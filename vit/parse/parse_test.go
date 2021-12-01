@@ -202,7 +202,7 @@ Item {
 }
 `
 
-var validDocument = &vitDocument{
+var validDocument = &VitDocument{
 	imports: []importStatement{
 		{namespace: []string{"One"}, version: "1.23"},
 		{namespace: []string{"Two", "Three"}, version: "4.56"},

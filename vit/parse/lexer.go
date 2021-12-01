@@ -42,6 +42,22 @@ func (e ReadError) Unwrap() error {
 	return e.err
 }
 
+func LexAll(input io.Reader, filePath string) ([]token, error) {
+	l := NewLexer(input, filePath)
+	allTokens := make([]token, 0, 100) // we will just start with some capacity
+	for {
+		t, err := l.Lex()
+		if err != nil {
+			return allTokens, err
+		}
+		allTokens = append(allTokens, t)
+		if t.tokenType == tokenEOF {
+			break
+		}
+	}
+	return allTokens, nil
+}
+
 type lexer struct {
 	source              *bufio.Reader
 	filePath            string
@@ -60,22 +76,6 @@ func NewLexer(input io.Reader, filePath string) *lexer {
 			column:   1,
 		},
 	}
-}
-
-func LexAll(input io.Reader, filePath string) ([]token, error) {
-	l := NewLexer(input, filePath)
-	allTokens := make([]token, 0, 100) // we will just start with some capacity
-	for {
-		t, err := l.Lex()
-		if err != nil {
-			return allTokens, err
-		}
-		allTokens = append(allTokens, t)
-		if t.tokenType == tokenEOF {
-			break
-		}
-	}
-	return allTokens, nil
 }
 
 // nextRune returns the next rune from the source as well as the position of that rune in the file.

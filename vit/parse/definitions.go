@@ -14,12 +14,12 @@ var dataTypes = map[string]bool{
 
 type tokenSource func() token
 
-type vitDocument struct {
+type VitDocument struct {
 	imports    []importStatement
 	components []*componentDefinition
 }
 
-func (d vitDocument) String() string {
+func (d VitDocument) String() string {
 	var out strings.Builder
 	out.WriteString("{\r\n\tImports:")
 	for _, imp := range d.imports {
@@ -88,6 +88,7 @@ func (uType unitType) String() string {
 
 type componentDefinition struct {
 	name       string
+	id         string
 	properties []property
 	children   []*componentDefinition
 	// signals               []signal

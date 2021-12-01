@@ -51,7 +51,7 @@ func (e unexpectedTokenError) Is(subject error) bool {
 	return ok
 }
 
-func Parse(tokens *tokenBuffer) (file *vitDocument, err error) {
+func Parse(tokens *tokenBuffer) (file *VitDocument, err error) {
 	defer func() {
 		// To simplify reading tokens from the lexer any errors it encounters will be thrown as a panic.
 		// We will catch them here and return them properly.
@@ -76,7 +76,7 @@ func Parse(tokens *tokenBuffer) (file *vitDocument, err error) {
 		}
 	}()
 
-	file = new(vitDocument)
+	file = new(VitDocument)
 
 	file.imports, err = parseImports(tokens)
 	if err != nil {
@@ -264,7 +264,12 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*componentDefinitio
 			return c, nil
 		case unitTypeProperty:
 			prop := unitIntf.(property)
-			c.properties = append(c.properties, prop)
+			if len(prop.identifier) == 1 && prop.identifier[0] == "id" {
+				// TODO: validate that the expression is a valid id. Calculations are not allowed
+				c.id = prop.expression
+			} else {
+				c.properties = append(c.properties, prop)
+			}
 		case unitTypeComponent:
 			child := unitIntf.(*componentDefinition)
 			c.children = append(c.children, child)
