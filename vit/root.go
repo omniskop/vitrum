@@ -5,15 +5,15 @@ import "fmt"
 // Root is the base component all other components embed. It provides some basic functionality.
 type Root struct {
 	parent     Component
-	id         string                 // id of this component. Can only be set on creation and not be changed.
-	properties map[string]interface{} // custom properties defined in a vit file
+	id         string           // id of this component. Can only be set on creation and not be changed.
+	properties map[string]Value // custom properties defined in a vit file
 	children   []Component
 }
 
 func NewRoot(id string) Root {
 	return Root{
 		id:         id,
-		properties: make(map[string]interface{}),
+		properties: make(map[string]Value),
 	}
 }
 
@@ -21,12 +21,29 @@ func (i *Root) String() string {
 	return fmt.Sprintf("Root{%s}", i.id)
 }
 
+func (i *Root) DefineProperty(name string, vitType string, expression string) bool {
+	switch vitType {
+	case "int":
+		if expression == "" {
+			i.properties[name] = NewEmptyIntValue()
+		} else {
+			i.properties[name] = NewIntValue(expression)
+		}
+	default:
+		return false
+	}
+	return true
+}
+
 func (i *Root) Property(key string) (interface{}, bool) {
 	if key == "id" {
 		return i.id, true
 	}
 	v, ok := i.properties[key]
-	return v, ok
+	if ok {
+		return v.GetValue(), true
+	}
+	return nil, false
 }
 
 func (i *Root) MustProperty(key string) interface{} {
@@ -42,7 +59,7 @@ func (i *Root) SetProperty(key string, value interface{}) bool {
 	if _, ok := i.properties[key]; !ok {
 		return false
 	}
-	i.properties[key] = value
+	i.properties[key].GetExpression().ChangeCode(value.(string))
 	return true
 }
 

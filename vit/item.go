@@ -13,8 +13,8 @@ type Item struct {
 func NewItem(id string) *Item {
 	return &Item{
 		Root:  NewRoot(id),
-		width: NewIntValue(),
-		stuff: NewIntValue(),
+		width: *NewEmptyIntValue(),
+		stuff: *NewEmptyIntValue(),
 	}
 }
 
@@ -90,6 +90,15 @@ func (i *Item) UpdateExpressions() (int, error) {
 		err := i.stuff.Update(i)
 		if err != nil {
 			return sum, fmt.Errorf("evaluating 'Item.stuff': %w", err)
+		}
+	}
+	for name, prop := range i.Root.properties {
+		if prop.ShouldEvaluate() {
+			sum++
+			err := prop.Update(i)
+			if err != nil {
+				return sum, fmt.Errorf("evaluating custom property 'Item.%s': %w", name, err)
+			}
 		}
 	}
 	n, err := i.Root.UpdateExpressions()

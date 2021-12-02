@@ -3,6 +3,7 @@ package parse
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/omniskop/vitrum/vit"
@@ -36,66 +37,66 @@ func DoMagic(fileName string) (vit.Component, error) {
 		return nil, err
 	}
 
-	components, err := Interpret([]VitDocument{*doc})
-	return components[0], err
+	fmt.Println("main file parsed...")
 
-	// entries, err := os.ReadDir(path.Dir(fileName))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var documents = make(map[string]VitDocument)
-	// for _, entry := range entries {
-	// 	if strings.HasSuffix(entry.Name(), ".vit") {
-	// 		doc, err := ParseFile(path.Join(path.Dir(fileName), entry.Name()))
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 		documents[strings.TrimSuffix(entry.Name(), ".vit")] = *doc
-	// 	}
-	// }
+	entries, err := os.ReadDir(path.Dir(fileName))
+	if err != nil {
+		return nil, err
+	}
+	var documents = make(map[string]VitDocument)
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name(), ".vit") {
+			doc, err := ParseFile(path.Join(path.Dir(fileName), entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			documents[strings.TrimSuffix(entry.Name(), ".vit")] = *doc
+		}
+	}
 
-	// components, err := Interpret([]VitDocument{*doc}, documents)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return nil, err
-	// }
+	fmt.Println("now interpreting...")
 
-	// return components[0], nil
+	components, err := Interpret(*doc, documents)
+	if err != nil {
+		return nil, err
+	}
+
+	return components[0], nil
 }
 
-func Interpret(documents []VitDocument) ([]vit.Component, error) {
+func Interpret(document VitDocument, neighbors map[string]VitDocument) ([]vit.Component, error) {
 	componentIndex := make(map[string]Library)
 
-	for _, doc := range documents {
-		for _, imp := range doc.imports {
-			if len(imp.file) != 0 {
-				// file import
-				return nil, fmt.Errorf("not yet implemented")
-			} else if len(imp.namespace) != 0 {
-				// namespace import
-				lib, err := resolveLibraryImport(imp.namespace)
-				if err != nil {
-					return nil, err
-				}
-				for _, name := range lib.ComponentNames() {
-					componentIndex[name] = lib
-				}
-			} else {
-				return nil, fmt.Errorf("incomplete namespace")
+	for _, imp := range document.imports {
+		if len(imp.file) != 0 {
+			// file import
+			return nil, fmt.Errorf("not yet implemented")
+		} else if len(imp.namespace) != 0 {
+			// namespace import
+			lib, err := resolveLibraryImport(imp.namespace)
+			if err != nil {
+				return nil, err
 			}
+			for _, name := range lib.ComponentNames() {
+				componentIndex[name] = lib
+			}
+		} else {
+			return nil, fmt.Errorf("incomplete namespace")
 		}
+	}
+
+	for name, doc := range neighbors {
+		componentIndex[name] = &standaloneDocument{name, doc, neighbors}
 	}
 
 	var instances []vit.Component
 
-	for _, doc := range documents {
-		for _, comp := range doc.components {
-			instance, err := instantiateComponent(componentIndex, comp)
-			if err != nil {
-				return nil, err
-			}
-			instances = append(instances, instance)
+	for _, comp := range document.components {
+		instance, err := instantiateComponent(componentIndex, comp)
+		if err != nil {
+			return nil, err
 		}
+		instances = append(instances, instance)
 	}
 
 	fmt.Println("components constructured")
@@ -135,11 +136,19 @@ func instantiateComponent(componentIndex map[string]Library, def *componentDefin
 func populateComponent(componentIndex map[string]Library, instance vit.Component, def *componentDefinition) error {
 	for _, prop := range def.properties {
 		exp := vit.NewExpression(prop.expression)
-		if len(prop.identifier) == 1 {
+		if prop.vitType != "" {
+			// this defines a new property
+			if ok := instance.DefineProperty(prop.identifier[0], prop.vitType, prop.expression); !ok {
+				return fmt.Errorf("property %q is already defined", prop.identifier[0])
+			}
+			// instance.SetProperty(prop.identifier[0], prop.expression)
+		} else if len(prop.identifier) == 1 {
+			// simple property assignment
 			if ok := instance.SetProperty(prop.identifier[0], prop.expression); !ok {
 				return fmt.Errorf("unknown property %q of component %q", prop.identifier[0], def.name)
 			}
 		} else {
+			// assign property with qualifier
 			if prop.identifier[0] == "anchors" {
 				a, _ := instance.Property("anchors")
 				a.(*vit.Anchors).SetProperty(prop.identifier[1], exp)
@@ -182,4 +191,27 @@ func CheckForReevaluation(components []vit.Component) (int, error) {
 		}
 	}
 	return sum, nil
+}
+
+type standaloneDocument struct {
+	name      string
+	doc       VitDocument
+	neighbors map[string]VitDocument
+}
+
+func (d *standaloneDocument) ComponentNames() []string {
+	return []string{d.name}
+}
+
+func (d *standaloneDocument) NewComponent(name, id string) (vit.Component, bool) {
+	if name != d.name {
+		return nil, false
+	}
+
+	components, err := Interpret(d.doc, d.neighbors)
+	if err != nil {
+		fmt.Printf("standalone document: %v\n", err)
+		return nil, false
+	}
+	return components[0], true
 }

@@ -31,25 +31,5 @@ func main() {
 	fmt.Println("======================================")
 
 	fmt.Println(component.Property("width"))
-	fmt.Println(component.Property("stuff"))
-	fmt.Println(component.Children()[0].Property("width"))
-	fmt.Println(component.Children()[0].Children()[0].Property("width"))
-
-	n, err := component.UpdateExpressions()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("main evaluted %d expressions\n", n)
-
-	fmt.Println("======================================")
-
-	component.SetProperty("width", "100")
-
-	n, err = component.UpdateExpressions()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("main evaluted %d expressions\n", n)
+	fmt.Println(component.Children()[0].Property("color"))
 }

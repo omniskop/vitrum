@@ -2,6 +2,7 @@ package vit
 
 // Component describes a generic vit component
 type Component interface {
+	DefineProperty(name string, vitType string, expression string) bool
 	Property(name string) (interface{}, bool)        // returns the value of the property with the given name, and a boolean indicating whether the property exists
 	MustProperty(name string) interface{}            // same as Property but panics if the property doesn't exist
 	SetProperty(name string, value interface{}) bool // sets the property with the given name to the given value and returns a boolean indicating whether the property exists

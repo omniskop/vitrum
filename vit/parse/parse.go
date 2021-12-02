@@ -294,9 +294,17 @@ func parseProperty(tokens *tokenBuffer) (property, error) {
 		return property{}, err
 	}
 
-	_, err = expectToken(tokens.next, tokenColon)
-	if err != nil {
-		return property{}, err
+	prop := property{
+		identifier: []string{identifier.literal},
+		vitType:    typeToken.literal,
+	}
+
+	switch tokens.next().tokenType {
+	case tokenColon: // continuing
+	case tokenNewline:
+		return prop, nil // property is finished with no value
+	default:
+		return property{}, unexpectedToken(tokens.next(), tokenColon, tokenNewline)
 	}
 
 	expression, err := expectToken(tokens.next, tokenExpression)
@@ -309,11 +317,9 @@ func parseProperty(tokens *tokenBuffer) (property, error) {
 		return property{}, err
 	}
 
-	return property{
-		identifier: []string{identifier.literal},
-		vitType:    typeToken.literal,
-		expression: expression.literal,
-	}, nil
+	prop.expression = expression.literal
+
+	return prop, nil
 }
 
 // ignoreTokens consumes all tokens of the given types.

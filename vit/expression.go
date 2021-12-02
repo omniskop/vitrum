@@ -17,6 +17,7 @@ type Value interface {
 	GetExpression() *Expression
 	AddDependent(*Expression)
 	RemoveDependent(*Expression)
+	ShouldEvaluate() bool
 	Err() error
 }
 
@@ -25,9 +26,15 @@ type IntValue struct {
 	Value int
 }
 
-func NewIntValue() IntValue {
-	return IntValue{
+func NewEmptyIntValue() *IntValue {
+	return &IntValue{
 		Expression: *NewExpression("0"),
+	}
+}
+
+func NewIntValue(expression string) *IntValue {
+	return &IntValue{
+		Expression: *NewExpression(expression),
 	}
 }
 

@@ -349,7 +349,6 @@ startExpressionScan:
 				if blockExpression {
 					// if it is a block expression the closing brace is part of it
 					str.WriteRune(r)
-					fmt.Println(pos)
 					t.end = pos
 				} else {
 					// As this is not a block expression we assume that this closing brace ends the component whose property we are reading.
