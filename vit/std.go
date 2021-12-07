@@ -4,13 +4,15 @@ type StdLib struct {
 }
 
 func (l StdLib) ComponentNames() []string {
-	return []string{"Item"}
+	return []string{"Item", "Rectangle"}
 }
 
-func (l StdLib) NewComponent(name string, id string) (Component, bool) {
+func (l StdLib) NewComponent(name string, id string, scope ComponentResolver) (Component, bool) {
 	switch name {
 	case "Item":
-		return NewItem(id), true
+		return NewItem(id, scope), true
+	case "Rectangle":
+		return NewRectangle(id, scope), true
 	}
 	return nil, false
 }

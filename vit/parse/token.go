@@ -24,8 +24,9 @@ const (
 	tokenFloat
 	tokenString
 
-	tokenLess    // <
-	tokenGreater // >
+	tokenLess       // <
+	tokenGreater    // >
+	tokenAssignment // =
 
 	tokenComma     // ,
 	tokenColon     // :
@@ -63,6 +64,8 @@ func (tt tokenType) String() string {
 		return "'<'"
 	case tokenGreater:
 		return "'>'"
+	case tokenAssignment:
+		return "'='"
 
 	case tokenComma:
 		return "','"
@@ -120,7 +123,7 @@ type position struct {
 }
 
 func (p position) String() string {
-	return fmt.Sprintf("%q:%d:%d", p.filePath, p.line, p.column)
+	return fmt.Sprintf("%s:%d:%d", p.filePath, p.line, p.column)
 }
 
 func (p position) IsEqual(o position) bool {

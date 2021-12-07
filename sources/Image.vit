@@ -1,0 +1,7 @@
+import Vit 1.0
+
+Item {
+    // property fillMode
+    property string source
+
+}

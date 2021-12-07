@@ -6,15 +6,23 @@ type Item struct {
 	Root
 
 	width   IntValue
-	stuff   IntValue
+	height  IntValue
+	stuff   IntValue // TODO: delete
 	anchors Anchors
+	x       FloatValue
+	y       FloatValue
+	z       FloatValue
 }
 
-func NewItem(id string) *Item {
+func NewItem(id string, scope ComponentResolver) *Item {
 	return &Item{
-		Root:  NewRoot(id),
-		width: *NewEmptyIntValue(),
-		stuff: *NewEmptyIntValue(),
+		Root:   NewRoot(id, scope),
+		width:  *NewIntValue(""),
+		height: *NewIntValue(""),
+		stuff:  *NewIntValue(""),
+		x:      *NewFloatValue(""),
+		y:      *NewFloatValue(""),
+		z:      *NewFloatValue(""),
 	}
 }
 
@@ -26,10 +34,18 @@ func (i *Item) Property(key string) (interface{}, bool) {
 	switch key {
 	case "width":
 		return i.width.Value, true
+	case "height":
+		return i.height.Value, true
 	case "stuff":
 		return i.stuff.Value, true
 	case "anchors":
 		return &i.anchors, true
+	case "x":
+		return i.x.Value, true
+	case "y":
+		return i.y.Value, true
+	case "z":
+		return i.z.Value, true
 	default:
 		return i.Root.Property(key)
 	}
@@ -44,14 +60,22 @@ func (i *Item) MustProperty(key string) interface{} {
 }
 
 func (i *Item) SetProperty(key string, value interface{}) bool {
-	fmt.Printf("[Item] set %q: %v\n", key, value)
+	// fmt.Printf("[Item] set %q: %v\n", key, value)
 	switch key {
 	case "width":
 		i.width.Expression.ChangeCode(value.(string))
+	case "height":
+		i.height.Expression.ChangeCode(value.(string))
 	case "stuff":
 		i.stuff.Expression.ChangeCode(value.(string))
 	case "anchors":
 		i.anchors = value.(Anchors)
+	case "x":
+		i.x.Expression.ChangeCode(value.(string))
+	case "y":
+		i.y.Expression.ChangeCode(value.(string))
+	case "z":
+		i.z.Expression.ChangeCode(value.(string))
 	default:
 		return i.Root.SetProperty(key, value)
 	}
@@ -64,8 +88,18 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 		return i, true
 	case "width":
 		return i.width, true
+	case "height":
+		return i.height, true
 	case "stuff":
 		return i.stuff, true
+	case "anchors":
+		return &i.anchors, true
+	case "x":
+		return i.x, true
+	case "y":
+		return i.y, true
+	case "z":
+		return i.z, true
 	}
 
 	return i.Root.ResolveVariable(key)
@@ -85,6 +119,13 @@ func (i *Item) UpdateExpressions() (int, error) {
 			return sum, fmt.Errorf("evaluating 'Item.width': %w", err)
 		}
 	}
+	if i.height.ShouldEvaluate() {
+		sum++
+		err := i.height.Update(i)
+		if err != nil {
+			return sum, fmt.Errorf("evaluating 'Item.height': %w", err)
+		}
+	}
 	if i.stuff.ShouldEvaluate() {
 		sum++
 		err := i.stuff.Update(i)
@@ -92,12 +133,34 @@ func (i *Item) UpdateExpressions() (int, error) {
 			return sum, fmt.Errorf("evaluating 'Item.stuff': %w", err)
 		}
 	}
+	if i.x.ShouldEvaluate() {
+		sum++
+		err := i.x.Update(i)
+		if err != nil {
+			return sum, fmt.Errorf("evaluating 'Item.x': %w", err)
+		}
+	}
+	if i.y.ShouldEvaluate() {
+		sum++
+		err := i.y.Update(i)
+		if err != nil {
+			return sum, fmt.Errorf("evaluating 'Item.y': %w", err)
+		}
+	}
+	if i.z.ShouldEvaluate() {
+		sum++
+		err := i.z.Update(i)
+		if err != nil {
+			return sum, fmt.Errorf("evaluating 'Item.z': %w", err)
+		}
+	}
+	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	for name, prop := range i.Root.properties {
 		if prop.ShouldEvaluate() {
 			sum++
 			err := prop.Update(i)
 			if err != nil {
-				return sum, fmt.Errorf("evaluating custom property 'Item.%s': %w", name, err)
+				return sum, fmt.Errorf("evaluating custom property %q: %w", name, err)
 			}
 		}
 	}

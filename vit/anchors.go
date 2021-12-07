@@ -82,6 +82,7 @@ func (a *Anchors) Property(key string) interface{} {
 }
 
 func (a *Anchors) SetProperty(key string, value interface{}) bool {
+	return true
 	switch key {
 	case "alignWhenCentered":
 		a.AlignWhenCentered = value.(bool)

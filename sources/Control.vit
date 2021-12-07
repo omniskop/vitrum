@@ -1,0 +1,5 @@
+import Vit 1.0
+
+Item {
+    property string title
+}

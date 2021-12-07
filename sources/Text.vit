@@ -1,0 +1,20 @@
+import Vit 1.0
+
+Item {
+    property string text
+    property HorizontalAlignment horizontalAlignment
+    property VerticalAlignment verticalAlignment
+
+    embedded enum HorizontalAlignment {
+        AlignLeft,
+        AlignRight,
+        AlignHCenter,
+        AlignJustify,
+    }
+
+    embedded enum VerticalAlignment {
+        AlignTop,
+        AlignBottom,
+        AlignVCenter,
+    }
+}

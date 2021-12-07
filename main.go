@@ -18,18 +18,28 @@ func main() {
 
 	script.Setup()
 
-	component, err := parse.DoMagic("sources/test.vit")
+	mngr := parse.NewManager()
+
+	mngr.AddImportPath("sources")
+	err := mngr.SetSource("sources/test.vit")
+	// err := mngr.SetSource("firefly/LaunchWindow.vit")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// for _, component := range components {
-	// 	fmt.Printf("%+v\n", component)
-	// }
+	err = mngr.Run()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Println("======================================")
 
-	fmt.Println(component.Property("width"))
-	fmt.Println(component.Children()[0].Property("color"))
+	component := mngr.MainComponent()
+	_ = component
+
+	// fmt.Println(component.Children()[0].MustProperty("horizontalAlignment"))
+	// c, _ := component.Children()[0].Property("color")
+	// fmt.Println(c.(color.Color).RGBA())
 }

@@ -3,6 +3,8 @@ package parse
 import (
 	"errors"
 	"fmt"
+
+	"github.com/omniskop/vitrum/vit"
 )
 
 type parseError struct {
@@ -191,13 +193,8 @@ scanLineIdentifier:
 
 	// check if the scanned identifier is a keyword
 	if len(lineIdentifier) == 1 {
-		switch lineIdentifier[0].literal {
-		case "property":
-			property, err := parseProperty(tokens)
-			if err != nil {
-				return nil, unitTypeNil, err
-			}
-			return property, unitTypeProperty, nil
+		if _, ok := keywords[lineIdentifier[0].literal]; ok {
+			return parseAttributeDeclaration(tokens, lineIdentifier[0].literal)
 		}
 	}
 
@@ -268,8 +265,17 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*componentDefinitio
 				// TODO: validate that the expression is a valid id. Calculations are not allowed
 				c.id = prop.expression
 			} else {
+				if c.IdentifierIsKnown(prop.identifier) {
+					return c, fmt.Errorf("identifier %v is already defined", prop.identifier)
+				}
 				c.properties = append(c.properties, prop)
 			}
+		case unitTypeEnum:
+			enum := unitIntf.(vit.Enumeration)
+			if c.IdentifierIsKnown([]string{enum.Name}) {
+				return c, fmt.Errorf("identifier %q is already defined", enum.Name)
+			}
+			c.enumerations = append(c.enumerations, enum)
 		case unitTypeComponent:
 			child := unitIntf.(*componentDefinition)
 			c.children = append(c.children, child)
@@ -280,13 +286,44 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*componentDefinitio
 	}
 }
 
-func parseProperty(tokens *tokenBuffer) (property, error) {
+func parseAttributeDeclaration(tokens *tokenBuffer, keyword string) (interface{}, unitType, error) {
+	var modifiers []string
+
+	for {
+		switch keyword {
+		case "property":
+			prop, err := parseProperty(tokens, modifiers)
+			if err != nil {
+				return nil, unitTypeNil, err
+			}
+			return prop, unitTypeProperty, nil
+		case "enum":
+			en, err := parseEnum(tokens, modifiers)
+			if err != nil {
+				return nil, unitTypeNil, err
+			}
+			return en, unitTypeEnum, nil
+		default:
+			for _, m := range modifiers {
+				if m == keyword {
+					return nil, unitTypeNil, fmt.Errorf("duplicate modifier %q", keyword)
+				}
+			}
+			modifiers = []string{keyword}
+		}
+
+		t, err := expectToken(tokens.next, tokenIdentifier)
+		if err != nil {
+			return nil, unitTypeNil, err
+		}
+		keyword = t.literal
+	}
+}
+
+func parseProperty(tokens *tokenBuffer, modifiers []string) (property, error) {
 	typeToken, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
 		return property{}, err
-	}
-	if !dataTypes[typeToken.literal] {
-		return property{}, parseError{typeToken.start, fmt.Errorf("unknown data type %q", typeToken.literal)}
 	}
 
 	identifier, err := expectToken(tokens.next, tokenIdentifier)
@@ -320,6 +357,79 @@ func parseProperty(tokens *tokenBuffer) (property, error) {
 	prop.expression = expression.literal
 
 	return prop, nil
+}
+
+func parseEnum(tokens *tokenBuffer, modifiers []string) (vit.Enumeration, error) {
+	enum := vit.Enumeration{
+		Values:   make(map[string]int),
+		Embedded: stringSliceContains(modifiers, "embedded"),
+	}
+
+	t, err := expectToken(tokens.next, tokenIdentifier)
+	if err != nil {
+		return enum, err
+	}
+	enum.Name = t.literal
+
+	_, err = expectToken(tokens.next, tokenLeftBrace)
+	if err != nil {
+		return enum, err
+	}
+
+	ignoreTokens(tokens, tokenNewline)
+
+	var nextValue = 0
+lineLoop:
+	for {
+		// read enum key or closing brace
+		keyToken := tokens.next()
+		if keyToken.tokenType == tokenRightBrace {
+			break lineLoop // enum ended
+		} else if keyToken.tokenType != tokenIdentifier {
+			return enum, unexpectedToken(keyToken, tokenIdentifier, tokenRightBrace)
+		}
+		// check if the key already exists
+		if _, ok := enum.Values[keyToken.literal]; ok {
+			return enum, parseError{keyToken.start, fmt.Errorf("duplicate enum key %q", keyToken.literal)}
+		}
+
+		// check if there is a manual assignment
+		t := tokens.next()
+		if t.tokenType == tokenAssignment {
+			valueToken := tokens.next()
+			if valueToken.tokenType != tokenInteger {
+				return enum, parseError{valueToken.start, fmt.Errorf("only integer literals can be assigned to enum keys, but found %q", keyToken.literal)}
+			}
+			nextValue = valueToken.IntValue()
+			if nextValue < 0 {
+				return enum, parseError{valueToken.start, fmt.Errorf("enum value can't be negative")}
+			}
+			t = tokens.next() // read the next token after the assignment
+		}
+
+		// store the value
+		enum.Values[keyToken.literal] = nextValue
+		nextValue++
+
+		// check how the line ends
+		switch t.tokenType {
+		case tokenComma:
+			ignoreTokens(tokens, tokenNewline)
+		case tokenNewline:
+			// a newline without a semicolon is only allowed at the end of the block, thus we expect a closing brace here
+			t = tokens.next()
+			if t.tokenType != tokenRightBrace {
+				return enum, unexpectedToken(t, tokenRightBrace)
+			}
+			enum.Values[t.literal] = nextValue
+			break lineLoop
+		default:
+			return enum, unexpectedToken(t, tokenAssignment, tokenComma, tokenNewline)
+		}
+
+	}
+
+	return enum, nil
 }
 
 // ignoreTokens consumes all tokens of the given types.
@@ -367,4 +477,25 @@ func literalsToStrings(tokens []token) []string {
 		strs[i] = ident.literal
 	}
 	return strs
+}
+
+func stringSliceContains(list []string, element string) bool {
+	for _, e := range list {
+		if e == element {
+			return true
+		}
+	}
+	return false
+}
+
+func stringSlicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, e := range a {
+		if e != b[i] {
+			return false
+		}
+	}
+	return true
 }

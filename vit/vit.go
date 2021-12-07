@@ -1,8 +1,13 @@
 package vit
 
+import (
+	"github.com/omniskop/vitrum/vit/script"
+)
+
 // Component describes a generic vit component
 type Component interface {
 	DefineProperty(name string, vitType string, expression string) bool
+	DefineEnum(Enumeration) bool
 	Property(name string) (interface{}, bool)        // returns the value of the property with the given name, and a boolean indicating whether the property exists
 	MustProperty(name string) interface{}            // same as Property but panics if the property doesn't exist
 	SetProperty(name string, value interface{}) bool // sets the property with the given name to the given value and returns a boolean indicating whether the property exists
@@ -14,4 +19,48 @@ type Component interface {
 	ID() string                                      // Returns the id of this component
 	String() string                                  // Returns a short string representation of this component
 	UpdateExpressions() (int, error)                 // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
+}
+
+type Enumeration struct {
+	Name     string
+	Embedded bool
+	Values   map[string]int
+}
+
+func (e Enumeration) ResolveVariable(name string) (interface{}, bool) {
+	if value, ok := e.Values[name]; ok {
+		return value, true
+	}
+	return nil, false
+}
+
+type AbstractComponent interface {
+	script.VariableSource
+	Instantiate(string, ComponentResolver) (Component, error)
+	// Static values
+}
+
+type ComponentResolver struct {
+	// TODO: make these private?
+	Parent     *ComponentResolver
+	Components map[string]AbstractComponent
+}
+
+func NewComponentResolver(parent *ComponentResolver) ComponentResolver {
+	return ComponentResolver{
+		Parent:     parent,
+		Components: make(map[string]AbstractComponent),
+	}
+}
+
+func (r ComponentResolver) Resolve(names ...string) (AbstractComponent, bool) {
+	src, ok := r.Components[names[0]]
+	if !ok {
+		if r.Parent != nil {
+			return r.Parent.Resolve(names...)
+		} else {
+			return nil, false
+		}
+	}
+	return src, ok
 }

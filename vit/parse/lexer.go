@@ -170,6 +170,21 @@ func (l *lexer) Lex() (token, error) {
 				tokenType: tokenRightBracket,
 				start:     pos, end: pos,
 			}, nil
+		case r == '<':
+			return token{
+				tokenType: tokenLess,
+				start:     pos, end: pos,
+			}, nil
+		case r == '>':
+			return token{
+				tokenType: tokenGreater,
+				start:     pos, end: pos,
+			}, nil
+		case r == '=':
+			return token{
+				tokenType: tokenAssignment,
+				start:     pos, end: pos,
+			}, nil
 		case r == ',':
 			return token{
 				tokenType: tokenComma,
@@ -205,7 +220,7 @@ func (l *lexer) Lex() (token, error) {
 			continue
 		case unicode.IsLetter(r):
 			return l.scanIdentifier(r)
-		case unicode.IsNumber(r):
+		case unicode.IsNumber(r), r == '-', r == '+':
 			l.unreadRune()
 			return l.scanNumber()
 		default:
@@ -574,19 +589,25 @@ func (l *lexer) scanNumber() (token, error) {
 			return token{}, err
 		}
 
-		// if r is not a number or a period...
-		if !unicode.IsNumber(r) && r != '.' {
-			// ... the number has ended
-			l.unreadRune()
-			goto parseAndReturn
-		}
-
-		if r == '.' {
+		switch {
+		case r == '.':
 			if isFloatingPoint {
 				invalid = true // more than one floating point but we will continue to scan
 			} else {
 				isFloatingPoint = true
 			}
+		case r == '+', r == '-':
+			// a sign that is not at the start ends this number
+			if str.Len() != 0 {
+				l.unreadRune()
+				goto parseAndReturn
+			}
+		case unicode.IsNumber(r):
+
+		default:
+			// the number has ended
+			l.unreadRune()
+			goto parseAndReturn
 		}
 
 		str.WriteRune(r)

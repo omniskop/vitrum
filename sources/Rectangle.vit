@@ -1,6 +1,0 @@
-import Vit 1.0
-
-Item {
-    property int color
-    width: 100
-}

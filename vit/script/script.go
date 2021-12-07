@@ -14,6 +14,7 @@ var runtimeMux sync.Mutex
 func Setup() {
 	runtime = goja.New()
 	runtime.SetParserOptions(parser.WithDisableSourceMaps)
+	runtime.Set("Vit", builtinFunctions)
 }
 
 type Script struct {
@@ -82,10 +83,10 @@ func (b *VariableBridge) Get(key string) goja.Value {
 		return goja.Undefined()
 	}
 	if subBridge, ok := val.(VariableBridge); ok {
-		fmt.Printf("[VariableBridge] get %q: component\n", key)
+		fmt.Printf("[VariableBridge] get %q: (abstract) component\n", key)
 		return runtime.NewDynamicObject(&subBridge)
 	}
-	fmt.Printf("[VariableBridge] get %q: %v (%T)\n", key, val, val)
+	fmt.Printf("[VariableBridge] get %q: (%T) %v\n", key, val, val)
 	return runtime.ToValue(val)
 }
 

@@ -1,17 +1,8 @@
 import Vit 1.0
 
-Item {
-    id: rect
-    width: 5
-    stuff: width + 2 // + subrect.width
+Rectangle {
 
-    Item {
-        id: subrect
-        width: rect.width + parent.stuff
+    Label {
 
-        Item {
-            id: child
-            width: parent.width
-        }
     }
 }

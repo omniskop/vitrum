@@ -4,79 +4,117 @@ import "fmt"
 
 // Root is the base component all other components embed. It provides some basic functionality.
 type Root struct {
-	parent     Component
-	id         string           // id of this component. Can only be set on creation and not be changed.
-	properties map[string]Value // custom properties defined in a vit file
-	children   []Component
+	scope        ComponentResolver
+	parent       Component
+	id           string           // id of this component. Can only be set on creation and not be changed.
+	properties   map[string]Value // custom properties defined in a vit file
+	enumerations map[string]Enumeration
+	children     []Component
 }
 
-func NewRoot(id string) Root {
+func NewRoot(id string, scope ComponentResolver) Root {
 	return Root{
-		id:         id,
-		properties: make(map[string]Value),
+		scope:        scope,
+		id:           id,
+		properties:   make(map[string]Value),
+		enumerations: make(map[string]Enumeration),
 	}
 }
 
-func (i *Root) String() string {
-	return fmt.Sprintf("Root{%s}", i.id)
+func (r *Root) String() string {
+	return fmt.Sprintf("Root{%s}", r.id)
 }
 
-func (i *Root) DefineProperty(name string, vitType string, expression string) bool {
+func (r *Root) DefineProperty(name string, vitType string, expression string) bool {
 	switch vitType {
 	case "int":
 		if expression == "" {
-			i.properties[name] = NewEmptyIntValue()
+			r.properties[name] = NewIntValue("")
 		} else {
-			i.properties[name] = NewIntValue(expression)
+			r.properties[name] = NewIntValue(expression)
+		}
+	case "float":
+		if expression == "" {
+			r.properties[name] = NewFloatValue("")
+		} else {
+			r.properties[name] = NewFloatValue(expression)
+		}
+	case "string":
+		if expression == "" {
+			r.properties[name] = NewStringValue("")
+		} else {
+			r.properties[name] = NewStringValue(expression)
 		}
 	default:
+		if _, ok := r.enumerations[vitType]; ok {
+			if expression == "" {
+				r.properties[name] = NewIntValue("")
+			} else {
+				r.properties[name] = NewIntValue(expression)
+			}
+			return true
+		}
 		return false
 	}
 	return true
 }
 
-func (i *Root) Property(key string) (interface{}, bool) {
-	if key == "id" {
-		return i.id, true
+func (r *Root) DefineEnum(enum Enumeration) bool {
+	if _, ok := r.enumerations[enum.Name]; ok {
+		return false
 	}
-	v, ok := i.properties[key]
+	r.enumerations[enum.Name] = enum
+	return true
+}
+
+func (r *Root) Property(key string) (interface{}, bool) {
+	if key == "id" {
+		return r.id, true
+	}
+	v, ok := r.properties[key]
 	if ok {
 		return v.GetValue(), true
 	}
 	return nil, false
 }
 
-func (i *Root) MustProperty(key string) interface{} {
-	v, ok := i.Property(key)
+func (r *Root) MustProperty(key string) interface{} {
+	v, ok := r.Property(key)
 	if !ok {
 		panic(fmt.Errorf("MustProperty called with unknown key %q", key))
 	}
 	return v
 }
 
-func (i *Root) SetProperty(key string, value interface{}) bool {
-	fmt.Printf("[Root] set %q: %v\n", key, value)
-	if _, ok := i.properties[key]; !ok {
+func (r *Root) SetProperty(key string, value interface{}) bool {
+	// fmt.Printf("[Root] set %q: %v\n", key, value)
+	if _, ok := r.properties[key]; !ok {
 		return false
 	}
-	i.properties[key].GetExpression().ChangeCode(value.(string))
+	r.properties[key].GetExpression().ChangeCode(value.(string))
 	return true
 }
 
 // ResolveVariable; THIS NEEDS TO BE REIMPLEMENTED BY THE EMBEDDING STRUCTS TO RETURN THE CORRECT TYPE IF THE ID OF THIS COMPONENT IS REQUESTED
-func (i *Root) ResolveVariable(key string) (interface{}, bool) {
+func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 	if key == "parent" {
-		if i.parent == nil {
+		if r.parent == nil {
 			fmt.Println("tried to access parent of root component")
 			return nil, false
 		}
-		return i.parent, true
+		return r.parent, true
 	}
-	if key == i.id {
-		return i, true
+	if key == r.id {
+		return r, true
 	}
 
-	for _, child := range i.children {
+	// use resolver
+	abs, ok := r.scope.Resolve(key)
+	if ok {
+		return abs, true
+	}
+
+	for _, child := range r.children {
 		if child.ID() == key {
 			return child, true
 		}
@@ -85,14 +123,14 @@ func (i *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 	}
 
-	if i.parent != nil {
-		return i.parent.ResolveVariable(key)
+	if r.parent != nil {
+		return r.parent.ResolveVariable(key)
 	}
 	return nil, false
 }
 
-func (i *Root) ResolveID(id string) (Component, bool) {
-	for _, child := range i.children {
+func (r *Root) ResolveID(id string) (Component, bool) {
+	for _, child := range r.children {
 		if child.ID() == id {
 			return child, true
 		}
@@ -102,22 +140,22 @@ func (i *Root) ResolveID(id string) (Component, bool) {
 
 // AddChild; THIS NEEDS TO BE REIMPLEMENTED BY THE EMBEDDING STRUCTS TO SET THE CORRECT PARENT TYPE INSTEAD OF ROOT
 // TODO: remove this method here, to force reimplementation?
-func (i *Root) AddChild(child Component) {
-	child.SetParent(i)
-	i.children = append(i.children, child)
+func (r *Root) AddChild(child Component) {
+	child.SetParent(r)
+	r.children = append(r.children, child)
 }
 
-func (i *Root) SetParent(parent Component) {
-	i.parent = parent
+func (r *Root) SetParent(parent Component) {
+	r.parent = parent
 }
 
-func (i *Root) Children() []Component {
-	return i.children
+func (r *Root) Children() []Component {
+	return r.children
 }
 
-func (i *Root) UpdateExpressions() (int, error) {
+func (r *Root) UpdateExpressions() (int, error) {
 	var sum int
-	for _, child := range i.children {
+	for _, child := range r.children {
 		n, err := child.UpdateExpressions()
 		sum += n
 		if err != nil {
@@ -127,6 +165,6 @@ func (i *Root) UpdateExpressions() (int, error) {
 	return sum, nil
 }
 
-func (i *Root) ID() string {
-	return i.id
+func (r *Root) ID() string {
+	return r.id
 }

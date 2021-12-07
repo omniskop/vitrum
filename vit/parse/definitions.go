@@ -3,6 +3,8 @@ package parse
 import (
 	"fmt"
 	"strings"
+
+	"github.com/omniskop/vitrum/vit"
 )
 
 var dataTypes = map[string]bool{
@@ -10,11 +12,22 @@ var dataTypes = map[string]bool{
 	"int":    true,
 	"float":  true,
 	"string": true,
+	"color":  true,
+}
+
+var keywords = map[string]bool{
+	"property": true,
+	"default":  true,
+	"required": true,
+	"readonly": true,
+	"enum":     true,
+	"embedded": true,
 }
 
 type tokenSource func() token
 
 type VitDocument struct {
+	name       string
 	imports    []importStatement
 	components []*componentDefinition
 }
@@ -65,22 +78,25 @@ type unitType int
 
 const (
 	unitTypeNil unitType = iota
+	unitTypeEOF
 	unitTypeComponent
 	unitTypeComponentEnd
 	unitTypeProperty
-	unitTypeEOF
+	unitTypeEnum
 )
 
 func (uType unitType) String() string {
 	switch uType {
+	case unitTypeEOF:
+		return "end of file"
 	case unitTypeComponent:
 		return "component"
 	case unitTypeComponentEnd:
 		return "end of component"
 	case unitTypeProperty:
 		return "property"
-	case unitTypeEOF:
-		return "end of file"
+	case unitTypeEnum:
+		return "enum"
 	default:
 		return "unknown unit"
 	}
@@ -96,26 +112,44 @@ type componentDefinition struct {
 	// methods               []method
 	// attachedProperties    []property
 	// attachedSignalHandler []signalHandler
-	// enums                 []enumeration
+	enumerations []vit.Enumeration
 }
 
-func (o *componentDefinition) String() string {
-	if o == nil {
+func (d *componentDefinition) IdentifierIsKnown(identifier []string) bool {
+	if len(identifier) == 0 {
+		return false
+	}
+	for _, p := range d.properties {
+		if stringSlicesEqual(p.identifier, identifier) {
+			return true
+		}
+	}
+	for _, e := range d.enumerations {
+		if e.Name == identifier[0] {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (d *componentDefinition) String() string {
+	if d == nil {
 		return "<nil>"
 	}
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s { ", o.name))
+	s.WriteString(fmt.Sprintf("%s { ", d.name))
 
-	for _, p := range o.properties {
+	for _, p := range d.properties {
 		s.WriteString(fmt.Sprintf("%s, ", p.String()))
 	}
 
-	if len(o.children) == 0 {
+	if len(d.children) == 0 {
 
-	} else if len(o.children) == 1 {
-		s.WriteString(fmt.Sprintf("%d child", len(o.children)))
+	} else if len(d.children) == 1 {
+		s.WriteString(fmt.Sprintf("%d child", len(d.children)))
 	} else {
-		s.WriteString(fmt.Sprintf("%d children", len(o.children)))
+		s.WriteString(fmt.Sprintf("%d children", len(d.children)))
 	}
 
 	// TODO: add other fields

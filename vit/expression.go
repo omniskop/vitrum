@@ -6,10 +6,6 @@ import (
 	"github.com/omniskop/vitrum/vit/script"
 )
 
-/*
-	Eine Wert kann entweder eine Konstante sein oder eine expression.
-*/
-
 type Value interface {
 	Update(context Component) error
 	GetValue() interface{}
@@ -26,16 +22,14 @@ type IntValue struct {
 	Value int
 }
 
-func NewEmptyIntValue() *IntValue {
-	return &IntValue{
-		Expression: *NewExpression("0"),
-	}
-}
-
 func NewIntValue(expression string) *IntValue {
-	return &IntValue{
-		Expression: *NewExpression(expression),
+	v := new(IntValue)
+	if expression == "" {
+		v.Expression = *NewExpression("0")
+	} else {
+		v.Expression = *NewExpression(expression)
 	}
+	return v
 }
 
 func (v *IntValue) Update(context Component) error {
@@ -52,6 +46,70 @@ func (v *IntValue) Update(context Component) error {
 }
 
 func (c *IntValue) GetValue() interface{} {
+	return c.Value
+}
+
+type FloatValue struct {
+	Expression
+	Value float64
+}
+
+func NewFloatValue(expression string) *FloatValue {
+	v := new(FloatValue)
+	if expression == "" {
+		v.Expression = *NewExpression("0")
+	} else {
+		v.Expression = *NewExpression(expression)
+	}
+	return v
+}
+
+func (v *FloatValue) Update(context Component) error {
+	val, err := v.Expression.Evaluate(context)
+	if err != nil {
+		return err
+	}
+	castVal, ok := castFloat(val)
+	if !ok {
+		return fmt.Errorf("expression did not evaluate to expected type int but %T instead", val)
+	}
+	v.Value = float64(castVal)
+	return nil
+}
+
+func (c *FloatValue) GetValue() interface{} {
+	return c.Value
+}
+
+type StringValue struct {
+	Expression
+	Value string
+}
+
+func NewStringValue(expression string) *StringValue {
+	v := new(StringValue)
+	if expression == "" {
+		v.Expression = *NewExpression(`""`)
+	} else {
+		v.Expression = *NewExpression(expression)
+	}
+	return v
+}
+
+func (v *StringValue) Update(context Component) error {
+	val, err := v.Expression.Evaluate(context)
+	if err != nil {
+		return err
+	}
+	var ok bool
+	v.Value, ok = val.(string)
+	if !ok {
+		return fmt.Errorf("expression did not evaluate to expected type string but %T instead", val)
+	}
+	return nil
+}
+
+func (c *StringValue) GetValue() interface{} {
 	return c.Value
 }
 
@@ -80,7 +138,7 @@ func NewExpression(code string) *Expression {
 }
 
 func (e *Expression) Evaluate(context Component) (interface{}, error) {
-	fmt.Printf("[expression] evaluating %q\n", e.code)
+	// fmt.Printf("[expression] evaluating %q\n", e.code)
 	collector := NewAccessCollector(context)
 	val, err := e.program.Run(collector)
 	variables := collector.GetReadValues()
@@ -199,8 +257,12 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 	}
 
 	switch actual := variable.(type) {
-	case Component:
+	case Component: // reference to an existing component instance
 		return script.VariableBridge{Source: c.SubContext(actual)}, true
+	case AbstractComponent: // static component values
+		return script.VariableBridge{Source: &variableConverter{actual}}, true
+	case Enumeration:
+		return script.VariableBridge{Source: &variableConverter{actual}}, true
 	case Value:
 		(*c.readValues)[actual] = true
 		return actual.GetValue(), true
@@ -229,12 +291,45 @@ func (c *AccessCollector) GetWrittenValues() []Value {
 	return result
 }
 
+type variableConverter struct {
+	context script.VariableSource
+}
+
+func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
+	variable, ok := c.context.ResolveVariable(key)
+	if !ok {
+		return nil, false
+	}
+
+	switch actual := variable.(type) {
+	case AbstractComponent: // static component values
+		return script.VariableBridge{Source: &variableConverter{actual}}, true
+	case Enumeration:
+		return script.VariableBridge{Source: &variableConverter{actual}}, true
+	case int:
+		return actual, true
+	default:
+		panic(fmt.Errorf("resolved variable %q to unhandled type %T", key, actual))
+	}
+}
+
 func castInt(val interface{}) (int, bool) {
 	switch n := val.(type) {
 	case int64:
 		return int(n), true
 	case float64:
 		return int(n), true
+	default:
+		return 0, false
+	}
+}
+
+func castFloat(val interface{}) (float64, bool) {
+	switch n := val.(type) {
+	case int64:
+		return float64(n), true
+	case float64:
+		return float64(n), true
 	default:
 		return 0, false
 	}

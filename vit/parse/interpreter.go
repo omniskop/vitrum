@@ -3,7 +3,6 @@ package parse
 import (
 	"fmt"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/omniskop/vitrum/vit"
@@ -11,10 +10,10 @@ import (
 
 type Library interface {
 	ComponentNames() []string
-	NewComponent(string, string) (vit.Component, bool)
+	NewComponent(string, string, vit.ComponentResolver) (vit.Component, bool)
 }
 
-func ParseFile(fileName string) (*VitDocument, error) {
+func ParseFile(fileName string, componentName string) (*VitDocument, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
@@ -27,45 +26,14 @@ func ParseFile(fileName string) (*VitDocument, error) {
 	if err != nil {
 		return nil, err
 	}
+	doc.name = componentName
 
 	return doc, nil
 }
 
-func DoMagic(fileName string) (vit.Component, error) {
-	doc, err := ParseFile(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("main file parsed...")
-
-	entries, err := os.ReadDir(path.Dir(fileName))
-	if err != nil {
-		return nil, err
-	}
-	var documents = make(map[string]VitDocument)
-	for _, entry := range entries {
-		if strings.HasSuffix(entry.Name(), ".vit") {
-			doc, err := ParseFile(path.Join(path.Dir(fileName), entry.Name()))
-			if err != nil {
-				return nil, err
-			}
-			documents[strings.TrimSuffix(entry.Name(), ".vit")] = *doc
-		}
-	}
-
-	fmt.Println("now interpreting...")
-
-	components, err := Interpret(*doc, documents)
-	if err != nil {
-		return nil, err
-	}
-
-	return components[0], nil
-}
-
-func Interpret(document VitDocument, neighbors map[string]VitDocument) ([]vit.Component, error) {
-	componentIndex := make(map[string]Library)
+// Interpret takes the parsed document and creates the appropriate component tree
+func Interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Component, error) {
+	allComponents := vit.NewComponentResolver(&components)
 
 	for _, imp := range document.imports {
 		if len(imp.file) != 0 {
@@ -78,21 +46,16 @@ func Interpret(document VitDocument, neighbors map[string]VitDocument) ([]vit.Co
 				return nil, err
 			}
 			for _, name := range lib.ComponentNames() {
-				componentIndex[name] = lib
+				allComponents.Components[name] = &LibraryInstantiator{lib, name}
 			}
 		} else {
 			return nil, fmt.Errorf("incomplete namespace")
 		}
 	}
 
-	for name, doc := range neighbors {
-		componentIndex[name] = &standaloneDocument{name, doc, neighbors}
-	}
-
 	var instances []vit.Component
-
 	for _, comp := range document.components {
-		instance, err := instantiateComponent(componentIndex, comp)
+		instance, err := instantiateComponent(comp, allComponents)
 		if err != nil {
 			return nil, err
 		}
@@ -102,30 +65,21 @@ func Interpret(document VitDocument, neighbors map[string]VitDocument) ([]vit.Co
 	fmt.Println("components constructured")
 	fmt.Println("evaluating expressions...")
 
-evaluateExpressions:
-	n, err := CheckForReevaluation(instances)
-	if err != nil {
-		return nil, err
-	}
-	if n > 0 {
-		fmt.Printf("evaluated %d expressions\n", n)
-		goto evaluateExpressions
-	}
-
 	return instances, nil
 }
 
-func instantiateComponent(componentIndex map[string]Library, def *componentDefinition) (vit.Component, error) {
-	lib, ok := componentIndex[def.name]
+// instantiateComponent creates a component described by a componentDefinition.
+func instantiateComponent(def *componentDefinition, components vit.ComponentResolver) (vit.Component, error) {
+	src, ok := components.Resolve(def.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown component %q", def.name)
 	}
-	instance, ok := lib.NewComponent(def.name, def.id)
-	if !ok {
-		return nil, fmt.Errorf("component %q could not be instantiated", def.name)
+	instance, err := src.Instantiate(def.id, components)
+	if err != nil {
+		return nil, fmt.Errorf("component %q could not be instantiated: %v", def.name, err)
 	}
 
-	err := populateComponent(componentIndex, instance, def)
+	err = populateComponent(instance, def, components)
 	if err != nil {
 		return instance, err
 	}
@@ -133,7 +87,14 @@ func instantiateComponent(componentIndex map[string]Library, def *componentDefin
 	return instance, nil
 }
 
-func populateComponent(componentIndex map[string]Library, instance vit.Component, def *componentDefinition) error {
+// populateComponent takes a fresh component instance as well as it's definition and populates all attributes and children with their correct values.
+func populateComponent(instance vit.Component, def *componentDefinition, components vit.ComponentResolver) error {
+	for _, enum := range def.enumerations {
+		if !instance.DefineEnum(enum) {
+			return fmt.Errorf("enum %q already defined", enum.Name)
+		}
+	}
+
 	for _, prop := range def.properties {
 		exp := vit.NewExpression(prop.expression)
 		if prop.vitType != "" {
@@ -157,7 +118,7 @@ func populateComponent(componentIndex map[string]Library, instance vit.Component
 	}
 
 	for _, childDef := range def.children {
-		childInstance, err := instantiateComponent(componentIndex, childDef)
+		childInstance, err := instantiateComponent(childDef, components)
 		if err != nil {
 			return err
 		}
@@ -167,6 +128,7 @@ func populateComponent(componentIndex map[string]Library, instance vit.Component
 	return nil
 }
 
+// resolveLibraryImport takes a library identifier and returns the corresponding library or an error if the identifier is unknown.
 func resolveLibraryImport(namespace []string) (Library, error) {
 	if len(namespace) == 0 {
 		return nil, fmt.Errorf("empty namespace")
@@ -176,27 +138,19 @@ func resolveLibraryImport(namespace []string) (Library, error) {
 		if len(namespace) == 1 {
 			return vit.StdLib{}, nil
 		}
+	case "QtQuick":
+		return vit.StdLib{}, nil
+	case "Dark":
+		return vit.StdLib{}, nil
 	}
 
 	return nil, fmt.Errorf("unknown library %q", strings.Join(namespace, "."))
 }
 
-func CheckForReevaluation(components []vit.Component) (int, error) {
-	var sum int
-	for _, c := range components {
-		n, err := c.UpdateExpressions()
-		sum += n
-		if err != nil {
-			return sum, err
-		}
-	}
-	return sum, nil
-}
-
 type standaloneDocument struct {
-	name      string
-	doc       VitDocument
-	neighbors map[string]VitDocument
+	name       string
+	doc        VitDocument
+	components vit.ComponentResolver
 }
 
 func (d *standaloneDocument) ComponentNames() []string {
@@ -208,7 +162,7 @@ func (d *standaloneDocument) NewComponent(name, id string) (vit.Component, bool)
 		return nil, false
 	}
 
-	components, err := Interpret(d.doc, d.neighbors)
+	components, err := Interpret(d.doc, d.components)
 	if err != nil {
 		fmt.Printf("standalone document: %v\n", err)
 		return nil, false
