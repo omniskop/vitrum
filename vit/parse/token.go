@@ -6,22 +6,41 @@ import (
 	"strings"
 )
 
+// ========================================== POSITION =============================================
+
+// position describes a specific position in a file
+type position struct {
+	filePath string
+	line     int // line inside the file starting at 1
+	column   int // column inside the line starting at 1 (this is pointing to the rune, not the byte)
+}
+
+// String returns a human readable description of the position
+func (p position) String() string {
+	return fmt.Sprintf("%s:%d:%d", p.filePath, p.line, p.column)
+}
+
+// IsEqual returns true if with positions point to the same location in the same file
+func (p position) IsEqual(o position) bool {
+	return p.filePath == o.filePath && p.line == o.line && p.column == o.column
+}
+
 // ========================================= TOKEN TYPE ============================================
 
 type tokenType int
 
 const (
-	tokenEOF tokenType = iota
-	tokenIdentifier
-	tokenExpression
+	tokenEOF        tokenType = iota
+	tokenIdentifier           // a single word
+	tokenExpression           // an expression that describes the value of a property
 
 	tokenLeftBrace    // {
 	tokenRightBrace   // }
 	tokenLeftBracket  // [
 	tokenRightBracket // ]
 
-	tokenInteger
-	tokenFloat
+	tokenInteger // the actual number value of a token with this type can be read by calling IntValue()
+	tokenFloat   // the actual number value of a token with this type can be read by calling FloatValue()
 	tokenString
 
 	tokenLess       // <
@@ -35,6 +54,7 @@ const (
 	tokenPeriod    // .
 )
 
+// String returns a human readable name of the token type
 func (tt tokenType) String() string {
 	switch tt {
 	case tokenEOF:
@@ -82,7 +102,7 @@ func (tt tokenType) String() string {
 	}
 }
 
-// isLiteralType returns true if the tokenType is not just a single character or operator but contains a literal with meaningful value.
+// isLiteralType returns true if the tokenType is not just a single character or operator but contains a literal with a meaningful value.
 func isLiteralType(tt tokenType) bool {
 	return tt == tokenInteger || tt == tokenFloat || tt == tokenString || tt == tokenIdentifier || tt == tokenExpression
 }
@@ -113,30 +133,14 @@ func joinTokenTypes(types []tokenType) string {
 	return out.String()
 }
 
-// ========================================== POSITION =============================================
-
-// position describes a specific position in a file
-type position struct {
-	filePath string
-	line     int // line inside the file starting at 1
-	column   int // column inside the line starting at 1 (this is pointing to the rune, not the byte)
-}
-
-func (p position) String() string {
-	return fmt.Sprintf("%s:%d:%d", p.filePath, p.line, p.column)
-}
-
-func (p position) IsEqual(o position) bool {
-	return p.filePath == o.filePath && p.line == o.line && p.column == o.column
-}
-
 // ============================================ TOKEN ==============================================
 
+// A token is a small building block of a vit file
 type token struct {
-	tokenType tokenType
-	literal   string   // only set for specific token types (see 'isLiteralType')
-	start     position // position of first rune
-	end       position // position of last rune
+	tokenType tokenType // specific type of this token
+	literal   string    // only set for specific token types (see 'isLiteralType')
+	start     position  // position of first rune
+	end       position  // position of last rune (points to the same location as start if the token is a single rune)
 }
 
 // IntValue converts the literal of this token to an integer.
@@ -173,6 +177,7 @@ func (t token) FloatValue() float64 {
 	return f
 }
 
+// String returns a human readable description of the token with it's type and literal
 func (t token) String() string {
 	if isLiteralType(t.tokenType) {
 		return fmt.Sprintf("%s %q", t.tokenType, t.literal)
@@ -183,9 +188,14 @@ func (t token) String() string {
 
 // ======================================== TOKEN BUFFER ===========================================
 
+// a tokenBuffer takes a token source and provides a number of methods for convenience.
+// It will panic when it encounters an error while reading a token from the source.
+// This is supposed to make the usage easier to use and reduce clutter in the parser.
+// They should be catched at a higher level and not be exposed to the user.
+// As described in lexer.Lex the error in the panic will always be of type LexError or ReadError depending on the underlying problem.
 type tokenBuffer struct {
-	buffer []token
-	source func() (token, error)
+	nextToken *token // The next token to be read. Will be set after calling peek and should be returned before reading the source again
+	source    func() (token, error)
 }
 
 func NewTokenBuffer(source func() (token, error)) *tokenBuffer {
@@ -194,32 +204,32 @@ func NewTokenBuffer(source func() (token, error)) *tokenBuffer {
 	}
 }
 
+// next returns the next available token.
+// Might panic, see 'tokenBuffer'.
 func (tb *tokenBuffer) next() token {
-	if len(tb.buffer) == 0 {
+	if tb.nextToken == nil {
 		t, err := tb.source()
 		if err != nil {
 			panic(err)
 		}
 		return t
+	} else {
+		t := *tb.nextToken
+		tb.nextToken = nil
+		return t
 	}
-	t := tb.buffer[0]
-	tb.buffer = tb.buffer[1:]
-	return t
 }
 
+// peek returns the next available token without consuming it.
+// All subsequent call to 'peek' without a call to 'next' in between will return the same token.
+// Might panic, see 'tokenBuffer'.
 func (tb *tokenBuffer) peek() token {
-	if len(tb.buffer) == 0 {
-		tb.loadOne()
+	if tb.nextToken == nil {
+		t, err := tb.source()
+		if err != nil {
+			panic(err)
+		}
+		tb.nextToken = &t
 	}
-
-	return tb.buffer[0]
-}
-
-func (tb *tokenBuffer) loadOne() {
-	t, err := tb.source()
-	if err != nil {
-		panic(err)
-	}
-
-	tb.buffer = append(tb.buffer, t)
+	return *tb.nextToken
 }

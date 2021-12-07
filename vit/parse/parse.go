@@ -53,6 +53,49 @@ func (e unexpectedTokenError) Is(subject error) bool {
 	return ok
 }
 
+var keywords = map[string]bool{
+	"property": true,
+	"default":  true,
+	"required": true,
+	"readonly": true,
+	"enum":     true,
+	"embedded": true,
+}
+
+// A tokenSource is a function that returns tokens
+type tokenSource func() token
+
+// unitType describes the type of a code unit that has been parsed
+type unitType int
+
+const (
+	unitTypeNil          unitType = iota // no valid unit was parsed
+	unitTypeEOF                          // the file has ended
+	unitTypeComponent                    // a component definition has been parsed
+	unitTypeComponentEnd                 // a component has ended
+	unitTypeProperty                     // a property has been parsed
+	unitTypeEnum                         // an enum has been parsed
+)
+
+// String returns the name of a unitType as a string
+func (uType unitType) String() string {
+	switch uType {
+	case unitTypeEOF:
+		return "end of file"
+	case unitTypeComponent:
+		return "component"
+	case unitTypeComponentEnd:
+		return "end of component"
+	case unitTypeProperty:
+		return "property"
+	case unitTypeEnum:
+		return "enum"
+	default:
+		return "unknown unit"
+	}
+}
+
+// Parse takes a tokenBuffer from a single vit file and returns a parsed document
 func Parse(tokens *tokenBuffer) (file *VitDocument, err error) {
 	defer func() {
 		// To simplify reading tokens from the lexer any errors it encounters will be thrown as a panic.
@@ -107,6 +150,7 @@ scanComponents:
 	return file, nil
 }
 
+// parseImports parses all import statements at the beginning of a file
 func parseImports(tokens *tokenBuffer) ([]importStatement, error) {
 	statements := make([]importStatement, 0)
 	for {
@@ -128,6 +172,7 @@ func parseImports(tokens *tokenBuffer) ([]importStatement, error) {
 	}
 }
 
+// parseSingleImport parses a single import statement
 func parseSingleImport(tokens *tokenBuffer) (importStatement, error) {
 	var imp importStatement
 
@@ -171,7 +216,7 @@ scanAgain:
 }
 
 // parseUnit parses a semantic unit of the file.
-// That could be a single parameter, or a whole component.
+// It specifies the returned unit by it's type. (See 'unitType')
 func parseUnit(tokens *tokenBuffer) (interface{}, unitType, error) {
 	ignoreTokens(tokens, tokenNewline, tokenSemicolon)
 
@@ -194,7 +239,7 @@ scanLineIdentifier:
 	// check if the scanned identifier is a keyword
 	if len(lineIdentifier) == 1 {
 		if _, ok := keywords[lineIdentifier[0].literal]; ok {
-			return parseAttributeDeclaration(tokens, lineIdentifier[0].literal)
+			return parseAttributeDeclaration(lineIdentifier[0].literal, tokens)
 		}
 	}
 
@@ -246,64 +291,76 @@ scanLineIdentifier:
 	return nil, unitTypeNil, nil
 }
 
+// parseComponent parses the content of a component and returns a component definition.
+// It takes the name of the component as parameter.
 func parseComponent(identifier string, tokens *tokenBuffer) (*componentDefinition, error) {
 	c := &componentDefinition{
 		name: identifier,
 	}
 
+	// read units and store them correspondingly until we reach the end of the component
 	for {
 		unitIntf, uType, err := parseUnit(tokens)
 		if err != nil {
 			return c, err
 		}
 		switch uType {
-		case unitTypeComponentEnd:
+		case unitTypeComponentEnd: // the component has ended
 			return c, nil
-		case unitTypeProperty:
+		case unitTypeProperty: // property declaration/definition
 			prop := unitIntf.(property)
+			// check if this property has the identifier "id" and handle it specially
 			if len(prop.identifier) == 1 && prop.identifier[0] == "id" {
 				// TODO: validate that the expression is a valid id. Calculations are not allowed
 				c.id = prop.expression
 			} else {
-				if c.IdentifierIsKnown(prop.identifier) {
+				// check if the property has already been defined before
+				if c.identifierIsKnown(prop.identifier) {
 					return c, fmt.Errorf("identifier %v is already defined", prop.identifier)
 				}
+				// save it in the component
 				c.properties = append(c.properties, prop)
 			}
-		case unitTypeEnum:
+		case unitTypeEnum: // an enumeration
 			enum := unitIntf.(vit.Enumeration)
-			if c.IdentifierIsKnown([]string{enum.Name}) {
+			if c.identifierIsKnown([]string{enum.Name}) {
 				return c, fmt.Errorf("identifier %q is already defined", enum.Name)
 			}
 			c.enumerations = append(c.enumerations, enum)
-		case unitTypeComponent:
+		case unitTypeComponent: // child component
 			child := unitIntf.(*componentDefinition)
 			c.children = append(c.children, child)
 		default:
 			return c, fmt.Errorf("unexpected %v while parsing unit", uType)
 		}
-
 	}
 }
 
-func parseAttributeDeclaration(tokens *tokenBuffer, keyword string) (interface{}, unitType, error) {
+// parseAttributeDeclaration parses the declaration or a component attribute. That could for example be a property or an enumeration.
+// The provided 'keyword' should be the first word that has already been read from the line. (Which has determined that this will be an attribute declaration)
+func parseAttributeDeclaration(keyword string, tokens *tokenBuffer) (interface{}, unitType, error) {
+	// We will collect modifiers that are listed before the actual attribute type is specified
 	var modifiers []string
 
+	// The switch comes before be read an actual token to handle the provided keyword that has been read before
 	for {
 		switch keyword {
 		case "property":
+			// this attribute is a property
 			prop, err := parseProperty(tokens, modifiers)
 			if err != nil {
 				return nil, unitTypeNil, err
 			}
 			return prop, unitTypeProperty, nil
 		case "enum":
+			// this attribute is an enumeration
 			en, err := parseEnum(tokens, modifiers)
 			if err != nil {
 				return nil, unitTypeNil, err
 			}
 			return en, unitTypeEnum, nil
 		default:
+			// a modifier
 			for _, m := range modifiers {
 				if m == keyword {
 					return nil, unitTypeNil, fmt.Errorf("duplicate modifier %q", keyword)
@@ -312,6 +369,7 @@ func parseAttributeDeclaration(tokens *tokenBuffer, keyword string) (interface{}
 			modifiers = []string{keyword}
 		}
 
+		// read the next word
 		t, err := expectToken(tokens.next, tokenIdentifier)
 		if err != nil {
 			return nil, unitTypeNil, err
@@ -320,12 +378,15 @@ func parseAttributeDeclaration(tokens *tokenBuffer, keyword string) (interface{}
 	}
 }
 
+// parseProperty parses a property declaration/definition with the given modifiers
 func parseProperty(tokens *tokenBuffer, modifiers []string) (property, error) {
+	// read the type of the property
 	typeToken, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
 		return property{}, err
 	}
 
+	// property name
 	identifier, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
 		return property{}, err
@@ -334,51 +395,58 @@ func parseProperty(tokens *tokenBuffer, modifiers []string) (property, error) {
 	prop := property{
 		identifier: []string{identifier.literal},
 		vitType:    typeToken.literal,
+		readOnly:   stringSliceContains(modifiers, "readonly"),
 	}
 
+	// read the next token and determine if a value will follow
 	switch tokens.next().tokenType {
-	case tokenColon: // continuing
+	case tokenColon: // continue to read the value
 	case tokenNewline:
 		return prop, nil // property is finished with no value
 	default:
 		return property{}, unexpectedToken(tokens.next(), tokenColon, tokenNewline)
 	}
 
+	// read the value (expression that will determine the value)
 	expression, err := expectToken(tokens.next, tokenExpression)
 	if err != nil {
 		return property{}, err
 	}
+	prop.expression = expression.literal
 
+	// remove any newlines or semicolons
 	_, err = expectToken(tokens.next, tokenNewline, tokenSemicolon)
 	if err != nil {
 		return property{}, err
 	}
 
-	prop.expression = expression.literal
-
 	return prop, nil
 }
 
+// parseEnum parses an enumeration declaration with the given modifiers
 func parseEnum(tokens *tokenBuffer, modifiers []string) (vit.Enumeration, error) {
 	enum := vit.Enumeration{
 		Values:   make(map[string]int),
 		Embedded: stringSliceContains(modifiers, "embedded"),
 	}
 
+	// name
 	t, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
 		return enum, err
 	}
 	enum.Name = t.literal
 
+	// expect a '{'
 	_, err = expectToken(tokens.next, tokenLeftBrace)
 	if err != nil {
 		return enum, err
 	}
 
+	// throw away new lines
 	ignoreTokens(tokens, tokenNewline)
 
-	var nextValue = 0
+	var nextValue = 0 // Contains the value that the next enum key will have. We start at 0
 lineLoop:
 	for {
 		// read enum key or closing brace
@@ -447,6 +515,8 @@ start:
 	return t
 }
 
+// expectToken ready the next token and checks if it is of one of the given types.
+// If not it returns a unexpectedToken error.
 func expectToken(nextToken tokenSource, tTypes ...tokenType) (token, error) {
 	t := nextToken()
 
@@ -459,6 +529,8 @@ func expectToken(nextToken tokenSource, tTypes ...tokenType) (token, error) {
 	return t, unexpectedToken(t, tTypes...)
 }
 
+// expectKeyword reads the next token and checks if it is an identifier with the given value.
+// If it is not an identifier it returns an unexpectedToken error. If it is but the values don't match it returns a descriptive parseError.
 func expectKeyword(nextToken tokenSource, value string) (token, error) {
 	t := nextToken()
 
@@ -471,6 +543,7 @@ func expectKeyword(nextToken tokenSource, value string) (token, error) {
 	return t, nil
 }
 
+// literalsToStrings converts the literals of a tokens list into a string slice
 func literalsToStrings(tokens []token) []string {
 	strs := make([]string, len(tokens))
 	for i, ident := range tokens {
@@ -479,6 +552,7 @@ func literalsToStrings(tokens []token) []string {
 	return strs
 }
 
+// stringSliceContains checks if a string slice contains a given string
 func stringSliceContains(list []string, element string) bool {
 	for _, e := range list {
 		if e == element {
@@ -488,6 +562,7 @@ func stringSliceContains(list []string, element string) bool {
 	return false
 }
 
+// unexpectedToken returns true if two string slices equal and false otherwise
 func stringSlicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

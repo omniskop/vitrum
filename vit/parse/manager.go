@@ -9,11 +9,13 @@ import (
 	"github.com/omniskop/vitrum/vit"
 )
 
+// bundles basic information about a vit file
 type componentFile struct {
-	name     string
-	filePath string
+	name     string // name of the file without extension
+	filePath string // full file path
 }
 
+// The Manager handles everything about loading files and instantiating them into a working component tree
 type Manager struct {
 	knownComponents   map[string]componentFile
 	importPaths       []string
@@ -27,6 +29,7 @@ func NewManager() *Manager {
 	}
 }
 
+// AddImportPath adds a folder to the list of folders to search for components
 func (m *Manager) AddImportPath(filePath string) error {
 	entries, err := os.ReadDir(filePath)
 	if err != nil {
@@ -50,6 +53,7 @@ func (m *Manager) AddImportPath(filePath string) error {
 	return nil
 }
 
+// SetSource sets the primary component that should be instantiated
 func (m *Manager) SetSource(filePath string) error {
 	if m.mainComponentName != "" {
 		return fmt.Errorf("main component already set")
@@ -65,12 +69,13 @@ func (m *Manager) SetSource(filePath string) error {
 	return nil
 }
 
+// Run instantiates the primary component and reports any errors in doing so
 func (m *Manager) Run() error {
 	var documents = make(map[string]vit.AbstractComponent)
 	var main VitDocument
 	for _, cFile := range m.knownComponents {
 		// TODO: maybe change ParseFile to operate on a componentFile?
-		doc, err := ParseFile(cFile.filePath, cFile.name)
+		doc, err := parseFile(cFile.filePath, cFile.name)
 		if err != nil {
 			return err
 		}
@@ -80,7 +85,7 @@ func (m *Manager) Run() error {
 		}
 	}
 
-	components, err := Interpret(main, vit.ComponentResolver{nil, documents})
+	components, err := interpret(main, vit.ComponentResolver{Parent: nil, Components: documents})
 	if err != nil {
 		return err
 	}
@@ -99,6 +104,7 @@ evaluateExpressions:
 	return nil
 }
 
+// MainComponent returns the instantiated primary component
 func (m *Manager) MainComponent() vit.Component {
 	return m.mainComponent
 }

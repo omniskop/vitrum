@@ -3,17 +3,12 @@ package parse
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/omniskop/vitrum/vit"
 )
 
-type Library interface {
-	ComponentNames() []string
-	NewComponent(string, string, vit.ComponentResolver) (vit.Component, bool)
-}
-
-func ParseFile(fileName string, componentName string) (*VitDocument, error) {
+// parseFile parsed a given file into a document with the given component name.
+func parseFile(fileName string, componentName string) (*VitDocument, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
@@ -31,8 +26,8 @@ func ParseFile(fileName string, componentName string) (*VitDocument, error) {
 	return doc, nil
 }
 
-// Interpret takes the parsed document and creates the appropriate component tree
-func Interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Component, error) {
+// interpret takes the parsed document and creates the appropriate component tree
+func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Component, error) {
 	allComponents := vit.NewComponentResolver(&components)
 
 	for _, imp := range document.imports {
@@ -126,46 +121,4 @@ func populateComponent(instance vit.Component, def *componentDefinition, compone
 	}
 
 	return nil
-}
-
-// resolveLibraryImport takes a library identifier and returns the corresponding library or an error if the identifier is unknown.
-func resolveLibraryImport(namespace []string) (Library, error) {
-	if len(namespace) == 0 {
-		return nil, fmt.Errorf("empty namespace")
-	}
-	switch namespace[0] {
-	case "Vit":
-		if len(namespace) == 1 {
-			return vit.StdLib{}, nil
-		}
-	case "QtQuick":
-		return vit.StdLib{}, nil
-	case "Dark":
-		return vit.StdLib{}, nil
-	}
-
-	return nil, fmt.Errorf("unknown library %q", strings.Join(namespace, "."))
-}
-
-type standaloneDocument struct {
-	name       string
-	doc        VitDocument
-	components vit.ComponentResolver
-}
-
-func (d *standaloneDocument) ComponentNames() []string {
-	return []string{d.name}
-}
-
-func (d *standaloneDocument) NewComponent(name, id string) (vit.Component, bool) {
-	if name != d.name {
-		return nil, false
-	}
-
-	components, err := Interpret(d.doc, d.components)
-	if err != nil {
-		fmt.Printf("standalone document: %v\n", err)
-		return nil, false
-	}
-	return components[0], true
 }
