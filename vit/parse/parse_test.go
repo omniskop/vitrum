@@ -19,8 +19,8 @@ func TestParseError(t *testing.T) {
 		},
 		err: wrapped,
 	}
-	if err.Error() != `"test.vit":1:2: test error` {
-		t.Errorf(`Expected error to be '"test.vit":1:2: test error', got '%s'`, err.Error())
+	if err.Error() != `test.vit:1:2: test error` {
+		t.Errorf(`Expected error to be 'test.vit:1:2: test error', got '%s'`, err.Error())
 	}
 	if !err.Is(err) {
 		t.Errorf("parseError.Is is not identifying itself correctly")
@@ -210,8 +210,8 @@ var validDocument = &VitDocument{
 	components: []*componentDefinition{
 		{
 			name: "Item",
+			id:   "rect",
 			properties: []property{
-				{identifier: []string{"id"}, expression: "rect"},
 				{identifier: []string{"anchors", "left"}, expression: "parent.left + 10"},
 				{identifier: []string{"affe"}, component: &componentDefinition{name: "Item", properties: []property{{identifier: []string{"one"}, expression: "1"}}}},
 				{identifier: []string{"local"}, vitType: "bool", expression: "true"},
