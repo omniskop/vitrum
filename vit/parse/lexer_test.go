@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/omniskop/vitrum/vit"
 )
 
 func TestLexAll(t *testing.T) {
@@ -16,7 +18,7 @@ func TestLexAll(t *testing.T) {
 		output: []interface{}{tokenEOF},
 	}, {
 		input:  "hello",
-		output: []interface{}{token{tokenIdentifier, "hello", positionRange{"", 1, 1, 1, 5}}, tokenEOF},
+		output: []interface{}{token{tokenIdentifier, "hello", vit.PositionRange{"", 1, 1, 1, 5}}, tokenEOF},
 	}, {
 		input:  "5 'test",
 		output: []interface{}{LexError{}},
@@ -53,116 +55,116 @@ func TestLex(t *testing.T) {
 		output: []interface{}{tokenEOF},
 	}, {
 		input:  "hello",
-		output: []interface{}{token{tokenIdentifier, "hello", positionRange{"", 1, 1, 1, 5}}},
+		output: []interface{}{token{tokenIdentifier, "hello", vit.PositionRange{"", 1, 1, 1, 5}}},
 	}, {
 		input:  " hello ",
-		output: []interface{}{token{tokenIdentifier, "hello", positionRange{"", 1, 2, 1, 6}}},
+		output: []interface{}{token{tokenIdentifier, "hello", vit.PositionRange{"", 1, 2, 1, 6}}},
 	}, {
 		input:  "{hello}",
-		output: []interface{}{token{tokenLeftBrace, "", positionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "hello", positionRange{"", 1, 2, 1, 6}}, token{tokenRightBrace, "", positionRange{"", 1, 7, 1, 7}}},
+		output: []interface{}{token{tokenLeftBrace, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "hello", vit.PositionRange{"", 1, 2, 1, 6}}, token{tokenRightBrace, "", vit.PositionRange{"", 1, 7, 1, 7}}},
 	}, {
 		input:  `[one, two]`,
-		output: []interface{}{token{tokenLeftBracket, "", positionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "one", positionRange{"", 1, 2, 1, 4}}, token{tokenComma, "", positionRange{"", 1, 5, 1, 5}}, token{tokenIdentifier, "two", positionRange{"", 1, 7, 1, 9}}, token{tokenRightBracket, "", positionRange{"", 1, 10, 1, 10}}},
+		output: []interface{}{token{tokenLeftBracket, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "one", vit.PositionRange{"", 1, 2, 1, 4}}, token{tokenComma, "", vit.PositionRange{"", 1, 5, 1, 5}}, token{tokenIdentifier, "two", vit.PositionRange{"", 1, 7, 1, 9}}, token{tokenRightBracket, "", vit.PositionRange{"", 1, 10, 1, 10}}},
 	}, {
 		input:  `Rectangle { color: "red" }`,
-		output: []interface{}{token{tokenIdentifier, "Rectangle", positionRange{"", 1, 1, 1, 9}}, token{tokenLeftBrace, "", positionRange{"", 1, 11, 1, 11}}, token{tokenIdentifier, "color", positionRange{"", 1, 13, 1, 17}}, token{tokenColon, "", positionRange{"", 1, 18, 1, 18}}, token{tokenExpression, `"red" `, positionRange{"", 1, 20, 1, 25}}, token{tokenRightBrace, "", positionRange{"", 1, 26, 1, 26}}},
+		output: []interface{}{token{tokenIdentifier, "Rectangle", vit.PositionRange{"", 1, 1, 1, 9}}, token{tokenLeftBrace, "", vit.PositionRange{"", 1, 11, 1, 11}}, token{tokenIdentifier, "color", vit.PositionRange{"", 1, 13, 1, 17}}, token{tokenColon, "", vit.PositionRange{"", 1, 18, 1, 18}}, token{tokenExpression, `"red" `, vit.PositionRange{"", 1, 20, 1, 25}}, token{tokenRightBrace, "", vit.PositionRange{"", 1, 26, 1, 26}}},
 	}, {
 		input:  "5",
-		output: []interface{}{token{tokenInteger, "5", positionRange{"", 1, 1, 1, 1}}},
+		output: []interface{}{token{tokenInteger, "5", vit.PositionRange{"", 1, 1, 1, 1}}},
 	}, {
 		input:  "5test: 12.3",
-		output: []interface{}{token{tokenInteger, "5", positionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "test", positionRange{"", 1, 2, 1, 5}}, token{tokenColon, "", positionRange{"", 1, 6, 1, 6}}, token{tokenExpression, "12.3", positionRange{"", 1, 8, 1, 11}}},
+		output: []interface{}{token{tokenInteger, "5", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "test", vit.PositionRange{"", 1, 2, 1, 5}}, token{tokenColon, "", vit.PositionRange{"", 1, 6, 1, 6}}, token{tokenExpression, "12.3", vit.PositionRange{"", 1, 8, 1, 11}}},
 	}, {
 		input:  "12.34",
-		output: []interface{}{token{tokenFloat, "12.34", positionRange{"", 1, 1, 1, 5}}},
+		output: []interface{}{token{tokenFloat, "12.34", vit.PositionRange{"", 1, 1, 1, 5}}},
 	}, {
 		input:  "one: 1\n    two: 2",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", positionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "1", positionRange{"", 1, 6, 1, 6}}, token{tokenNewline, "", positionRange{"", 1, 7, 1, 7}}, token{tokenIdentifier, "two", positionRange{"", 2, 5, 2, 7}}, token{tokenColon, "", positionRange{"", 2, 8, 2, 8}}, token{tokenExpression, "2", positionRange{"", 2, 10, 2, 10}}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "1", vit.PositionRange{"", 1, 6, 1, 6}}, token{tokenNewline, "", vit.PositionRange{"", 1, 7, 1, 7}}, token{tokenIdentifier, "two", vit.PositionRange{"", 2, 5, 2, 7}}, token{tokenColon, "", vit.PositionRange{"", 2, 8, 2, 8}}, token{tokenExpression, "2", vit.PositionRange{"", 2, 10, 2, 10}}},
 	}, {
 		input:  "import QtQuick.Controls 5.15",
-		output: []interface{}{token{tokenIdentifier, "import", positionRange{"", 1, 1, 1, 6}}, token{tokenIdentifier, "QtQuick", positionRange{"", 1, 8, 1, 14}}, token{tokenPeriod, "", positionRange{"", 1, 15, 1, 15}}, token{tokenIdentifier, "Controls", positionRange{"", 1, 16, 1, 23}}, token{tokenFloat, "5.15", positionRange{"", 1, 25, 1, 28}}},
+		output: []interface{}{token{tokenIdentifier, "import", vit.PositionRange{"", 1, 1, 1, 6}}, token{tokenIdentifier, "QtQuick", vit.PositionRange{"", 1, 8, 1, 14}}, token{tokenPeriod, "", vit.PositionRange{"", 1, 15, 1, 15}}, token{tokenIdentifier, "Controls", vit.PositionRange{"", 1, 16, 1, 23}}, token{tokenFloat, "5.15", vit.PositionRange{"", 1, 25, 1, 28}}},
 	}, {
 		input:  `property color nextColor: "blue"`,
-		output: []interface{}{token{tokenIdentifier, "property", positionRange{"", 1, 1, 1, 8}}, token{tokenIdentifier, "color", positionRange{"", 1, 10, 1, 14}}, token{tokenIdentifier, "nextColor", positionRange{"", 1, 16, 1, 24}}, token{tokenColon, "", positionRange{"", 1, 25, 1, 25}}, token{tokenExpression, `"blue"`, positionRange{"", 1, 27, 1, 32}}},
+		output: []interface{}{token{tokenIdentifier, "property", vit.PositionRange{"", 1, 1, 1, 8}}, token{tokenIdentifier, "color", vit.PositionRange{"", 1, 10, 1, 14}}, token{tokenIdentifier, "nextColor", vit.PositionRange{"", 1, 16, 1, 24}}, token{tokenColon, "", vit.PositionRange{"", 1, 25, 1, 25}}, token{tokenExpression, `"blue"`, vit.PositionRange{"", 1, 27, 1, 32}}},
 	}, {
 		input:  `:"test"`,
-		output: []interface{}{token{tokenColon, "", positionRange{"", 1, 1, 1, 1}}, token{tokenExpression, `"test"`, positionRange{"", 1, 2, 1, 7}}},
+		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, `"test"`, vit.PositionRange{"", 1, 2, 1, 7}}},
 	}, {
 		input:  ":'\n;\\'\"test'",
-		output: []interface{}{token{tokenColon, "", positionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "'\n;\\'\"test'", positionRange{"", 1, 2, 2, 9}}},
+		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "'\n;\\'\"test'", vit.PositionRange{"", 1, 2, 2, 9}}},
 	}, {
 		input:  ": {\none\ntwo\n}",
-		output: []interface{}{token{tokenColon, "", positionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "{\none\ntwo\n}", positionRange{"", 1, 3, 4, 1}}},
+		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "{\none\ntwo\n}", vit.PositionRange{"", 1, 3, 4, 1}}},
 	}, {
 		input:  "one //two",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}},
 	}, {
 		input:  "one//two\nthree",
-		output: []interface{}{token{tokenIdentifier, `one`, positionRange{"", 1, 1, 1, 3}}, token{tokenNewline, "", positionRange{"", 1, 9, 1, 9}}, token{tokenIdentifier, `three`, positionRange{"", 2, 1, 2, 5}}},
+		output: []interface{}{token{tokenIdentifier, `one`, vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenNewline, "", vit.PositionRange{"", 1, 9, 1, 9}}, token{tokenIdentifier, `three`, vit.PositionRange{"", 2, 1, 2, 5}}},
 	}, {
 		input:  "one/*two\nthree*/four",
-		output: []interface{}{token{tokenIdentifier, `one`, positionRange{"", 1, 1, 1, 3}}, token{tokenIdentifier, `four`, positionRange{"", 2, 8, 2, 11}}},
+		output: []interface{}{token{tokenIdentifier, `one`, vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenIdentifier, `four`, vit.PositionRange{"", 2, 8, 2, 11}}},
 	}, {
 		input:  "one: /*stuff*/5",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", positionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "5", positionRange{"", 1, 15, 1, 15}}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "5", vit.PositionRange{"", 1, 15, 1, 15}}},
 	}, {
 		input:  "one: // stuff",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", positionRange{"", 1, 4, 1, 4}}, LexError{position{"", 1, 6}, "unexpected token: '//'"}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, LexError{vit.Position{"", 1, 6}, "unexpected token: '//'"}},
 	}, {
 		input:  "one: two//stuff",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", positionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "two", positionRange{"", 1, 6, 1, 8}}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "two", vit.PositionRange{"", 1, 6, 1, 8}}},
 	}, {
 		input:  "one: two/*stuff*/three",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", positionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "twothree", positionRange{"", 1, 6, 1, 22}}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "twothree", vit.PositionRange{"", 1, 6, 1, 22}}},
 	}, {
 		input:  "one: /*#*/ Item{",
-		output: []interface{}{token{tokenIdentifier, "one", positionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", positionRange{"", 1, 4, 1, 4}}, token{tokenIdentifier, "Item", positionRange{"", 1, 12, 1, 15}}, token{tokenLeftBrace, "", positionRange{"", 1, 16, 1, 16}}},
+		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenIdentifier, "Item", vit.PositionRange{"", 1, 12, 1, 15}}, token{tokenLeftBrace, "", vit.PositionRange{"", 1, 16, 1, 16}}},
 	}, {
 		input:  "one/*two",
-		output: []interface{}{token{tokenIdentifier, `one`, positionRange{"", 1, 1, 1, 3}}, LexError{}},
+		output: []interface{}{token{tokenIdentifier, `one`, vit.PositionRange{"", 1, 1, 1, 3}}, LexError{}},
 	}, {
 		input:  ":`a${\n5}b`",
-		output: []interface{}{token{tokenColon, "", positionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "`a${\n5}b`", positionRange{"", 1, 2, 2, 4}}},
+		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "`a${\n5}b`", vit.PositionRange{"", 1, 2, 2, 4}}},
 	}, {
 		input: `Rectangle {width: 100; height: 100; gradient: Gradient { GradientStop { position: 0.0; color: "yellow" }; GradientStop { position: 1.0; color: "green" } }}`,
 		output: []interface{}{
-			token{tokenIdentifier, "Rectangle", positionRange{"", 1, 1, 1, 9}},        // Rectangle
-			token{tokenLeftBrace, "", positionRange{"", 1, 11, 1, 11}},                // {
-			token{tokenIdentifier, "width", positionRange{"", 1, 12, 1, 16}},          // width
-			token{tokenColon, "", positionRange{"", 1, 17, 1, 17}},                    // :
-			token{tokenExpression, "100", positionRange{"", 1, 19, 1, 21}},            // 100
-			token{tokenSemicolon, "", positionRange{"", 1, 22, 1, 22}},                // ;
-			token{tokenIdentifier, "height", positionRange{"", 1, 24, 1, 29}},         // height
-			token{tokenColon, "", positionRange{"", 1, 30, 1, 30}},                    // :
-			token{tokenExpression, "100", positionRange{"", 1, 32, 1, 34}},            // 100
-			token{tokenSemicolon, "", positionRange{"", 1, 35, 1, 35}},                // ;
-			token{tokenIdentifier, "gradient", positionRange{"", 1, 37, 1, 44}},       // gradient
-			token{tokenColon, "", positionRange{"", 1, 45, 1, 45}},                    // :
-			token{tokenIdentifier, "Gradient", positionRange{"", 1, 47, 1, 54}},       // Gradient
-			token{tokenLeftBrace, "", positionRange{"", 1, 56, 1, 56}},                // {
-			token{tokenIdentifier, "GradientStop", positionRange{"", 1, 58, 1, 69}},   // GradientStop
-			token{tokenLeftBrace, "", positionRange{"", 1, 71, 1, 71}},                // {
-			token{tokenIdentifier, "position", positionRange{"", 1, 73, 1, 80}},       // position
-			token{tokenColon, "", positionRange{"", 1, 81, 1, 81}},                    // :
-			token{tokenExpression, "0.0", positionRange{"", 1, 83, 1, 85}},            // 0.0
-			token{tokenSemicolon, "", positionRange{"", 1, 86, 1, 86}},                // ;
-			token{tokenIdentifier, "color", positionRange{"", 1, 88, 1, 92}},          // color
-			token{tokenColon, "", positionRange{"", 1, 93, 1, 93}},                    // :
-			token{tokenExpression, `"yellow" `, positionRange{"", 1, 95, 1, 103}},     // "yellow"
-			token{tokenRightBrace, "", positionRange{"", 1, 104, 1, 104}},             // }
-			token{tokenSemicolon, "", positionRange{"", 1, 105, 1, 105}},              // ;
-			token{tokenIdentifier, "GradientStop", positionRange{"", 1, 107, 1, 118}}, // GradientStop
-			token{tokenLeftBrace, "", positionRange{"", 1, 120, 1, 120}},              // {
-			token{tokenIdentifier, "position", positionRange{"", 1, 122, 1, 129}},     // position
-			token{tokenColon, "", positionRange{"", 1, 130, 1, 130}},                  // :
-			token{tokenExpression, "1.0", positionRange{"", 1, 132, 1, 134}},          // 1.0
-			token{tokenSemicolon, "", positionRange{"", 1, 135, 1, 135}},              // ;
-			token{tokenIdentifier, "color", positionRange{"", 1, 137, 1, 141}},        // color
-			token{tokenColon, "", positionRange{"", 1, 142, 1, 142}},                  // :
-			token{tokenExpression, `"green" `, positionRange{"", 1, 144, 1, 151}},     // "green"
-			token{tokenRightBrace, "", positionRange{"", 1, 152, 1, 152}},             // }
-			token{tokenRightBrace, "", positionRange{"", 1, 154, 1, 154}},             // }
-			token{tokenRightBrace, "", positionRange{"", 1, 155, 1, 155}},             // }
+			token{tokenIdentifier, "Rectangle", vit.PositionRange{"", 1, 1, 1, 9}},        // Rectangle
+			token{tokenLeftBrace, "", vit.PositionRange{"", 1, 11, 1, 11}},                // {
+			token{tokenIdentifier, "width", vit.PositionRange{"", 1, 12, 1, 16}},          // width
+			token{tokenColon, "", vit.PositionRange{"", 1, 17, 1, 17}},                    // :
+			token{tokenExpression, "100", vit.PositionRange{"", 1, 19, 1, 21}},            // 100
+			token{tokenSemicolon, "", vit.PositionRange{"", 1, 22, 1, 22}},                // ;
+			token{tokenIdentifier, "height", vit.PositionRange{"", 1, 24, 1, 29}},         // height
+			token{tokenColon, "", vit.PositionRange{"", 1, 30, 1, 30}},                    // :
+			token{tokenExpression, "100", vit.PositionRange{"", 1, 32, 1, 34}},            // 100
+			token{tokenSemicolon, "", vit.PositionRange{"", 1, 35, 1, 35}},                // ;
+			token{tokenIdentifier, "gradient", vit.PositionRange{"", 1, 37, 1, 44}},       // gradient
+			token{tokenColon, "", vit.PositionRange{"", 1, 45, 1, 45}},                    // :
+			token{tokenIdentifier, "Gradient", vit.PositionRange{"", 1, 47, 1, 54}},       // Gradient
+			token{tokenLeftBrace, "", vit.PositionRange{"", 1, 56, 1, 56}},                // {
+			token{tokenIdentifier, "GradientStop", vit.PositionRange{"", 1, 58, 1, 69}},   // GradientStop
+			token{tokenLeftBrace, "", vit.PositionRange{"", 1, 71, 1, 71}},                // {
+			token{tokenIdentifier, "position", vit.PositionRange{"", 1, 73, 1, 80}},       // position
+			token{tokenColon, "", vit.PositionRange{"", 1, 81, 1, 81}},                    // :
+			token{tokenExpression, "0.0", vit.PositionRange{"", 1, 83, 1, 85}},            // 0.0
+			token{tokenSemicolon, "", vit.PositionRange{"", 1, 86, 1, 86}},                // ;
+			token{tokenIdentifier, "color", vit.PositionRange{"", 1, 88, 1, 92}},          // color
+			token{tokenColon, "", vit.PositionRange{"", 1, 93, 1, 93}},                    // :
+			token{tokenExpression, `"yellow" `, vit.PositionRange{"", 1, 95, 1, 103}},     // "yellow"
+			token{tokenRightBrace, "", vit.PositionRange{"", 1, 104, 1, 104}},             // }
+			token{tokenSemicolon, "", vit.PositionRange{"", 1, 105, 1, 105}},              // ;
+			token{tokenIdentifier, "GradientStop", vit.PositionRange{"", 1, 107, 1, 118}}, // GradientStop
+			token{tokenLeftBrace, "", vit.PositionRange{"", 1, 120, 1, 120}},              // {
+			token{tokenIdentifier, "position", vit.PositionRange{"", 1, 122, 1, 129}},     // position
+			token{tokenColon, "", vit.PositionRange{"", 1, 130, 1, 130}},                  // :
+			token{tokenExpression, "1.0", vit.PositionRange{"", 1, 132, 1, 134}},          // 1.0
+			token{tokenSemicolon, "", vit.PositionRange{"", 1, 135, 1, 135}},              // ;
+			token{tokenIdentifier, "color", vit.PositionRange{"", 1, 137, 1, 141}},        // color
+			token{tokenColon, "", vit.PositionRange{"", 1, 142, 1, 142}},                  // :
+			token{tokenExpression, `"green" `, vit.PositionRange{"", 1, 144, 1, 151}},     // "green"
+			token{tokenRightBrace, "", vit.PositionRange{"", 1, 152, 1, 152}},             // }
+			token{tokenRightBrace, "", vit.PositionRange{"", 1, 154, 1, 154}},             // }
+			token{tokenRightBrace, "", vit.PositionRange{"", 1, 155, 1, 155}},             // }
 		},
 	}}
 	// Check if only specific test cases should be run. Allows for easier debugging.
@@ -212,22 +214,22 @@ func TestScanNumber(t *testing.T) {
 		output: LexError{},
 	}, {
 		input:  "1",
-		output: token{tokenInteger, "1", positionRange{"", 1, 1, 1, 1}},
+		output: token{tokenInteger, "1", vit.PositionRange{"", 1, 1, 1, 1}},
 	}, {
 		input:  "1.0",
-		output: token{tokenFloat, "1.0", positionRange{"", 1, 1, 1, 3}},
+		output: token{tokenFloat, "1.0", vit.PositionRange{"", 1, 1, 1, 3}},
 	}, {
 		input:  ".5",
-		output: token{tokenFloat, ".5", positionRange{"", 1, 1, 1, 2}},
+		output: token{tokenFloat, ".5", vit.PositionRange{"", 1, 1, 1, 2}},
 	}, {
 		input:  "1.",
-		output: token{tokenFloat, "1.", positionRange{"", 1, 1, 1, 2}},
+		output: token{tokenFloat, "1.", vit.PositionRange{"", 1, 1, 1, 2}},
 	}, {
 		input:  "1.0.3",
-		output: token{tokenIdentifier, "1.0.3", positionRange{"", 1, 1, 1, 5}},
+		output: token{tokenIdentifier, "1.0.3", vit.PositionRange{"", 1, 1, 1, 5}},
 	}, {
 		input:  "01.20",
-		output: token{tokenFloat, "01.20", positionRange{"", 1, 1, 1, 5}},
+		output: token{tokenFloat, "01.20", vit.PositionRange{"", 1, 1, 1, 5}},
 	}}
 	for _, test := range tests {
 		l := NewLexer(strings.NewReader(test.input), "")
