@@ -79,13 +79,14 @@ func (r *Rectangle) AddChild(child Component) {
 	r.children = append(r.children, child)
 }
 
-func (r *Rectangle) UpdateExpressions() (int, error) {
+func (r *Rectangle) UpdateExpressions() (int, ErrorGroup) {
 	var sum int
+	var errs ErrorGroup
 	if r.color.ShouldEvaluate() {
 		sum++
 		err := r.color.Update(r)
 		if err != nil {
-			return sum, newExpressionError("Rectangle", "color", r.color.Expression, err)
+			errs.Add(newExpressionError("Rectangle", "color", r.color.Expression, err))
 		}
 	}
 
@@ -95,13 +96,14 @@ func (r *Rectangle) UpdateExpressions() (int, error) {
 			sum++
 			err := prop.Update(r)
 			if err != nil {
-				return sum, newExpressionError("Rectangle", name, *prop.GetExpression(), err)
+				errs.Add(newExpressionError("Rectangle", name, *prop.GetExpression(), err))
 			}
 		}
 	}
 	n, err := r.Item.UpdateExpressions()
 	sum += n
-	return sum, err
+	errs.AddGroup(err)
+	return sum, errs
 }
 
 func (r *Rectangle) ID() string {

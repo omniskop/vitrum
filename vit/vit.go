@@ -1,6 +1,8 @@
 package vit
 
 import (
+	"fmt"
+
 	"github.com/omniskop/vitrum/vit/script"
 )
 
@@ -18,7 +20,7 @@ type Component interface {
 	SetParent(Component)                                                      // Sets the parent of this component to the given component
 	ID() string                                                               // Returns the id of this component
 	String() string                                                           // Returns a short string representation of this component
-	UpdateExpressions() (int, error)                                          // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
+	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
 }
 
 type Enumeration struct {
@@ -65,4 +67,43 @@ func (r ComponentResolver) Resolve(names ...string) (AbstractComponent, bool) {
 		}
 	}
 	return src, ok
+}
+
+// ErrorGroup contains a list of multiple error and may be used whenever multiple errors may occur without the need to fail immediately.
+// To check if an error actually occurred use the method 'Failed'.
+type ErrorGroup struct {
+	Errors []error
+}
+
+// Add the error to the list. If err is nil it won't be added.
+func (e *ErrorGroup) Add(err error) {
+	if err != nil {
+		e.Errors = append(e.Errors, err)
+	}
+}
+
+// AddGroup adds all errors of another group to this one. It doesn't matter if the other group is empty or not.
+func (e *ErrorGroup) AddGroup(group ErrorGroup) {
+	if !group.Failed() {
+		return
+	}
+	e.Errors = append(e.Errors, group.Errors...)
+}
+
+// Failed returns true if the group contains at least one error.
+func (e *ErrorGroup) Failed() bool {
+	return len(e.Errors) > 0
+}
+
+// Error implements the error interface. It does not actually return any of the errors itself, but just a short information about the amount of errors.
+func (e ErrorGroup) Error() string {
+	if !e.Failed() {
+		return "no errors"
+	}
+	return fmt.Sprintf("group with %d errors", len(e.Errors))
+}
+
+func (e ErrorGroup) Is(target error) bool {
+	_, ok := target.(ErrorGroup)
+	return ok
 }

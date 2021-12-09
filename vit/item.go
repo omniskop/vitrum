@@ -110,48 +110,49 @@ func (i *Item) AddChild(child Component) {
 	i.children = append(i.children, child)
 }
 
-func (i *Item) UpdateExpressions() (int, error) {
+func (i *Item) UpdateExpressions() (int, ErrorGroup) {
+	var errs ErrorGroup
 	var sum int
 	if i.width.ShouldEvaluate() {
 		sum++
 		err := i.width.Update(i)
 		if err != nil {
-			return sum, newExpressionError("Item", "width", i.width.Expression, err)
+			errs.Add(newExpressionError("Item", "width", i.width.Expression, err))
 		}
 	}
 	if i.height.ShouldEvaluate() {
 		sum++
 		err := i.height.Update(i)
 		if err != nil {
-			return sum, newExpressionError("Item", "height", i.height.Expression, err)
+			errs.Add(newExpressionError("Item", "height", i.height.Expression, err))
 		}
 	}
 	if i.stuff.ShouldEvaluate() {
 		sum++
 		err := i.stuff.Update(i)
 		if err != nil {
-			return sum, newExpressionError("Item", "stuff", i.stuff.Expression, err)
+			errs.Add(newExpressionError("Item", "stuff", i.stuff.Expression, err))
 		}
 	}
 	if i.x.ShouldEvaluate() {
 		sum++
 		err := i.x.Update(i)
 		if err != nil {
-			return sum, newExpressionError("Item", "x", i.x.Expression, err)
+			errs.Add(newExpressionError("Item", "x", i.x.Expression, err))
 		}
 	}
 	if i.y.ShouldEvaluate() {
 		sum++
 		err := i.y.Update(i)
 		if err != nil {
-			return sum, newExpressionError("Item", "y", i.y.Expression, err)
+			errs.Add(newExpressionError("Item", "y", i.y.Expression, err))
 		}
 	}
 	if i.z.ShouldEvaluate() {
 		sum++
 		err := i.z.Update(i)
 		if err != nil {
-			return sum, newExpressionError("Item", "z", i.z.Expression, err)
+			errs.Add(newExpressionError("Item", "z", i.z.Expression, err))
 		}
 	}
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
@@ -160,7 +161,7 @@ func (i *Item) UpdateExpressions() (int, error) {
 			sum++
 			err := prop.Update(i)
 			if err != nil {
-				return sum, newExpressionError("Item", name, *prop.GetExpression(), err)
+				errs.Add(newExpressionError("Item", name, *prop.GetExpression(), err))
 			}
 		}
 	}

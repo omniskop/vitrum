@@ -152,16 +152,15 @@ func (r *Root) Children() []Component {
 	return r.children
 }
 
-func (r *Root) UpdateExpressions() (int, error) {
+func (r *Root) UpdateExpressions() (int, ErrorGroup) {
 	var sum int
+	var errors ErrorGroup
 	for _, child := range r.children {
 		n, err := child.UpdateExpressions()
 		sum += n
-		if err != nil {
-			return sum, err
-		}
+		errors.AddGroup(err)
 	}
-	return sum, nil
+	return sum, errors
 }
 
 func (r *Root) ID() string {

@@ -94,9 +94,9 @@ func (m *Manager) Run() error {
 	m.mainComponent = components[0]
 
 evaluateExpressions:
-	n, err := m.Update()
-	if err != nil {
-		return err
+	n, errs := m.Update()
+	if errs.Failed() {
+		return errs
 	}
 	if n > 0 {
 		goto evaluateExpressions
@@ -111,11 +111,26 @@ func (m *Manager) MainComponent() vit.Component {
 }
 
 // Update reevaluates all expressions whose dependencies have changed since the last update.
-func (m *Manager) Update() (int, error) {
+func (m *Manager) Update() (int, vit.ErrorGroup) {
 	return m.mainComponent.UpdateExpressions()
 }
 
+// FormatError takes an error that has been returned and formats it nicely for printing
 func FormatError(err error) string {
+	var group vit.ErrorGroup
+	if errors.As(err, &group) {
+		if len(group.Errors) == 1 {
+			return FormatError(group.Errors[0])
+		}
+		var b strings.Builder
+		b.WriteString(fmt.Sprintf("%d Errors:\r\n", len(group.Errors)))
+		for _, e := range group.Errors {
+			b.WriteString(e.Error())
+			b.WriteString("\r\n")
+		}
+		return b.String()
+	}
+
 	var gErr genericError
 	if errors.As(err, &gErr) {
 		// If the error chain contains a genericError, we will grab it's position and start the line with that.
@@ -123,15 +138,18 @@ func FormatError(err error) string {
 		// We will also generate a report to add more information about the error location.
 		return fmt.Sprintf("%v: %v\r\n\r\n%s", gErr.position, err, gErr.position.Report())
 	}
+
 	var pErr ParseError
 	if errors.As(err, &pErr) {
 		// If the error chain contains a parseError we will use it's position to create a report.
 		return fmt.Sprintf("%v\r\n\r\n%s", err, gErr.position.Report())
 	}
+
 	var eErr vit.ExpressionError
 	if errors.As(err, &eErr) {
 		// same as ParseError
 		return fmt.Sprintf("%v\r\n\r\n%s", err, eErr.Position.Report())
 	}
+
 	return err.Error()
 }

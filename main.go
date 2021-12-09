@@ -30,7 +30,7 @@ func main() {
 
 	err = mngr.Run()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(parse.FormatError(err))
 		return
 	}
 
