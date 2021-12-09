@@ -1,11 +1,69 @@
 package parse
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/omniskop/vitrum/vit"
 )
+
+type componentError struct {
+	component vit.AbstractComponent
+	err       error
+}
+
+func (e componentError) Error() string {
+	var cErr componentError
+	if errors.As(e.err, &cErr) {
+		return fmt.Sprintf("%s > %s", e.component.Name(), e.err) // looks nicer
+	}
+	return fmt.Sprintf("%s: %s", e.component.Name(), e.err)
+}
+
+func (e componentError) Is(target error) bool {
+	_, ok := target.(componentError)
+	return ok
+}
+
+func (e componentError) Unwrap() error {
+	return e.err
+}
+
+type unknownComponentError struct {
+	name string
+}
+
+func (e unknownComponentError) Error() string {
+	return fmt.Sprintf("unknown component %q", e.name)
+}
+
+func (e unknownComponentError) Is(target error) bool {
+	_, ok := target.(unknownComponentError)
+	return ok
+}
+
+type genericError struct {
+	position vit.PositionRange
+	err      error
+}
+
+func genericErrorf(position vit.PositionRange, format string, args ...interface{}) error {
+	return genericError{position, fmt.Errorf(format, args...)}
+}
+
+func (e genericError) Error() string {
+	return e.err.Error()
+}
+
+func (e genericError) Is(target error) bool {
+	_, ok := target.(genericError)
+	return ok
+}
+
+func (e genericError) Unwrap() error {
+	return e.err
+}
 
 // parseFile parsed a given file into a document with the given component name.
 func parseFile(fileName string, componentName string) (*VitDocument, error) {
@@ -26,25 +84,26 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 	return doc, nil
 }
 
-// interpret takes the parsed document and creates the appropriate component tree
+// interpret takes the parsed document and creates the appropriate component tree.
+// The returned error will always be of type ParseError
 func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Component, error) {
 	allComponents := vit.NewComponentResolver(&components)
 
 	for _, imp := range document.imports {
 		if len(imp.file) != 0 {
 			// file import
-			return nil, fmt.Errorf("not yet implemented")
+			return nil, genericErrorf(imp.position, "not yet implemented")
 		} else if len(imp.namespace) != 0 {
 			// namespace import
 			lib, err := resolveLibraryImport(imp.namespace)
 			if err != nil {
-				return nil, err
+				return nil, ParseError{imp.position, err}
 			}
 			for _, name := range lib.ComponentNames() {
 				allComponents.Components[name] = &LibraryInstantiator{lib, name}
 			}
 		} else {
-			return nil, fmt.Errorf("incomplete namespace")
+			return nil, genericErrorf(imp.position, "incomplete namespace")
 		}
 	}
 
@@ -57,9 +116,6 @@ func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Co
 		instances = append(instances, instance)
 	}
 
-	fmt.Println("components constructured")
-	fmt.Println("evaluating expressions...")
-
 	return instances, nil
 }
 
@@ -67,16 +123,16 @@ func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Co
 func instantiateComponent(def *componentDefinition, components vit.ComponentResolver) (vit.Component, error) {
 	src, ok := components.Resolve(def.name)
 	if !ok {
-		return nil, fmt.Errorf("unknown component %q", def.name)
+		return nil, unknownComponentError{def.name}
 	}
 	instance, err := src.Instantiate(def.id, components)
 	if err != nil {
-		return nil, fmt.Errorf("component %q could not be instantiated: %v", def.name, err)
+		return nil, componentError{src, err}
 	}
 
 	err = populateComponent(instance, def, components)
 	if err != nil {
-		return instance, err
+		return instance, componentError{src, err}
 	}
 
 	return instance, nil
@@ -86,26 +142,26 @@ func instantiateComponent(def *componentDefinition, components vit.ComponentReso
 func populateComponent(instance vit.Component, def *componentDefinition, components vit.ComponentResolver) error {
 	for _, enum := range def.enumerations {
 		if !instance.DefineEnum(enum) {
-			return fmt.Errorf("enum %q already defined", enum.Name)
+			return genericErrorf(enum.Position, "enum %q already defined", enum.Name)
 		}
 	}
 
 	for _, prop := range def.properties {
-		exp := vit.NewExpression(prop.expression)
 		if prop.vitType != "" {
 			// this defines a new property
-			if ok := instance.DefineProperty(prop.identifier[0], prop.vitType, prop.expression); !ok {
-				return fmt.Errorf("property %q is already defined", prop.identifier[0])
+			if ok := instance.DefineProperty(prop.identifier[0], prop.vitType, prop.expression, &prop.position); !ok {
+				return genericErrorf(prop.position, "property %q is already defined", prop.identifier[0])
 			}
 			// instance.SetProperty(prop.identifier[0], prop.expression)
 		} else if len(prop.identifier) == 1 {
 			// simple property assignment
-			if ok := instance.SetProperty(prop.identifier[0], prop.expression); !ok {
-				return fmt.Errorf("unknown property %q of component %q", prop.identifier[0], def.name)
+			if ok := instance.SetProperty(prop.identifier[0], prop.expression, &prop.position); !ok {
+				return genericErrorf(prop.position, "unknown property %q of component %q", prop.identifier[0], def.name)
 			}
 		} else {
 			// assign property with qualifier
 			if prop.identifier[0] == "anchors" {
+				exp := vit.NewExpression(prop.expression, &prop.position)
 				a, _ := instance.Property("anchors")
 				a.(*vit.Anchors).SetProperty(prop.identifier[1], exp)
 			}

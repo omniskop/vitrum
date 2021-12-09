@@ -43,11 +43,10 @@ func (r *Rectangle) MustProperty(key string) interface{} {
 	return v
 }
 
-func (r *Rectangle) SetProperty(key string, value interface{}) bool {
-	fmt.Printf("[Rectangle] set %q: %v\n", key, value)
+func (r *Rectangle) SetProperty(key string, value interface{}, position *PositionRange) bool {
 	switch key {
 	case "color":
-		r.color.Expression.ChangeCode(value.(string))
+		r.color.Expression.ChangeCode(value.(string), position)
 	// case "width":
 	// 	r.width.Expression.ChangeCode(value.(string))
 	// case "stuff":
@@ -55,7 +54,7 @@ func (r *Rectangle) SetProperty(key string, value interface{}) bool {
 	// case "anchors":
 	// 	r.anchors = value.(Anchors)
 	default:
-		return r.Item.SetProperty(key, value)
+		return r.Item.SetProperty(key, value, position)
 	}
 	return true
 }
@@ -86,16 +85,9 @@ func (r *Rectangle) UpdateExpressions() (int, error) {
 		sum++
 		err := r.color.Update(r)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Rectangle.color' as %q: %w", r.color.Expression.code, err)
+			return sum, newExpressionError("Rectangle", "color", r.color.Expression, err)
 		}
 	}
-	// if r.stuff.ShouldEvaluate() {
-	// 	sum++
-	// 	err := r.stuff.Update(r)
-	// 	if err != nil {
-	// 		return sum, fmt.Errorf("evaluating 'Rectangle.stuff': %w", err)
-	// 	}
-	// }
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	for name, prop := range r.Item.properties {
@@ -103,7 +95,7 @@ func (r *Rectangle) UpdateExpressions() (int, error) {
 			sum++
 			err := prop.Update(r)
 			if err != nil {
-				return sum, fmt.Errorf("evaluating custom property %q: %w", name, err)
+				return sum, newExpressionError("Rectangle", name, *prop.GetExpression(), err)
 			}
 		}
 	}

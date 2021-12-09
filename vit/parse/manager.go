@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -112,4 +113,25 @@ func (m *Manager) MainComponent() vit.Component {
 // Update reevaluates all expressions whose dependencies have changed since the last update.
 func (m *Manager) Update() (int, error) {
 	return m.mainComponent.UpdateExpressions()
+}
+
+func FormatError(err error) string {
+	var gErr genericError
+	if errors.As(err, &gErr) {
+		// If the error chain contains a genericError, we will grab it's position and start the line with that.
+		// The generic error itself will not print it's position.
+		// We will also generate a report to add more information about the error location.
+		return fmt.Sprintf("%v: %v\r\n\r\n%s", gErr.position, err, gErr.position.Report())
+	}
+	var pErr ParseError
+	if errors.As(err, &pErr) {
+		// If the error chain contains a parseError we will use it's position to create a report.
+		return fmt.Sprintf("%v\r\n\r\n%s", err, gErr.position.Report())
+	}
+	var eErr vit.ExpressionError
+	if errors.As(err, &eErr) {
+		// same as ParseError
+		return fmt.Sprintf("%v\r\n\r\n%s", err, eErr.Position.Report())
+	}
+	return err.Error()
 }

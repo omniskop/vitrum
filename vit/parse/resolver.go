@@ -1,8 +1,6 @@
 package parse
 
 import (
-	"fmt"
-
 	"github.com/omniskop/vitrum/vit"
 )
 
@@ -42,6 +40,10 @@ func (i *DocumentInstantiator) ResolveVariable(name string) (interface{}, bool) 
 	return nil, false
 }
 
+func (i *DocumentInstantiator) Name() string {
+	return i.doc.name
+}
+
 // LibraryInstantiator implements the vit.AbstractComponent interface for a specific component defined in a vit library.
 type LibraryInstantiator struct {
 	library       Library
@@ -55,7 +57,7 @@ func (i *LibraryInstantiator) Instantiate(id string, components vit.ComponentRes
 	c, ok := i.library.NewComponent(i.componentName, id, components)
 	if !ok {
 		// if this happens the LibraryInstantiator was build incorrectly
-		return nil, fmt.Errorf("unknown component %q", i.componentName)
+		return nil, unknownComponentError{i.componentName}
 	}
 	return c, nil
 }
@@ -64,4 +66,8 @@ func (i *LibraryInstantiator) Instantiate(id string, components vit.ComponentRes
 func (i *LibraryInstantiator) ResolveVariable(name string) (interface{}, bool) {
 	panic("LibraryInstantiator.ResolveVariable() not implemented")
 	return nil, false
+}
+
+func (i *LibraryInstantiator) Name() string {
+	return i.componentName
 }

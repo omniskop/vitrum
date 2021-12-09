@@ -7,15 +7,19 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/omniskop/vitrum/vit"
 )
 
 func TestParseError(t *testing.T) {
 	wrapped := errors.New("test error")
-	err := parseError{
-		pos: position{
-			filePath: "test.vit",
-			line:     1,
-			column:   2,
+	err := ParseError{
+		pos: vit.PositionRange{
+			FilePath:    "test.vit",
+			StartLine:   1,
+			StartColumn: 2,
+			EndLine:     3,
+			EndColumn:   4,
 		},
 		err: wrapped,
 	}
@@ -61,20 +65,11 @@ func TestUnexpectedToken(t *testing.T) {
 	tok := token{
 		tokenType: tokenIdentifier,
 		literal:   "value",
-		start: position{
-			filePath: "test",
-			line:     0,
-			column:   0,
-		},
-		end: position{
-			filePath: "",
-			line:     0,
-			column:   0,
-		},
+		position:  vit.PositionRange{"test", 0, 0, 0, 0},
 	}
 	err := unexpectedToken(tok, tokenInteger)
-	if err.pos != tok.start {
-		t.Errorf("unexpectedToken set 'pos' incorrectly to %+v", tok.start)
+	if err.pos != tok.position {
+		t.Errorf("unexpectedToken set 'pos' incorrectly to %+v", tok.position)
 	}
 	var unexpErr unexpectedTokenError
 	if !errors.As(err, &unexpErr) {

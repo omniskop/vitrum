@@ -12,12 +12,12 @@ type ColorValue struct {
 	Value color.Color
 }
 
-func NewColorValue(expression string) *ColorValue {
+func NewColorValue(expression string, position *PositionRange) *ColorValue {
 	v := new(ColorValue)
 	if expression == "" {
-		v.Expression = *NewExpression(`"black"`)
+		v.Expression = *NewExpression(`"black"`, position)
 	} else {
-		v.Expression = *NewExpression(expression)
+		v.Expression = *NewExpression(expression, position)
 	}
 	return v
 }

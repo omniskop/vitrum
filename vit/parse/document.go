@@ -41,6 +41,7 @@ type importStatement struct {
 	file      string   // file path that should be imported
 	version   string   // version string for namespace imports
 	qualifier string   // optional qualifier that allows the user to refer to the import by a different name
+	position  vit.PositionRange
 }
 
 // String returns a human readable multiline string representation of the import
@@ -60,6 +61,7 @@ func (s importStatement) String() string {
 
 // componentDefinition contains everything about a component that is defined in a vit file
 type componentDefinition struct {
+	position     vit.PositionRange
 	name         string                 // name of the instantiated component
 	id           string                 // custom id of the component
 	properties   []property             // all explicitly defined or declared properties
@@ -115,6 +117,7 @@ func (d *componentDefinition) String() string {
 
 // property contains everything about a defined or declared property
 type property struct {
+	position   vit.PositionRange    // position of the property declaration
 	identifier []string             // Identifier of this property. This will usually be only one value but can contain multiple parts for example with 'Anchors.fill'
 	vitType    string               // data type of the property in vit terms, not go
 	expression string               // Expression string that defines the property. Can be empty.
@@ -130,4 +133,8 @@ func (p property) String() string {
 	}
 
 	return fmt.Sprintf("%s (%s): %s", ident, p.vitType, p.expression)
+}
+
+func (p property) Position() vit.PositionRange {
+	return p.position
 }

@@ -4,26 +4,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/omniskop/vitrum/vit"
 )
-
-// ========================================== POSITION =============================================
-
-// position describes a specific position in a file
-type position struct {
-	filePath string
-	line     int // line inside the file starting at 1
-	column   int // column inside the line starting at 1 (this is pointing to the rune, not the byte)
-}
-
-// String returns a human readable description of the position
-func (p position) String() string {
-	return fmt.Sprintf("%s:%d:%d", p.filePath, p.line, p.column)
-}
-
-// IsEqual returns true if with positions point to the same location in the same file
-func (p position) IsEqual(o position) bool {
-	return p.filePath == o.filePath && p.line == o.line && p.column == o.column
-}
 
 // ========================================= TOKEN TYPE ============================================
 
@@ -139,8 +122,7 @@ func joinTokenTypes(types []tokenType) string {
 type token struct {
 	tokenType tokenType // specific type of this token
 	literal   string    // only set for specific token types (see 'isLiteralType')
-	start     position  // position of first rune
-	end       position  // position of last rune (points to the same location as start if the token is a single rune)
+	position  vit.PositionRange
 }
 
 // IntValue converts the literal of this token to an integer.
@@ -154,7 +136,7 @@ func (t token) IntValue() int {
 	if err != nil {
 		// If we get here the lexer has failed
 		// as it should only return number tokens when a conversion is possible.
-		panic(fmt.Errorf("lexer wrongly interpreted literal %q at %s as a number but it can't be converted: %w", t.literal, t.start, err))
+		panic(fmt.Errorf("lexer wrongly interpreted literal %q at %s as a number but it can't be converted: %w", t.literal, t.position.Start(), err))
 	}
 
 	return i
@@ -171,7 +153,7 @@ func (t token) FloatValue() float64 {
 	if err != nil {
 		// If we get here the lexer has failed
 		// as it should only return number tokens when a conversion is possible.
-		panic(fmt.Errorf("lexer wrongly interpreted literal %q at %s as a number but it can't be converted: %w", t.literal, t.start, err))
+		panic(fmt.Errorf("lexer wrongly interpreted literal %q at %s as a number but it can't be converted: %w", t.literal, t.position.Start(), err))
 	}
 
 	return f

@@ -25,32 +25,32 @@ func (r *Root) String() string {
 	return fmt.Sprintf("Root{%s}", r.id)
 }
 
-func (r *Root) DefineProperty(name string, vitType string, expression string) bool {
+func (r *Root) DefineProperty(name string, vitType string, expression string, position *PositionRange) bool {
 	switch vitType {
 	case "int":
 		if expression == "" {
-			r.properties[name] = NewIntValue("")
+			r.properties[name] = NewIntValue("", position)
 		} else {
-			r.properties[name] = NewIntValue(expression)
+			r.properties[name] = NewIntValue(expression, position)
 		}
 	case "float":
 		if expression == "" {
-			r.properties[name] = NewFloatValue("")
+			r.properties[name] = NewFloatValue("", position)
 		} else {
-			r.properties[name] = NewFloatValue(expression)
+			r.properties[name] = NewFloatValue(expression, position)
 		}
 	case "string":
 		if expression == "" {
-			r.properties[name] = NewStringValue("")
+			r.properties[name] = NewStringValue("", position)
 		} else {
-			r.properties[name] = NewStringValue(expression)
+			r.properties[name] = NewStringValue(expression, position)
 		}
 	default:
 		if _, ok := r.enumerations[vitType]; ok {
 			if expression == "" {
-				r.properties[name] = NewIntValue("")
+				r.properties[name] = NewIntValue("", position)
 			} else {
-				r.properties[name] = NewIntValue(expression)
+				r.properties[name] = NewIntValue(expression, position)
 			}
 			return true
 		}
@@ -86,12 +86,11 @@ func (r *Root) MustProperty(key string) interface{} {
 	return v
 }
 
-func (r *Root) SetProperty(key string, value interface{}) bool {
-	// fmt.Printf("[Root] set %q: %v\n", key, value)
+func (r *Root) SetProperty(key string, value interface{}, position *PositionRange) bool {
 	if _, ok := r.properties[key]; !ok {
 		return false
 	}
-	r.properties[key].GetExpression().ChangeCode(value.(string))
+	r.properties[key].GetExpression().ChangeCode(value.(string), position)
 	return true
 }
 

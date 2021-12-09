@@ -17,12 +17,12 @@ type Item struct {
 func NewItem(id string, scope ComponentResolver) *Item {
 	return &Item{
 		Root:   NewRoot(id, scope),
-		width:  *NewIntValue(""),
-		height: *NewIntValue(""),
-		stuff:  *NewIntValue(""),
-		x:      *NewFloatValue(""),
-		y:      *NewFloatValue(""),
-		z:      *NewFloatValue(""),
+		width:  *NewIntValue("", nil),
+		height: *NewIntValue("", nil),
+		stuff:  *NewIntValue("", nil),
+		x:      *NewFloatValue("", nil),
+		y:      *NewFloatValue("", nil),
+		z:      *NewFloatValue("", nil),
 	}
 }
 
@@ -59,25 +59,25 @@ func (i *Item) MustProperty(key string) interface{} {
 	return v
 }
 
-func (i *Item) SetProperty(key string, value interface{}) bool {
+func (i *Item) SetProperty(key string, value interface{}, position *PositionRange) bool {
 	// fmt.Printf("[Item] set %q: %v\n", key, value)
 	switch key {
 	case "width":
-		i.width.Expression.ChangeCode(value.(string))
+		i.width.Expression.ChangeCode(value.(string), position)
 	case "height":
-		i.height.Expression.ChangeCode(value.(string))
+		i.height.Expression.ChangeCode(value.(string), position)
 	case "stuff":
-		i.stuff.Expression.ChangeCode(value.(string))
+		i.stuff.Expression.ChangeCode(value.(string), position)
 	case "anchors":
 		i.anchors = value.(Anchors)
 	case "x":
-		i.x.Expression.ChangeCode(value.(string))
+		i.x.Expression.ChangeCode(value.(string), position)
 	case "y":
-		i.y.Expression.ChangeCode(value.(string))
+		i.y.Expression.ChangeCode(value.(string), position)
 	case "z":
-		i.z.Expression.ChangeCode(value.(string))
+		i.z.Expression.ChangeCode(value.(string), position)
 	default:
-		return i.Root.SetProperty(key, value)
+		return i.Root.SetProperty(key, value, position)
 	}
 	return true
 }
@@ -116,42 +116,42 @@ func (i *Item) UpdateExpressions() (int, error) {
 		sum++
 		err := i.width.Update(i)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Item.width': %w", err)
+			return sum, newExpressionError("Item", "width", i.width.Expression, err)
 		}
 	}
 	if i.height.ShouldEvaluate() {
 		sum++
 		err := i.height.Update(i)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Item.height': %w", err)
+			return sum, newExpressionError("Item", "height", i.height.Expression, err)
 		}
 	}
 	if i.stuff.ShouldEvaluate() {
 		sum++
 		err := i.stuff.Update(i)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Item.stuff': %w", err)
+			return sum, newExpressionError("Item", "stuff", i.stuff.Expression, err)
 		}
 	}
 	if i.x.ShouldEvaluate() {
 		sum++
 		err := i.x.Update(i)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Item.x': %w", err)
+			return sum, newExpressionError("Item", "x", i.x.Expression, err)
 		}
 	}
 	if i.y.ShouldEvaluate() {
 		sum++
 		err := i.y.Update(i)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Item.y': %w", err)
+			return sum, newExpressionError("Item", "y", i.y.Expression, err)
 		}
 	}
 	if i.z.ShouldEvaluate() {
 		sum++
 		err := i.z.Update(i)
 		if err != nil {
-			return sum, fmt.Errorf("evaluating 'Item.z': %w", err)
+			return sum, newExpressionError("Item", "z", i.z.Expression, err)
 		}
 	}
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
@@ -160,7 +160,7 @@ func (i *Item) UpdateExpressions() (int, error) {
 			sum++
 			err := prop.Update(i)
 			if err != nil {
-				return sum, fmt.Errorf("evaluating custom property %q: %w", name, err)
+				return sum, newExpressionError("Item", name, *prop.GetExpression(), err)
 			}
 		}
 	}

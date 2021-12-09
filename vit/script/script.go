@@ -1,7 +1,6 @@
 package script
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/dop251/goja"
@@ -79,34 +78,34 @@ type VariableBridge struct {
 func (b *VariableBridge) Get(key string) goja.Value {
 	val, ok := b.Source.ResolveVariable(key)
 	if !ok {
-		fmt.Printf("[VariableBridge] get %q: undefined\n", key)
+		// fmt.Printf("[VariableBridge] get %q: undefined\n", key)
 		return goja.Undefined()
 	}
 	if subBridge, ok := val.(VariableBridge); ok {
-		fmt.Printf("[VariableBridge] get %q: (abstract) component\n", key)
+		// fmt.Printf("[VariableBridge] get %q: (abstract) component\n", key)
 		return runtime.NewDynamicObject(&subBridge)
 	}
-	fmt.Printf("[VariableBridge] get %q: (%T) %v\n", key, val, val)
+	// fmt.Printf("[VariableBridge] get %q: (%T) %v\n", key, val, val)
 	return runtime.ToValue(val)
 }
 
 func (b *VariableBridge) Set(key string, value goja.Value) bool {
-	fmt.Printf("[VariableBridge] set %q: %v (%T)", key, value, value)
+	// fmt.Printf("[VariableBridge] set %q: %v (%T)", key, value, value)
 	return true
 }
 
 func (b *VariableBridge) Has(key string) bool {
-	fmt.Println("Has", key)
+	// fmt.Println("Has", key)
 	_, ok := b.Source.ResolveVariable(key)
 	return ok
 }
 
 func (b *VariableBridge) Delete(key string) bool {
-	fmt.Println("Delete", key)
+	// fmt.Println("Delete", key)
 	return false
 }
 
 func (b *VariableBridge) Keys() []string {
-	fmt.Println("Keys")
+	// fmt.Println("Keys")
 	return nil
 }

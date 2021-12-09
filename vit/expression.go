@@ -22,12 +22,12 @@ type IntValue struct {
 	Value int
 }
 
-func NewIntValue(expression string) *IntValue {
+func NewIntValue(expression string, position *PositionRange) *IntValue {
 	v := new(IntValue)
 	if expression == "" {
-		v.Expression = *NewExpression("0")
+		v.Expression = *NewExpression("0", position)
 	} else {
-		v.Expression = *NewExpression(expression)
+		v.Expression = *NewExpression(expression, position)
 	}
 	return v
 }
@@ -54,12 +54,12 @@ type FloatValue struct {
 	Value float64
 }
 
-func NewFloatValue(expression string) *FloatValue {
+func NewFloatValue(expression string, position *PositionRange) *FloatValue {
 	v := new(FloatValue)
 	if expression == "" {
-		v.Expression = *NewExpression("0")
+		v.Expression = *NewExpression("0", position)
 	} else {
-		v.Expression = *NewExpression(expression)
+		v.Expression = *NewExpression(expression, position)
 	}
 	return v
 }
@@ -86,12 +86,12 @@ type StringValue struct {
 	Value string
 }
 
-func NewStringValue(expression string) *StringValue {
+func NewStringValue(expression string, position *PositionRange) *StringValue {
 	v := new(StringValue)
 	if expression == "" {
-		v.Expression = *NewExpression(`""`)
+		v.Expression = *NewExpression(`""`, position)
 	} else {
-		v.Expression = *NewExpression(expression)
+		v.Expression = *NewExpression(expression, position)
 	}
 	return v
 }
@@ -119,10 +119,11 @@ type Expression struct {
 	dependencies map[Value]bool
 	dependents   map[*Expression]bool
 	program      script.Script
+	position     *PositionRange
 	err          error
 }
 
-func NewExpression(code string) *Expression {
+func NewExpression(code string, position *PositionRange) *Expression {
 	prog, err := script.NewScript("expression", code)
 	if err != nil {
 		panic(err)
@@ -133,6 +134,7 @@ func NewExpression(code string) *Expression {
 		dependencies: make(map[Value]bool),
 		dependents:   make(map[*Expression]bool),
 		program:      prog,
+		position:     position,
 		err:          nil,
 	}
 }
@@ -180,12 +182,13 @@ func (e *Expression) MakeDirty(stack []*Expression) {
 	e.NotifyDependents(append(stack, e))
 }
 
-func (e *Expression) ChangeCode(code string) {
+func (e *Expression) ChangeCode(code string, position *PositionRange) {
 	e.program, e.err = script.NewScript("expression", code)
 	if e.err != nil {
-		fmt.Printf("[expression] code error %q: %v\n", code, e.err)
+		fmt.Printf("[expression] code error %q: %v\r\n", code, e.err)
 		return
 	}
+	e.position = position
 	e.code = code
 	e.ClearDependencies()
 	e.dirty = true
@@ -333,4 +336,38 @@ func castFloat(val interface{}) (float64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+type ExpressionError struct {
+	ComponentName string
+	PropertyName  string
+	Code          string
+	Position      *PositionRange
+	err           error
+}
+
+func newExpressionError(componentName string, propertyName string, expression Expression, err error) ExpressionError {
+	return ExpressionError{
+		ComponentName: componentName,
+		PropertyName:  propertyName,
+		Code:          expression.code,
+		Position:      expression.position,
+		err:           err,
+	}
+}
+
+func (e ExpressionError) Error() string {
+	if e.Position != nil {
+		return fmt.Sprintf("%v: %s.%s: error in expression %q: %v", e.Position, e.ComponentName, e.PropertyName, e.Code, e.err)
+	}
+	return fmt.Sprintf("%s.%s: error in expression %q: %v", e.ComponentName, e.PropertyName, e.Code, e.err)
+}
+
+func (e ExpressionError) Is(target error) bool {
+	_, ok := target.(ExpressionError)
+	return ok
+}
+
+func (e ExpressionError) Unwrap() error {
+	return e.err
 }

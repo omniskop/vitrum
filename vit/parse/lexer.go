@@ -8,11 +8,13 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/omniskop/vitrum/vit"
 )
 
 // LexError contains additional information about the error that occurred
 type LexError struct {
-	pos position
+	pos vit.Position
 	msg string
 }
 
@@ -61,8 +63,8 @@ func LexAll(input io.Reader, filePath string) ([]token, error) {
 type lexer struct {
 	source              *bufio.Reader
 	filePath            string
-	pos                 position
-	previousPosition    position
+	pos                 vit.Position
+	previousPosition    vit.Position
 	expressionFollowing bool // weather the next scanned part should be an expression
 }
 
@@ -70,39 +72,40 @@ func NewLexer(input io.Reader, filePath string) *lexer {
 	return &lexer{
 		source:   bufio.NewReader(input),
 		filePath: filePath,
-		pos: position{
-			filePath: filePath,
-			line:     1,
-			column:   1,
+		pos: vit.Position{
+			FilePath: filePath,
+			Line:     1,
+			Column:   1,
 		},
 	}
 }
 
-// nextRune returns the next rune from the source as well as the position of that rune in the file.
+// nextRune returns the next rune from the source as well as the vit.Position of that rune in the file.
 // The error returned will always be of type ReadError.
-func (l *lexer) nextRune() (rune, position, error) {
+func (l *lexer) nextRune() (rune, vit.Position, error) {
 	r, _, err := l.source.ReadRune()
 	if err != nil {
 		return r, l.pos, ReadError{err}
 	}
 	p := l.pos
 	l.previousPosition = l.pos
+	// TODO: check how this handles line breaks with a carriage return
 	if r == '\n' {
-		l.pos.line++
-		l.pos.column = 1
+		l.pos.Line++
+		l.pos.Column = 1
 	} else {
-		l.pos.column++
+		l.pos.Column++
 	}
 
 	return r, p, nil
 }
 
 // unreadRune adds the last read rune back to the buffer.
-// Calling this more than once might result in incorrect positions.
+// Calling this more than once might result in incorrect vit.Positions.
 func (l *lexer) unreadRune() {
 	l.source.UnreadRune()
 	l.pos = l.previousPosition
-	l.previousPosition.column-- // just an estimate, we might be missing a line break
+	l.previousPosition.Column-- // just an estimate, we might be missing a line break
 }
 
 // Lex returns the next token from the source.
@@ -115,7 +118,7 @@ func (l *lexer) Lex() (token, error) {
 		}
 		l.expressionFollowing = false
 		if t.tokenType == tokenExpression && len(t.literal) == 0 {
-			return t, LexError{pos: t.start, msg: "empty expression"}
+			return t, LexError{pos: t.position.Start(), msg: "empty expression"}
 		}
 		return t, nil
 	}
@@ -126,8 +129,7 @@ func (l *lexer) Lex() (token, error) {
 			if errors.Is(err, io.EOF) {
 				return token{
 					tokenType: tokenEOF,
-					start:     pos,
-					end:       pos,
+					position:  vit.NewRangeFromPosition(pos),
 				}, nil
 			}
 
@@ -142,63 +144,63 @@ func (l *lexer) Lex() (token, error) {
 		case r == '{':
 			return token{
 				tokenType: tokenLeftBrace,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '}':
 			return token{
 				tokenType: tokenRightBrace,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == ':':
 			l.expressionFollowing = true
 			return token{
 				tokenType: tokenColon,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '.':
 			return token{
 				tokenType: tokenPeriod,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '[':
 			return token{
 				tokenType: tokenLeftBracket,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == ']':
 			return token{
 				tokenType: tokenRightBracket,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '<':
 			return token{
 				tokenType: tokenLess,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '>':
 			return token{
 				tokenType: tokenGreater,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '=':
 			return token{
 				tokenType: tokenAssignment,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == ',':
 			return token{
 				tokenType: tokenComma,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == ';':
 			return token{
 				tokenType: tokenSemicolon,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '\n':
 			return token{
 				tokenType: tokenNewline,
-				start:     pos, end: pos,
+				position:  vit.NewRangeFromPosition(pos),
 			}, nil
 		case r == '/':
 			r, _, err := l.nextRune()
@@ -245,7 +247,7 @@ func (l *lexer) Lex() (token, error) {
 func (l *lexer) scanExpression() (token, error) {
 	t := token{
 		tokenType: tokenExpression,
-		start:     l.pos,
+		position:  vit.NewRangeFromPosition(l.pos),
 	}
 
 startExpressionScan:
@@ -268,7 +270,7 @@ startExpressionScan:
 		} else if r == '{' {
 			blockExpression = true
 		}
-		t.start = pos
+		t.position = vit.NewRangeFromPosition(pos)
 		l.unreadRune() // put whatever we just read back
 		break
 	}
@@ -282,12 +284,12 @@ startExpressionScan:
 	var insideString bool        // weather or not we are inside a string
 	var stringDelimiter rune     // which rune started the string (either ', ` or ")
 	var escaped bool             // weather the next rune is escaped
-	var previousPosition = l.pos // the position of the previous rune
+	var previousPosition = l.pos // the vit.Position of the previous rune
 	var potentialComment bool    // set to true if we encountered a / in the last rune
 	// couldBeLiteral is true if all read runes until this point would be a valid literal.
 	// We need to check this because properties can also hold components which would start with a literal.
 	var couldBeLiteral = !blockExpression // only if it's not a block expression
-	// If we thought that the read runes couldn't be a literal because the last read character was a / we will store the position of that slash here.
+	// If we thought that the read runes couldn't be a literal because the last read character was a / we will store the vit.Position of that slash here.
 	var literalFailedBecauseOfSlashAt int = -1
 
 	for {
@@ -297,7 +299,7 @@ startExpressionScan:
 				if blockExpression {
 					return t, LexError{pos, "unexpected end of file, expecting closing brace"}
 				} else {
-					t.end = previousPosition
+					t.position.SetEnd(previousPosition)
 					t.literal = str.String()
 					return t, nil
 				}
@@ -316,21 +318,21 @@ startExpressionScan:
 				value := strings.Trim(str.String(), " \n")
 				// value can now only contain characters appearing on the same line
 				// thus we can calculate the end like this:
-				end := t.start
-				end.column += len(value) - 1 // -1 because we wan't the location of the last rune not the following one
+				end := t.position.Start()
+				end.Column += len(value) - 1 // -1 because we wan't the location of the last rune not the following one
+				t.position.SetEnd(end)
 				return token{
 					tokenIdentifier,
 					value,
-					t.start,
-					end,
+					t.position,
 				}, nil
 			}
 			// if this is not a valid literal rune, space or newline ...
 			if !validLiteralRune(r, str.Len() == 0) && r != ' ' && r != '\n' {
 				// ... this has no longer the potential to be a vit component
 				if r == '/' {
-					// if it is a / we will note the position in case that this is just the start of a comment
-					literalFailedBecauseOfSlashAt = pos.column
+					// if it is a / we will note the vit.Position in case that this is just the start of a comment
+					literalFailedBecauseOfSlashAt = pos.Column
 				}
 				couldBeLiteral = false
 			}
@@ -364,11 +366,11 @@ startExpressionScan:
 				if blockExpression {
 					// if it is a block expression the closing brace is part of it
 					str.WriteRune(r)
-					t.end = pos
+					t.position.SetEnd(pos)
 				} else {
 					// As this is not a block expression we assume that this closing brace ends the component whose property we are reading.
 					// Thus we will put the brace back and return here.
-					t.end = previousPosition
+					t.position.SetEnd(previousPosition)
 					l.unreadRune()
 				}
 				t.literal = str.String()
@@ -377,7 +379,7 @@ startExpressionScan:
 		case '\n', ';':
 			// inline expressions end here
 			if !blockExpression {
-				t.end = previousPosition
+				t.position.SetEnd(previousPosition)
 				l.unreadRune()
 				t.literal = str.String()
 				return t, nil
@@ -385,8 +387,8 @@ startExpressionScan:
 		case '/':
 			if potentialComment {
 				// a line comment started
-				t.end = previousPosition
-				t.end.column-- // remove first '/'; we can just go back one rune because we now that we can't be at the start of a line
+				t.position.SetEnd(previousPosition)
+				t.position.EndColumn-- // remove first '/'; we can just go back one rune because we now that we can't be at the start of a line
 				err := l.skipComment(false)
 				t.literal = str.String()
 				if len(t.literal) == 0 { // should never happen
@@ -401,7 +403,7 @@ startExpressionScan:
 		case '*':
 			if potentialComment {
 				// a block comment started
-				t.end = previousPosition
+				t.position.SetEnd(previousPosition)
 				l.unreadRune()
 				err := l.skipComment(true)
 				if err != nil {
@@ -414,11 +416,11 @@ startExpressionScan:
 				}
 				if len(s) == 1 && !blockExpression {
 					// if the only thing scanned so far was the first '/' of the comment we restart scanning of the expression like it had just started
-					// this gives more accurate position of the actual expression without the comment
+					// this gives more accurate vit.Position of the actual expression without the comment
 					goto startExpressionScan
 				}
 				// if we decided that the scanned text could not be a literal just because we found the preceding '/', reset couldBeLiteral here.
-				if literalFailedBecauseOfSlashAt == pos.column-1 {
+				if literalFailedBecauseOfSlashAt == pos.Column-1 {
 					couldBeLiteral = true
 					literalFailedBecauseOfSlashAt = -1
 				}
@@ -437,9 +439,9 @@ startExpressionScan:
 	}
 }
 
-// skipSpaces skips all spaces and newlines. It returns the position of the first non-space character.
+// skipSpaces skips all spaces and newlines. It returns the vit.Position of the first non-space character.
 // That rune will still be in the source as unreadRune will be called at the end.
-func (l *lexer) skipSpaces() (position, error) {
+func (l *lexer) skipSpaces() (vit.Position, error) {
 	for {
 		r, pos, err := l.nextRune()
 		if err != nil {
@@ -461,7 +463,7 @@ func (l *lexer) skipSpaces() (position, error) {
 func (l *lexer) scanString(quotationMark rune) (token, error) {
 	t := token{
 		tokenType: tokenString,
-		start:     l.pos,
+		position:  vit.NewRangeFromPosition(l.pos),
 	}
 
 	// NOTE: new lines are allowed inside strings
@@ -485,7 +487,7 @@ func (l *lexer) scanString(quotationMark rune) (token, error) {
 
 		switch r {
 		case quotationMark:
-			t.end = pos
+			t.position.SetEnd(pos)
 			t.literal = str.String()
 			return t, nil
 		case '\\':
@@ -501,18 +503,18 @@ func (l *lexer) scanString(quotationMark rune) (token, error) {
 func (l *lexer) scanIdentifier(first rune) (token, error) {
 	t := token{
 		tokenType: tokenIdentifier,
-		start:     l.pos,
+		position:  vit.NewRangeFromPosition(l.pos),
 	}
-	t.start.column--
+	t.position.StartColumn--
 
-	previousPosition := t.start
+	previousPosition := t.position.Start()
 	var str strings.Builder
 	str.WriteRune(first)
 	for {
 		r, pos, err := l.nextRune()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				t.end = previousPosition
+				t.position.SetEnd(previousPosition)
 				t.literal = str.String()
 				return t, nil
 			}
@@ -522,7 +524,7 @@ func (l *lexer) scanIdentifier(first rune) (token, error) {
 		if validLiteralRune(r, str.Len() == 0) {
 			str.WriteRune(r)
 		} else {
-			t.end = previousPosition
+			t.position.SetEnd(previousPosition)
 			t.literal = str.String()
 			l.unreadRune()
 			return t, nil
@@ -571,7 +573,7 @@ func (l *lexer) skipComment(multiLineComment bool) error {
 func (l *lexer) scanNumber() (token, error) {
 	t := token{
 		tokenType: tokenFloat,
-		start:     l.pos,
+		position:  vit.NewRangeFromPosition(l.pos),
 	}
 
 	// read in all runes
@@ -617,12 +619,12 @@ func (l *lexer) scanNumber() (token, error) {
 	// now parse the read number
 
 parseAndReturn:
-	t.end = previousPosition
+	t.position.SetEnd(previousPosition)
 
 	stringN := str.String()
 	// catch some exceptions
 	if len(stringN) == 0 || stringN == "." || stringN == "+" || stringN == "-" {
-		return t, LexError{t.start, fmt.Sprintf("number %q is incomplete", stringN)}
+		return t, LexError{t.position.Start(), fmt.Sprintf("number %q is incomplete", stringN)}
 	}
 	t.literal = stringN
 
@@ -634,13 +636,13 @@ parseAndReturn:
 	if isFloatingPoint {
 		_, err := strconv.ParseFloat(stringN, 64)
 		if err != nil {
-			return t, LexError{t.start, fmt.Sprintf("%q is not a valid number: %v", stringN, err)}
+			return t, LexError{t.position.Start(), fmt.Sprintf("%q is not a valid number: %v", stringN, err)}
 		}
 		t.tokenType = tokenFloat
 	} else {
 		_, err := strconv.ParseInt(stringN, 10, 64)
 		if err != nil {
-			return t, LexError{t.start, fmt.Sprintf("%q is not a valid number: %v", stringN, err)}
+			return t, LexError{t.position.Start(), fmt.Sprintf("%q is not a valid number: %v", stringN, err)}
 		}
 		t.tokenType = tokenInteger
 	}
