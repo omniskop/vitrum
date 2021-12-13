@@ -165,9 +165,10 @@ func (i *Item) UpdateExpressions() (int, ErrorGroup) {
 			}
 		}
 	}
-	n, err := i.Root.UpdateExpressions()
+	n, errs := i.Root.UpdateExpressions()
+	errs.AddGroup(errs)
 	sum += n
-	return sum, err
+	return sum, errs
 }
 
 func (i *Item) ID() string {
