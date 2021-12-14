@@ -1,6 +1,7 @@
 package vit
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/omniskop/vitrum/vit/script"
@@ -35,6 +36,9 @@ func NewIntValue(expression string, position *PositionRange) *IntValue {
 func (v *IntValue) Update(context Component) error {
 	val, err := v.Expression.Evaluate(context)
 	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
 		return err
 	}
 	castVal, ok := castInt(val)
@@ -67,6 +71,9 @@ func NewFloatValue(expression string, position *PositionRange) *FloatValue {
 func (v *FloatValue) Update(context Component) error {
 	val, err := v.Expression.Evaluate(context)
 	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
 		return err
 	}
 	castVal, ok := castFloat(val)
@@ -99,6 +106,9 @@ func NewStringValue(expression string, position *PositionRange) *StringValue {
 func (v *StringValue) Update(context Component) error {
 	val, err := v.Expression.Evaluate(context)
 	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
 		return err
 	}
 	var ok bool
@@ -112,6 +122,9 @@ func (v *StringValue) Update(context Component) error {
 func (c *StringValue) GetValue() interface{} {
 	return c.Value
 }
+
+// indicates that an expression was not evaluated fully because it read from another expression that has been marked as dirty
+var unsettledDependenciesError = errors.New("unsettled dependencies")
 
 type Expression struct {
 	code         string
@@ -140,13 +153,18 @@ func NewExpression(code string, position *PositionRange) *Expression {
 }
 
 func (e *Expression) Evaluate(context Component) (interface{}, error) {
-	// fmt.Printf("[expression] evaluating %q\n", e.code)
+	// fmt.Printf("[expression] evaluating %q from %v\n", e.code, e.position)
 	collector := NewAccessCollector(context)
 	val, err := e.program.Run(collector)
 	variables := collector.GetReadValues()
-	// fmt.Printf("[expression] expression %q read from:\n", e.code)
+	// fmt.Printf("[expression] expression %q read from expressions:\n", e.code)
+	var dontStoreValue bool
 	for _, variable := range variables {
 		// fmt.Printf("\t%v\n", variable.GetExpression().code)
+		if variable.ShouldEvaluate() {
+			// fmt.Printf("[expression] this expression is dirty, we will not update out value for now\n")
+			dontStoreValue = true
+		}
 		if _, ok := e.dependencies[variable]; !ok {
 			e.dependencies[variable] = true
 			variable.AddDependent(e)
@@ -160,10 +178,22 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 			e.dependents[variable.GetExpression()] = true
 		}
 	}
+	if dontStoreValue {
+		return nil, unsettledDependenciesError
+	}
 	e.dirty = false
 	if err != nil {
 		return nil, fmt.Errorf("expression %q failed: %v", e.code, err)
 	}
+	// NOTE: Currently we don't update other expression that depend on out value.
+	// This is due to the fact that this should already have happened when this expression was marked as dirty.
+	// In the future this might turn out to not be sufficient and if dependents will be marked as dirty in here in the future we should
+	// consider removing that part of the code in MakeDirty.
+	// Cases where that change might be necessary could be:
+	//   - if this expression surprisingly directly sets the value of another expression
+	//   - if this expression uses volatile vallues like the current time which would evaluate differently each time without a previous call to MakeDirty.
+	//     Altough that would beg the question of why this expression would've been reevaluated in the first place.
+	//     And this sounds like a very special case that would need to be handled specifically anyways.
 	return val, nil
 }
 
@@ -267,12 +297,8 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 	case Enumeration:
 		return script.VariableBridge{Source: &variableConverter{actual}}, true
 	case Value:
-		(*c.readValues)[actual] = true
+		(*c.readValues)[actual] = true // mark as read
 		return actual.GetValue(), true
-	case IntValue:
-		var intf Value = &actual
-		(*c.readValues)[intf] = true
-		return actual.Value, true
 	default:
 		panic(fmt.Errorf("resolved variable %q to unhandled type %T", key, actual))
 	}

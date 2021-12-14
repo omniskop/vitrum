@@ -105,7 +105,7 @@ func (p PositionRange) String() string {
 func (p PositionRange) Report() string {
 	f, err := os.ReadFile(p.FilePath)
 	if err != nil {
-		fmt.Printf("unable to generate detailed position string: %v", err)
+		fmt.Printf("(unable to generate detailed position string: %v)\r\n", err)
 		return p.String()
 	}
 	lines := strings.Split(string(f), "\n")

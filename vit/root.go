@@ -113,6 +113,18 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		return abs, true
 	}
 
+	for name, enum := range r.enumerations {
+		if name == key {
+			return enum, true
+		}
+	}
+
+	for name, prop := range r.properties {
+		if name == key {
+			return prop, true
+		}
+	}
+
 	for _, child := range r.children {
 		if child.ID() == key {
 			return child, true
