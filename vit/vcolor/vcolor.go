@@ -49,7 +49,7 @@ func StringRGBA(input string) (r, g, b, a byte, err error) {
 			if err != nil {
 				return 0, 0, 0, 0, err
 			}
-			return out[0], out[1], out[2], out[3], nil
+			return out[0], out[1], out[2], 255, nil
 		case 9:
 			out, err := hex.DecodeString(input[1:])
 			if err != nil {
