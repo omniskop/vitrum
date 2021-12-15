@@ -11,8 +11,8 @@ type DocumentInstantiator struct {
 
 var _ vit.AbstractComponent = (*DocumentInstantiator)(nil) // make sure that DocumentInstantiator implements the AbstractComponent interface
 
-// Instantiate this component with the given id. The componentResolver will be used to resolve components that are needed in the instantiation.
-func (i *DocumentInstantiator) Instantiate(id string, components vit.ComponentResolver) (vit.Component, error) {
+// Instantiate this component with the given id. The componentContainer will be used to resolve components that are needed in the instantiation.
+func (i *DocumentInstantiator) Instantiate(id string, components vit.ComponentContainer) (vit.Component, error) {
 	// TODO: use id
 	comp, err := interpret(i.doc, components)
 	if err != nil {
@@ -60,8 +60,8 @@ type LibraryInstantiator struct {
 
 var _ vit.AbstractComponent = (*LibraryInstantiator)(nil) // make sure that DocumentInstantiator implements the AbstractComponent interface
 
-// Instantiate this component with the given id. The componentResolver will be used to resolve components that are needed in the instantiation.
-func (i *LibraryInstantiator) Instantiate(id string, components vit.ComponentResolver) (vit.Component, error) {
+// Instantiate this component with the given id. The componentContainer will be used to resolve components that are needed in the instantiation.
+func (i *LibraryInstantiator) Instantiate(id string, components vit.ComponentContainer) (vit.Component, error) {
 	c, ok := i.library.NewComponent(i.componentName, id, components)
 	if !ok {
 		// if this happens the LibraryInstantiator was build incorrectly

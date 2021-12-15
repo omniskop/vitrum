@@ -10,7 +10,7 @@ import (
 // A Library describes defines one or more components that can be used in other files
 type Library interface {
 	ComponentNames() []string
-	NewComponent(string, string, vit.ComponentResolver) (vit.Component, bool)
+	NewComponent(string, string, vit.ComponentContainer) (vit.Component, bool)
 }
 
 // resolveLibraryImport takes a library identifier and returns the corresponding library or an error if the identifier is unknown.

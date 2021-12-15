@@ -4,7 +4,7 @@ import "fmt"
 
 // Root is the base component all other components embed. It provides some basic functionality.
 type Root struct {
-	scope        ComponentResolver
+	scope        ComponentContainer
 	parent       Component
 	id           string           // id of this component. Can only be set on creation and not be changed.
 	properties   map[string]Value // custom properties defined in a vit file
@@ -12,7 +12,7 @@ type Root struct {
 	children     []Component
 }
 
-func NewRoot(id string, scope ComponentResolver) Root {
+func NewRoot(id string, scope ComponentContainer) Root {
 	return Root{
 		scope:        scope,
 		id:           id,
@@ -107,8 +107,8 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		return r, true
 	}
 
-	// use resolver
-	abs, ok := r.scope.Resolve(key)
+	// check components in scope
+	abs, ok := r.scope.Get(key)
 	if ok {
 		return abs, true
 	}

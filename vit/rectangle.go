@@ -10,7 +10,7 @@ type Rectangle struct {
 	color ColorValue
 }
 
-func NewRectangle(id string, scope ComponentResolver) *Rectangle {
+func NewRectangle(id string, scope ComponentContainer) *Rectangle {
 	return &Rectangle{
 		Item: *NewItem(id, scope),
 	}

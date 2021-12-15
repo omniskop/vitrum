@@ -86,8 +86,8 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 
 // interpret takes the parsed document and creates the appropriate component tree.
 // The returned error will always be of type ParseError
-func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Component, error) {
-	allComponents := vit.NewComponentResolver(&components)
+func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.Component, error) {
+	allComponents := vit.WrapComponentContainer(&components)
 
 	for _, imp := range document.imports {
 		if len(imp.file) != 0 {
@@ -100,7 +100,7 @@ func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Co
 				return nil, ParseError{imp.position, err}
 			}
 			for _, name := range lib.ComponentNames() {
-				allComponents.Components[name] = &LibraryInstantiator{lib, name}
+				allComponents.Set(name, &LibraryInstantiator{lib, name})
 			}
 		} else {
 			return nil, genericErrorf(imp.position, "incomplete namespace")
@@ -120,8 +120,8 @@ func interpret(document VitDocument, components vit.ComponentResolver) ([]vit.Co
 }
 
 // instantiateComponent creates a component described by a componentDefinition.
-func instantiateComponent(def *componentDefinition, components vit.ComponentResolver) (vit.Component, error) {
-	src, ok := components.Resolve(def.name)
+func instantiateComponent(def *componentDefinition, components vit.ComponentContainer) (vit.Component, error) {
+	src, ok := components.Get(def.name)
 	if !ok {
 		return nil, unknownComponentError{def.name}
 	}
@@ -139,7 +139,7 @@ func instantiateComponent(def *componentDefinition, components vit.ComponentReso
 }
 
 // populateComponent takes a fresh component instance as well as it's definition and populates all attributes and children with their correct values.
-func populateComponent(instance vit.Component, def *componentDefinition, components vit.ComponentResolver) error {
+func populateComponent(instance vit.Component, def *componentDefinition, components vit.ComponentContainer) error {
 	for _, enum := range def.enumerations {
 		if !instance.DefineEnum(enum) {
 			return genericErrorf(enum.Position, "enum %q already defined", enum.Name)

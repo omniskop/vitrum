@@ -14,7 +14,7 @@ type Item struct {
 	z       FloatValue
 }
 
-func NewItem(id string, scope ComponentResolver) *Item {
+func NewItem(id string, scope ComponentContainer) *Item {
 	return &Item{
 		Root:   NewRoot(id, scope),
 		width:  *NewIntValue("", nil),

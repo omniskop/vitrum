@@ -21,7 +21,7 @@ func evaluateStaticExpressions(documents map[string]vit.AbstractComponent) {
 				if !prop.static || prop.staticValue != nil {
 					continue
 				}
-				val, err := script.RunContained(prop.expression, staticVariableResolver{vit.ComponentResolver{Components: documents}, doc.components[i]})
+				val, err := script.RunContained(prop.expression, staticVariableResolver{vit.NewComponentContainer(documents), doc.components[i]})
 				if err != nil {
 					fmt.Println("1>", err)
 					continue
@@ -34,12 +34,12 @@ func evaluateStaticExpressions(documents map[string]vit.AbstractComponent) {
 }
 
 type staticVariableResolver struct {
-	documents vit.ComponentResolver
+	documents vit.ComponentContainer
 	component *componentDefinition
 }
 
 func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool) {
-	if comp, ok := r.documents.Resolve(name); ok {
+	if comp, ok := r.documents.Get(name); ok {
 		return comp, true
 	}
 

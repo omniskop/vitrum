@@ -39,28 +39,45 @@ func (e Enumeration) ResolveVariable(name string) (interface{}, bool) {
 
 type AbstractComponent interface {
 	script.VariableSource
-	Instantiate(string, ComponentResolver) (Component, error)
+	Instantiate(string, ComponentContainer) (Component, error)
 	Name() string
 	// Static values
 }
 
-type ComponentResolver struct {
-	Parent     *ComponentResolver
-	Components map[string]AbstractComponent
+// ComponentContainer holds a list of abstract components
+type ComponentContainer struct {
+	parent     *ComponentContainer
+	components map[string]AbstractComponent
 }
 
-func NewComponentResolver(parent *ComponentResolver) ComponentResolver {
-	return ComponentResolver{
-		Parent:     parent,
-		Components: make(map[string]AbstractComponent),
+func NewEmptyComponentContainer() ComponentContainer {
+	return ComponentContainer{
+		components: make(map[string]AbstractComponent),
 	}
 }
 
-func (r ComponentResolver) Resolve(names ...string) (AbstractComponent, bool) {
-	src, ok := r.Components[names[0]]
+func NewComponentContainer(components map[string]AbstractComponent) ComponentContainer {
+	return ComponentContainer{
+		components: components,
+	}
+}
+
+func WrapComponentContainer(parent *ComponentContainer) ComponentContainer {
+	return ComponentContainer{
+		parent:     parent,
+		components: make(map[string]AbstractComponent),
+	}
+}
+
+func (c ComponentContainer) Set(name string, comp AbstractComponent) {
+	c.components[name] = comp
+}
+
+func (c ComponentContainer) Get(names ...string) (AbstractComponent, bool) {
+	src, ok := c.components[names[0]]
 	if !ok {
-		if r.Parent != nil {
-			return r.Parent.Resolve(names...)
+		if c.parent != nil {
+			return c.parent.Get(names...)
 		} else {
 			return nil, false
 		}

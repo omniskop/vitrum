@@ -7,7 +7,7 @@ func (l StdLib) ComponentNames() []string {
 	return []string{"Item", "Rectangle"}
 }
 
-func (l StdLib) NewComponent(name string, id string, scope ComponentResolver) (Component, bool) {
+func (l StdLib) NewComponent(name string, id string, scope ComponentContainer) (Component, bool) {
 	switch name {
 	case "Item":
 		return NewItem(id, scope), true

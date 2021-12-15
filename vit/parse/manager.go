@@ -86,7 +86,7 @@ func (m *Manager) Run() error {
 		}
 	}
 
-	components, err := interpret(main, vit.ComponentResolver{Parent: nil, Components: documents})
+	components, err := interpret(main, vit.NewComponentContainer(documents))
 	if err != nil {
 		return err
 	}
