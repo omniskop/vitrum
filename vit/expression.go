@@ -43,7 +43,7 @@ func (v *IntValue) Update(context Component) error {
 	}
 	castVal, ok := castInt(val)
 	if !ok {
-		return fmt.Errorf("expression did not evaluate to expected type int but %T instead", val)
+		return fmt.Errorf("did not evaluate to expected type int but %T instead", val)
 	}
 	v.Value = int(castVal)
 	return nil
@@ -78,7 +78,7 @@ func (v *FloatValue) Update(context Component) error {
 	}
 	castVal, ok := castFloat(val)
 	if !ok {
-		return fmt.Errorf("expression did not evaluate to expected type int but %T instead", val)
+		return fmt.Errorf("did not evaluate to expected type int but %T instead", val)
 	}
 	v.Value = float64(castVal)
 	return nil
@@ -114,7 +114,7 @@ func (v *StringValue) Update(context Component) error {
 	var ok bool
 	v.Value, ok = val.(string)
 	if !ok {
-		return fmt.Errorf("expression did not evaluate to expected type string but %T instead", val)
+		return fmt.Errorf("did not evaluate to expected type string but %T instead", val)
 	}
 	return nil
 }
@@ -384,9 +384,9 @@ func newExpressionError(componentName string, propertyName string, expression Ex
 
 func (e ExpressionError) Error() string {
 	if e.Position != nil {
-		return fmt.Sprintf("%v: %s.%s: error in expression %q: %v", e.Position, e.ComponentName, e.PropertyName, e.Code, e.err)
+		return fmt.Sprintf("%v: %s.%s: expression %q: %v", e.Position, e.ComponentName, e.PropertyName, e.Code, e.err)
 	}
-	return fmt.Sprintf("%s.%s: error in expression %q: %v", e.ComponentName, e.PropertyName, e.Code, e.err)
+	return fmt.Sprintf("%s.%s: expression %q: %v", e.ComponentName, e.PropertyName, e.Code, e.err)
 }
 
 func (e ExpressionError) Is(target error) bool {
