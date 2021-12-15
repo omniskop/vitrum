@@ -117,12 +117,14 @@ func (d *componentDefinition) String() string {
 
 // property contains everything about a defined or declared property
 type property struct {
-	position   vit.PositionRange    // position of the property declaration
-	identifier []string             // Identifier of this property. This will usually be only one value but can contain multiple parts for example with 'Anchors.fill'
-	vitType    string               // data type of the property in vit terms, not go
-	expression string               // Expression string that defines the property. Can be empty.
-	component  *componentDefinition // Only set if this properties type is a component.
-	readOnly   bool                 // Readonly properties are statically defined on the component itself and cannot be changed directly. They will however be recalculated if one of the expressions dependencies should change.
+	position    vit.PositionRange    // position of the property declaration
+	identifier  []string             // Identifier of this property. This will usually be only one value but can contain multiple parts for example with 'Anchors.fill'
+	vitType     string               // data type of the property in vit terms, not go
+	expression  string               // Expression string that defines the property. Can be empty.
+	component   *componentDefinition // Only set if this properties type is a component.
+	readOnly    bool                 // Readonly properties are statically defined on the component itself and cannot be changed directly. They will however be recalculated if one of the expressions dependencies should change.
+	static      bool                 // Static properties are defined on the component itself. They will only be evaluated once when the component is loaded and are constant from that point on.
+	staticValue interface{}          // The evaluated value of a static property.
 }
 
 // String returns a human readable string representation of the property

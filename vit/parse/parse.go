@@ -73,6 +73,7 @@ var keywords = map[string]bool{
 	"default":  true,
 	"required": true,
 	"readonly": true,
+	"static":   true,
 	"enum":     true,
 	"embedded": true,
 }
@@ -362,7 +363,7 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 					return nilUnit(), parseErrorf(t.position, "duplicate modifier %q", t.literal)
 				}
 			}
-			modifiers = []string{t.literal}
+			modifiers = append(modifiers, t.literal)
 		}
 
 		// read the next word
@@ -391,6 +392,7 @@ func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit
 		identifier: []string{identifier.literal},
 		vitType:    typeToken.literal,
 		readOnly:   stringSliceContains(modifiers, "readonly"),
+		static:     stringSliceContains(modifiers, "static"),
 		position:   vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()),
 	}
 

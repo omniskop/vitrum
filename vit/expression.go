@@ -3,6 +3,7 @@ package vit
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/omniskop/vitrum/vit/script"
 )
@@ -112,7 +113,7 @@ func (v *StringValue) Update(context Component) error {
 		return err
 	}
 	var ok bool
-	v.Value, ok = val.(string)
+	v.Value, ok = convertJSValueToString(val)
 	if !ok {
 		return fmt.Errorf("did not evaluate to expected type string but %T instead", val)
 	}
@@ -121,6 +122,18 @@ func (v *StringValue) Update(context Component) error {
 
 func (c *StringValue) GetValue() interface{} {
 	return c.Value
+}
+
+func convertJSValueToString(value interface{}) (string, bool) {
+	switch actual := value.(type) {
+	case string:
+		return actual, true
+	case int64:
+		return strconv.FormatInt(actual, 10), true
+	case float64:
+		return strconv.FormatFloat(actual, 'f', 64, 10), true
+	}
+	return "", false
 }
 
 // indicates that an expression was not evaluated fully because it read from another expression that has been marked as dirty
@@ -299,6 +312,8 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 	case Value:
 		(*c.readValues)[actual] = true // mark as read
 		return actual.GetValue(), true
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, bool, string:
+		return actual, true
 	default:
 		panic(fmt.Errorf("resolved variable %q to unhandled type %T", key, actual))
 	}
@@ -335,7 +350,7 @@ func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
 		return script.VariableBridge{Source: &variableConverter{actual}}, true
 	case Enumeration:
 		return script.VariableBridge{Source: &variableConverter{actual}}, true
-	case int:
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, bool, string:
 		return actual, true
 	default:
 		panic(fmt.Errorf("resolved variable %q to unhandled type %T", key, actual))

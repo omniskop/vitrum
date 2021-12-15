@@ -93,6 +93,8 @@ func (m *Manager) Run() error {
 
 	m.mainComponent = components[0]
 
+	evaluateStaticExpressions(documents)
+
 evaluateExpressions:
 	n, errs := m.Update()
 	if errs.Failed() {

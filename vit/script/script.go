@@ -46,6 +46,8 @@ func (s *Script) Run(variables VariableSource) (interface{}, error) {
 	return val.Export(), nil
 }
 
+// Run executes the given code with the provided variable context.
+// The resulting value and a potential error is returned.
 func Run(code string, variables VariableSource) (interface{}, error) {
 	runtimeMux.Lock()
 	defer runtimeMux.Unlock()
@@ -55,6 +57,23 @@ func Run(code string, variables VariableSource) (interface{}, error) {
 	global := runtime.GlobalObject()
 	global.SetPrototype(bridgeObj)
 	defer global.SetPrototype(nil)
+	val, err := runtime.RunString(code)
+	if err != nil {
+		return nil, err
+	}
+	return val.Export(), nil
+}
+
+// RunContainer executes the given code in a separate runtime with the provided variable context.
+// It behaves like Run but it supports multi threading by using it's own separate runtime for each call.
+func RunContained(code string, variables VariableSource) (interface{}, error) {
+	// NOTE: If the recreation of the runtime should at some point become a speed issue, it could maybe be consideret to put the runtime in a pool.
+	bridgeObj := runtime.NewDynamicObject(&VariableBridge{variables})
+	runtime := goja.New()
+	runtime.SetParserOptions(parser.WithDisableSourceMaps)
+	runtime.Set("Vit", builtinFunctions)
+	global := runtime.GlobalObject()
+	global.SetPrototype(bridgeObj)
 	val, err := runtime.RunString(code)
 	if err != nil {
 		return nil, err
@@ -81,9 +100,13 @@ func (b *VariableBridge) Get(key string) goja.Value {
 		// fmt.Printf("[VariableBridge] get %q: undefined\n", key)
 		return goja.Undefined()
 	}
-	if subBridge, ok := val.(VariableBridge); ok {
+	switch actual := val.(type) {
+	case VariableBridge:
 		// fmt.Printf("[VariableBridge] get %q: (abstract) component\n", key)
-		return runtime.NewDynamicObject(&subBridge)
+		return runtime.NewDynamicObject(&actual)
+	case VariableSource:
+		// fmt.Printf("[VariableBridge] get %q: dynamic object\n", key)
+		return runtime.NewDynamicObject(&VariableBridge{actual})
 	}
 	// fmt.Printf("[VariableBridge] get %q: (%T) %v\n", key, val, val)
 	return runtime.ToValue(val)

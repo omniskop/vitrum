@@ -45,7 +45,6 @@ type AbstractComponent interface {
 }
 
 type ComponentResolver struct {
-	// TODO: make these private?
 	Parent     *ComponentResolver
 	Components map[string]AbstractComponent
 }
