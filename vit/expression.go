@@ -196,7 +196,7 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	}
 	e.dirty = false
 	if err != nil {
-		return nil, fmt.Errorf("expression %q failed: %v", e.code, err)
+		return nil, err
 	}
 	// NOTE: Currently we don't update other expression that depend on out value.
 	// This is due to the fact that this should already have happened when this expression was marked as dirty.
@@ -315,7 +315,7 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, bool, string:
 		return actual, true
 	default:
-		panic(fmt.Errorf("resolved variable %q to unhandled type %T", key, actual))
+		panic(script.Exception(fmt.Sprintf("resolved variable %q to unhandled type %T", key, actual)))
 	}
 }
 
@@ -353,7 +353,7 @@ func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
 	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, bool, string:
 		return actual, true
 	default:
-		panic(fmt.Errorf("resolved variable %q to unhandled type %T", key, actual))
+		panic(script.Exception(fmt.Sprintf("resolved variable %q to unhandled type %T", key, actual)))
 	}
 }
 

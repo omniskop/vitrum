@@ -1,6 +1,8 @@
 package script
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/dop251/goja"
@@ -41,6 +43,9 @@ func (s *Script) Run(variables VariableSource) (interface{}, error) {
 	defer global.SetPrototype(nil)
 	val, err := runtime.RunProgram(s.compiled)
 	if err != nil {
+		if exception, ok := err.(*goja.Exception); ok {
+			return nil, errors.New(exception.Value().String())
+		}
 		return nil, err
 	}
 	return val.Export(), nil
@@ -81,6 +86,10 @@ func RunContained(code string, variables VariableSource) (interface{}, error) {
 	return val.Export(), nil
 }
 
+func Exception(msg string) goja.Value {
+	return runtime.ToValue(msg)
+}
+
 type Variable struct {
 	Identifier []string
 	Value      interface{}
@@ -98,7 +107,9 @@ func (b *VariableBridge) Get(key string) goja.Value {
 	val, ok := b.Source.ResolveVariable(key)
 	if !ok {
 		// fmt.Printf("[VariableBridge] get %q: undefined\n", key)
-		return goja.Undefined()
+		// returning undefined here would be a better fit for JavaScript, but I think failing here will give better error messages
+		// return goja.Undefined()
+		panic(Exception(fmt.Sprintf("undefined variable %q", key)))
 	}
 	switch actual := val.(type) {
 	case VariableBridge:
