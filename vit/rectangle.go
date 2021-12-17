@@ -7,12 +7,13 @@ import (
 type Rectangle struct {
 	Item
 
-	color ColorValue
+	color *ColorValue
 }
 
 func NewRectangle(id string, scope ComponentContainer) *Rectangle {
 	return &Rectangle{
-		Item: *NewItem(id, scope),
+		Item:  *NewItem(id, scope),
+		color: NewColorValue("", nil),
 	}
 }
 
@@ -23,7 +24,7 @@ func (r *Rectangle) String() string {
 func (r *Rectangle) Property(key string) (interface{}, bool) {
 	switch key {
 	case "color":
-		return r.color.Value, true
+		return &r.color.Value, true
 	// case "width":
 	// 	return r.width.Value, true
 	// case "stuff":

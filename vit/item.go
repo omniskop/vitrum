@@ -33,19 +33,19 @@ func (i *Item) String() string {
 func (i *Item) Property(key string) (interface{}, bool) {
 	switch key {
 	case "width":
-		return i.width.Value, true
+		return &i.width.Value, true
 	case "height":
-		return i.height.Value, true
+		return &i.height.Value, true
 	case "stuff":
-		return i.stuff.Value, true
+		return &i.stuff.Value, true
 	case "anchors":
 		return &i.anchors, true
 	case "x":
-		return i.x.Value, true
+		return &i.x.Value, true
 	case "y":
-		return i.y.Value, true
+		return &i.y.Value, true
 	case "z":
-		return i.z.Value, true
+		return &i.z.Value, true
 	default:
 		return i.Root.Property(key)
 	}

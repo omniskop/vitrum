@@ -72,7 +72,7 @@ func (m *Manager) SetSource(filePath string) error {
 
 // Run instantiates the primary component and reports any errors in doing so
 func (m *Manager) Run() error {
-	var documents = make(map[string]vit.AbstractComponent)
+	var documents = vit.NewComponentContainer()
 	var main VitDocument
 	for _, cFile := range m.knownComponents {
 		// TODO: maybe change ParseFile to operate on a componentFile?
@@ -80,13 +80,15 @@ func (m *Manager) Run() error {
 		if err != nil {
 			return err
 		}
-		documents[cFile.name] = &DocumentInstantiator{*doc}
+		documents.Set(cFile.name, &DocumentInstantiator{*doc})
 		if cFile.name == m.mainComponentName {
 			main = *doc
 		}
 	}
 
-	components, err := interpret(main, vit.NewComponentContainer(documents))
+	documents = documents.ToGlobal()
+
+	components, err := interpret(main, documents)
 	if err != nil {
 		return err
 	}

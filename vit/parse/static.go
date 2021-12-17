@@ -8,8 +8,8 @@ import (
 )
 
 // evaluates all static expressions in all documents
-func evaluateStaticExpressions(documents map[string]vit.AbstractComponent) {
-	for componentName, abstract := range documents {
+func evaluateStaticExpressions(documents vit.ComponentContainer) {
+	for componentName, abstract := range documents.Global {
 		docInst, ok := abstract.(*DocumentInstantiator)
 		if !ok {
 			continue
@@ -21,7 +21,7 @@ func evaluateStaticExpressions(documents map[string]vit.AbstractComponent) {
 				if !prop.static || prop.staticValue != nil {
 					continue
 				}
-				val, err := script.RunContained(prop.expression, staticVariableResolver{vit.NewComponentContainer(documents), doc.components[i]})
+				val, err := script.RunContained(prop.expression, staticVariableResolver{documents, doc.components[i]})
 				if err != nil {
 					fmt.Println("1>", err)
 					continue
@@ -29,7 +29,7 @@ func evaluateStaticExpressions(documents map[string]vit.AbstractComponent) {
 				prop.staticValue = val
 			}
 		}
-		documents[componentName] = &DocumentInstantiator{doc}
+		documents.Global[componentName] = &DocumentInstantiator{doc}
 	}
 }
 

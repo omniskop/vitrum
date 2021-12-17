@@ -46,41 +46,41 @@ type AbstractComponent interface {
 
 // ComponentContainer holds a list of abstract components
 type ComponentContainer struct {
-	parent     *ComponentContainer
-	components map[string]AbstractComponent
+	Global map[string]AbstractComponent // globally defined componets
+	Local  map[string]AbstractComponent // components specific to the current document
 }
 
-func NewEmptyComponentContainer() ComponentContainer {
+func NewComponentContainer() ComponentContainer {
 	return ComponentContainer{
-		components: make(map[string]AbstractComponent),
+		Global: make(map[string]AbstractComponent),
+		Local:  make(map[string]AbstractComponent),
 	}
 }
 
-func NewComponentContainer(components map[string]AbstractComponent) ComponentContainer {
+// Returns a new ComponentContainer carrying over the global components from this one.
+func (c ComponentContainer) JustGlobal() ComponentContainer {
 	return ComponentContainer{
-		components: components,
+		Global: c.Global,
+		Local:  make(map[string]AbstractComponent),
 	}
 }
 
-func WrapComponentContainer(parent *ComponentContainer) ComponentContainer {
+// Returns a new ComponentContainer using this local components as global ones.
+func (c ComponentContainer) ToGlobal() ComponentContainer {
 	return ComponentContainer{
-		parent:     parent,
-		components: make(map[string]AbstractComponent),
+		Global: c.Local,
+		Local:  make(map[string]AbstractComponent),
 	}
 }
 
 func (c ComponentContainer) Set(name string, comp AbstractComponent) {
-	c.components[name] = comp
+	c.Local[name] = comp
 }
 
-func (c ComponentContainer) Get(names ...string) (AbstractComponent, bool) {
-	src, ok := c.components[names[0]]
+func (c ComponentContainer) Get(names string) (AbstractComponent, bool) {
+	src, ok := c.Local[names]
 	if !ok {
-		if c.parent != nil {
-			return c.parent.Get(names...)
-		} else {
-			return nil, false
-		}
+		src, ok = c.Global[names]
 	}
 	return src, ok
 }

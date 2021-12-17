@@ -25,10 +25,7 @@ func (i *DocumentInstantiator) Instantiate(id string, components vit.ComponentCo
 // It implements the script.VariableResolver interface.
 func (i *DocumentInstantiator) ResolveVariable(name string) (interface{}, bool) {
 	for _, prop := range i.doc.components[0].properties {
-		if !prop.static {
-			continue
-		}
-		if len(prop.identifier) == 1 && prop.identifier[0] == name {
+		if prop.static && len(prop.identifier) == 1 && prop.identifier[0] == name {
 			return prop.staticValue, true
 		}
 	}

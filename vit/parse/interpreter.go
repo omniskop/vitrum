@@ -87,8 +87,6 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 // interpret takes the parsed document and creates the appropriate component tree.
 // The returned error will always be of type ParseError
 func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.Component, error) {
-	allComponents := vit.WrapComponentContainer(&components)
-
 	for _, imp := range document.imports {
 		if len(imp.file) != 0 {
 			// file import
@@ -100,7 +98,7 @@ func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.C
 				return nil, ParseError{imp.position, err}
 			}
 			for _, name := range lib.ComponentNames() {
-				allComponents.Set(name, &LibraryInstantiator{lib, name})
+				components.Set(name, &LibraryInstantiator{lib, name})
 			}
 		} else {
 			return nil, genericErrorf(imp.position, "incomplete namespace")
@@ -109,7 +107,7 @@ func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.C
 
 	var instances []vit.Component
 	for _, comp := range document.components {
-		instance, err := instantiateComponent(comp, allComponents)
+		instance, err := instantiateComponent(comp, components)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +123,7 @@ func instantiateComponent(def *componentDefinition, components vit.ComponentCont
 	if !ok {
 		return nil, unknownComponentError{def.name}
 	}
-	instance, err := src.Instantiate(def.id, components)
+	instance, err := src.Instantiate(def.id, components.JustGlobal())
 	if err != nil {
 		return nil, componentError{src, err}
 	}
