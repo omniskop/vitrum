@@ -304,11 +304,11 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 
 	switch actual := variable.(type) {
 	case Component: // reference to an existing component instance
-		return script.VariableBridge{Source: c.SubContext(actual)}, true
+		return c.SubContext(actual), true
 	case AbstractComponent: // static component values
-		return script.VariableBridge{Source: &variableConverter{actual}}, true
+		return &variableConverter{actual}, true
 	case Enumeration:
-		return script.VariableBridge{Source: &variableConverter{actual}}, true
+		return &variableConverter{actual}, true
 	case Value:
 		(*c.readValues)[actual] = true // mark as read
 		return actual.GetValue(), true
@@ -347,9 +347,9 @@ func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
 
 	switch actual := variable.(type) {
 	case AbstractComponent: // static component values
-		return script.VariableBridge{Source: &variableConverter{actual}}, true
+		return &variableConverter{actual}, true
 	case Enumeration:
-		return script.VariableBridge{Source: &variableConverter{actual}}, true
+		return &variableConverter{actual}, true
 	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, bool, string:
 		return actual, true
 	default:
