@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/omniskop/vitrum/vit"
 )
 
@@ -197,7 +197,7 @@ Item {
 }
 `
 
-var validDocument = &VitDocument{
+var validDocumentold = &VitDocument{
 	imports: []importStatement{
 		{namespace: []string{"One"}, version: "1.23"},
 		{namespace: []string{"Two", "Three"}, version: "4.56"},
@@ -224,6 +224,74 @@ var validDocument = &VitDocument{
 	},
 }
 
+var validDocument = &VitDocument{
+	imports: []importStatement{
+		{namespace: []string{"One"}, version: "1.23", position: vit.PositionRange{FilePath: "test", StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
+		{namespace: []string{"Two", "Three"}, version: "4.56", position: vit.PositionRange{FilePath: "test", StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
+	},
+	components: []*componentDefinition{
+		{
+			position: vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
+			name:     "Item",
+			id:       "rect",
+			properties: []property{
+				{
+					position:    vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
+					identifier:  []string{"anchors", "left"},
+					expression:  "parent.left + 10",
+					component:   (*componentDefinition)(nil),
+					readOnly:    false,
+					static:      false,
+					staticValue: interface{}(nil),
+				},
+				{
+					position:   vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 14, EndColumn: 34},
+					identifier: []string{"affe"},
+					component: &componentDefinition{
+						position: vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
+						name:     "Item",
+						id:       "",
+						properties: []property{
+							{
+								position:   vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
+								identifier: []string{"one"},
+								vitType:    "", expression: "1", component: (*componentDefinition)(nil),
+								readOnly:    false,
+								static:      false,
+								staticValue: interface{}(nil),
+							},
+						},
+						children:     []*componentDefinition(nil),
+						enumerations: []vit.Enumeration(nil),
+					},
+					readOnly:    false,
+					static:      false,
+					staticValue: interface{}(nil),
+				},
+				{
+					position:    vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 26},
+					identifier:  []string{"local"},
+					vitType:     "bool",
+					expression:  "true",
+					component:   (*componentDefinition)(nil),
+					readOnly:    false,
+					static:      false,
+					staticValue: interface{}(nil),
+				},
+			},
+			children: []*componentDefinition{
+				{
+					name: "Label",
+					properties: []property{
+						{identifier: []string{"wrapMode"}, expression: "Text.WordWrap", position: vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31}},
+						{identifier: []string{"text"}, expression: `"What a wonderful world"`, position: vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38}},
+					},
+				},
+			},
+		},
+	},
+}
+
 func TestParse(t *testing.T) {
 	// we lex an example file in here but we only really care about parser and not the lexer
 	l := NewLexer(strings.NewReader(validFile), "test")
@@ -232,11 +300,12 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if reflect.DeepEqual(doc, validDocument) == false {
+	options := []cmp.Option{cmp.AllowUnexported(VitDocument{}, componentDefinition{}, property{}, importStatement{})}
+	if !cmp.Equal(validDocument, doc, options...) {
 		t.Log("Parsed document deviated from expected result:")
-		t.Log("Expected:")
-		t.Logf("%+v\r\n", validDocument)
-		t.Log("Got:")
-		t.Logf("%+v\r\n", doc)
+		t.Log("- expected")
+		t.Log("+ found")
+		t.Log(cmp.Diff(validDocument, doc, options...))
+		t.Fail()
 	}
 }
