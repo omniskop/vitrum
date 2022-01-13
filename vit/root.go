@@ -68,9 +68,6 @@ func (r *Root) DefineEnum(enum Enumeration) bool {
 }
 
 func (r *Root) Property(key string) (interface{}, bool) {
-	if key == "id" {
-		return r.id, true
-	}
 	v, ok := r.properties[key]
 	if ok {
 		return v.GetValue(), true
@@ -125,6 +122,7 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 	}
 
+	// for children we only check id's and not properties
 	for _, child := range r.children {
 		if child.ID() == key {
 			return child, true
@@ -134,9 +132,6 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 	}
 
-	if r.parent != nil {
-		return r.parent.ResolveVariable(key)
-	}
 	return nil, false
 }
 
@@ -177,4 +172,8 @@ func (r *Root) UpdateExpressions() (int, ErrorGroup) {
 
 func (r *Root) ID() string {
 	return r.id
+}
+
+func (r *Root) root() *Root {
+	return r
 }

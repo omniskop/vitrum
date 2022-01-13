@@ -381,15 +381,17 @@ func castFloat(val interface{}) (float64, bool) {
 
 type ExpressionError struct {
 	ComponentName string
+	ComponentID   string
 	PropertyName  string
 	Code          string
 	Position      *PositionRange
 	err           error
 }
 
-func newExpressionError(componentName string, propertyName string, expression Expression, err error) ExpressionError {
+func newExpressionError(componentName string, propertyName string, componentID string, expression Expression, err error) ExpressionError {
 	return ExpressionError{
 		ComponentName: componentName,
+		ComponentID:   componentID,
 		PropertyName:  propertyName,
 		Code:          expression.code,
 		Position:      expression.position,
@@ -398,10 +400,16 @@ func newExpressionError(componentName string, propertyName string, expression Ex
 }
 
 func (e ExpressionError) Error() string {
-	if e.Position != nil {
-		return fmt.Sprintf("%v: %s.%s: expression %q: %v", e.Position, e.ComponentName, e.PropertyName, e.Code, e.err)
+	var identifier string
+	if e.ComponentID == "" {
+		identifier = fmt.Sprintf("%s.%s", e.ComponentName, e.PropertyName)
+	} else {
+		identifier = fmt.Sprintf("%s(%s).%s", e.ComponentName, e.ComponentID, e.PropertyName)
 	}
-	return fmt.Sprintf("%s.%s: expression %q: %v", e.ComponentName, e.PropertyName, e.Code, e.err)
+	if e.Position != nil {
+		return fmt.Sprintf("%v: %s: expression %q: %v", e.Position, identifier, e.Code, e.err)
+	}
+	return fmt.Sprintf("%s: expression %q: %v", identifier, e.Code, e.err)
 }
 
 func (e ExpressionError) Is(target error) bool {

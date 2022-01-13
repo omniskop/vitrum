@@ -6,6 +6,7 @@ import (
 
 type Rectangle struct {
 	Item
+	id string
 
 	color *ColorValue
 }
@@ -13,6 +14,7 @@ type Rectangle struct {
 func NewRectangle(id string, scope ComponentContainer) *Rectangle {
 	return &Rectangle{
 		Item:  *NewItem(id, scope),
+		id:    id,
 		color: NewColorValue("", nil),
 	}
 }
@@ -87,7 +89,7 @@ func (r *Rectangle) UpdateExpressions() (int, ErrorGroup) {
 		sum++
 		err := r.color.Update(r)
 		if err != nil {
-			errs.Add(newExpressionError("Rectangle", "color", r.color.Expression, err))
+			errs.Add(newExpressionError("Rectangle", "color", r.id, r.color.Expression, err))
 		}
 	}
 
@@ -97,7 +99,7 @@ func (r *Rectangle) UpdateExpressions() (int, ErrorGroup) {
 			sum++
 			err := prop.Update(r)
 			if err != nil {
-				errs.Add(newExpressionError("Rectangle", name, *prop.GetExpression(), err))
+				errs.Add(newExpressionError("Rectangle", name, r.id, *prop.GetExpression(), err))
 			}
 		}
 	}

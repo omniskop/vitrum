@@ -13,8 +13,7 @@ var _ vit.AbstractComponent = (*DocumentInstantiator)(nil) // make sure that Doc
 
 // Instantiate this component with the given id. The componentContainer will be used to resolve components that are needed in the instantiation.
 func (i *DocumentInstantiator) Instantiate(id string, components vit.ComponentContainer) (vit.Component, error) {
-	// TODO: use id
-	comp, err := interpret(i.doc, components)
+	comp, err := interpret(i.doc, id, components)
 	if err != nil {
 		return nil, err
 	}

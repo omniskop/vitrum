@@ -109,6 +109,9 @@ func (b *VariableBridge) Get(key string) goja.Value {
 		// fmt.Printf("[VariableBridge] get %q: undefined\n", key)
 		// returning undefined here would be a better fit for JavaScript, but I think failing here will give better error messages
 		// return goja.Undefined()
+		if key == "id" {
+			panic(Exception(fmt.Sprintf("id can't be used in an expression")))
+		}
 		panic(Exception(fmt.Sprintf("undefined variable %q", key)))
 	}
 	switch actual := val.(type) {

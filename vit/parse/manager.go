@@ -88,7 +88,7 @@ func (m *Manager) Run() error {
 
 	documents = documents.ToGlobal()
 
-	components, err := interpret(main, documents)
+	components, err := interpret(main, "", documents)
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,8 @@ type Component interface {
 	ID() string                                                               // Returns the id of this component
 	String() string                                                           // Returns a short string representation of this component
 	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
+
+	root() *Root // returns the root of this component
 }
 
 type Enumeration struct {

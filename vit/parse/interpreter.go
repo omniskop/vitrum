@@ -86,7 +86,7 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 
 // interpret takes the parsed document and creates the appropriate component tree.
 // The returned error will always be of type ParseError
-func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.Component, error) {
+func interpret(document VitDocument, id string, components vit.ComponentContainer) ([]vit.Component, error) {
 	for _, imp := range document.imports {
 		if len(imp.file) != 0 {
 			// file import
@@ -107,7 +107,7 @@ func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.C
 
 	var instances []vit.Component
 	for _, comp := range document.components {
-		instance, err := instantiateComponent(comp, components)
+		instance, err := instantiateCustomComponent(comp, id, document.name, components)
 		if err != nil {
 			return nil, err
 		}
@@ -115,6 +115,17 @@ func interpret(document VitDocument, components vit.ComponentContainer) ([]vit.C
 	}
 
 	return instances, nil
+}
+
+func instantiateCustomComponent(def *componentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
+	comp, err := instantiateComponent(def, components)
+	if err != nil {
+		return nil, err
+	}
+
+	cst := vit.NewCustom(id, name, comp)
+
+	return cst, nil
 }
 
 // instantiateComponent creates a component described by a componentDefinition.
