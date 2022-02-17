@@ -23,10 +23,10 @@ func (r *Rectangle) String() string {
 	return fmt.Sprintf("Rectangle{%s}", r.id)
 }
 
-func (r *Rectangle) Property(key string) (interface{}, bool) {
+func (r *Rectangle) Property(key string) (Value, bool) {
 	switch key {
 	case "color":
-		return &r.color.Value, true
+		return r.color, true
 	// case "width":
 	// 	return r.width.Value, true
 	// case "stuff":
@@ -38,16 +38,7 @@ func (r *Rectangle) Property(key string) (interface{}, bool) {
 	}
 }
 
-func (r *Rectangle) InternalProperty(key string) (Value, bool) {
-	switch key {
-	case "color":
-		return r.color, true
-	default:
-		return r.Item.InternalProperty(key)
-	}
-}
-
-func (r *Rectangle) MustProperty(key string) interface{} {
+func (r *Rectangle) MustProperty(key string) Value {
 	v, ok := r.Property(key)
 	if !ok {
 		panic(fmt.Errorf("MustProperty called with unknown key %q", key))

@@ -172,9 +172,10 @@ func populateComponent(instance vit.Component, def *componentDefinition, compone
 			// assign property with qualifier
 			// TODO: make this universal
 			if prop.identifier[0] == "anchors" {
-				exp := vit.NewExpression(prop.expression, &prop.position)
-				a, _ := instance.Property("anchors")
-				a.(*vit.Anchors).SetProperty(prop.identifier[1], exp)
+				// TODO: fix this
+				// exp := vit.NewExpression(prop.expression, &prop.position)
+				// a, _ := instance.Property("anchors")
+				// a.GetValue().(*vit.Anchors).SetProperty(prop.identifier[1], exp)
 			}
 		}
 	}

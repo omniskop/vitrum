@@ -72,15 +72,7 @@ func (r *Root) DefineEnum(enum Enumeration) bool {
 	return true
 }
 
-func (r *Root) Property(key string) (interface{}, bool) {
-	v, ok := r.properties[key]
-	if ok {
-		return v.GetValue(), true
-	}
-	return nil, false
-}
-
-func (r *Root) InternalProperty(key string) (Value, bool) {
+func (r *Root) Property(key string) (Value, bool) {
 	v, ok := r.properties[key]
 	if ok {
 		return v, true
@@ -88,7 +80,7 @@ func (r *Root) InternalProperty(key string) (Value, bool) {
 	return nil, false
 }
 
-func (r *Root) MustProperty(key string) interface{} {
+func (r *Root) MustProperty(key string) Value {
 	v, ok := r.Property(key)
 	if !ok {
 		panic(fmt.Errorf("MustProperty called with unknown key %q", key))

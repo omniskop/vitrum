@@ -32,28 +32,7 @@ func (i *Item) String() string {
 	return fmt.Sprintf("Item{%s}", i.id)
 }
 
-func (i *Item) Property(key string) (interface{}, bool) {
-	switch key {
-	case "width":
-		return &i.width.Value, true
-	case "height":
-		return &i.height.Value, true
-	case "stuff":
-		return &i.stuff.Value, true
-	case "anchors":
-		return &i.anchors, true
-	case "x":
-		return &i.x.Value, true
-	case "y":
-		return &i.y.Value, true
-	case "z":
-		return &i.z.Value, true
-	default:
-		return i.Root.Property(key)
-	}
-}
-
-func (i *Item) InternalProperty(key string) (Value, bool) {
+func (i *Item) Property(key string) (Value, bool) {
 	switch key {
 	case "width":
 		return &i.width, true
@@ -61,8 +40,9 @@ func (i *Item) InternalProperty(key string) (Value, bool) {
 		return &i.height, true
 	case "stuff":
 		return &i.stuff, true
-	// case "anchors": // TODO: fix this
-	// return &i.anchors, true
+	// TODO: fix this
+	// case "anchors":
+	// 	return &i.anchors, true
 	case "x":
 		return &i.x, true
 	case "y":
@@ -70,11 +50,11 @@ func (i *Item) InternalProperty(key string) (Value, bool) {
 	case "z":
 		return &i.z, true
 	default:
-		return i.Root.InternalProperty(key)
+		return i.Root.Property(key)
 	}
 }
 
-func (i *Item) MustProperty(key string) interface{} {
+func (i *Item) MustProperty(key string) Value {
 	v, ok := i.Property(key)
 	if !ok {
 		panic(fmt.Errorf("MustProperty called with unknown key %q", key))

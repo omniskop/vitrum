@@ -10,9 +10,8 @@ import (
 type Component interface {
 	DefineProperty(name string, vitType string, expression string, position *PositionRange) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
-	Property(name string) (interface{}, bool)                                 // returns the value of the property with the given name, and a boolean indicating whether the property exists
-	InternalProperty(name string) (Value, bool)                               // returns the internal representation of the property with the given name, and a boolean indicating whether the property exists
-	MustProperty(name string) interface{}                                     // same as Property but panics if the property doesn't exist
+	Property(name string) (Value, bool)                                       // returns the property with the given name, and a boolean indicating whether the property exists
+	MustProperty(name string) Value                                           // same as Property but panics if the property doesn't exist
 	SetProperty(name string, value interface{}, position *PositionRange) bool // sets the property with the given name to the given value and returns a boolean indicating whether the property exists
 	ResolveVariable(name string) (interface{}, bool)                          // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
 	ResolveID(id string) (Component, bool)                                    // Recursively searches the children for a component with the given id. It does not check itself, only it's children!

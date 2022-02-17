@@ -188,7 +188,7 @@ func (v *AliasValue) Update(context Component) error {
 	}
 	// find property using the remaining parts
 	for _, part := range parts {
-		val, ok := currentComponent.InternalProperty(part)
+		val, ok := currentComponent.Property(part)
 		if !ok {
 			return fmt.Errorf("unable to resolve alias reference: %q", v.Expression)
 		}
