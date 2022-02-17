@@ -38,6 +38,15 @@ func (r *Rectangle) Property(key string) (interface{}, bool) {
 	}
 }
 
+func (r *Rectangle) InternalProperty(key string) (Value, bool) {
+	switch key {
+	case "color":
+		return r.color, true
+	default:
+		return r.Item.InternalProperty(key)
+	}
+}
+
 func (r *Rectangle) MustProperty(key string) interface{} {
 	v, ok := r.Property(key)
 	if !ok {
@@ -111,4 +120,24 @@ func (r *Rectangle) UpdateExpressions() (int, ErrorGroup) {
 
 func (r *Rectangle) ID() string {
 	return r.id
+}
+
+func (r *Rectangle) finish() error {
+	for _, props := range r.properties {
+		if alias, ok := props.(*AliasValue); ok {
+			err := alias.Update(r)
+			if err != nil {
+				return fmt.Errorf("alias error: %w", err)
+			}
+		}
+	}
+
+	for _, child := range r.children {
+		err := child.finish()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

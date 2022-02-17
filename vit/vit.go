@@ -8,9 +8,10 @@ import (
 
 // Component describes a generic vit component
 type Component interface {
-	DefineProperty(name string, vitType string, expression string, position *PositionRange) bool
+	DefineProperty(name string, vitType string, expression string, position *PositionRange) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
 	Property(name string) (interface{}, bool)                                 // returns the value of the property with the given name, and a boolean indicating whether the property exists
+	InternalProperty(name string) (Value, bool)                               // returns the internal representation of the property with the given name, and a boolean indicating whether the property exists
 	MustProperty(name string) interface{}                                     // same as Property but panics if the property doesn't exist
 	SetProperty(name string, value interface{}, position *PositionRange) bool // sets the property with the given name to the given value and returns a boolean indicating whether the property exists
 	ResolveVariable(name string) (interface{}, bool)                          // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
@@ -23,6 +24,11 @@ type Component interface {
 	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
 
 	root() *Root // returns the root of this component
+	finish() error
+}
+
+func FinishComponent(comp Component) error {
+	return comp.finish()
 }
 
 type Enumeration struct {
@@ -123,5 +129,32 @@ func (e ErrorGroup) Error() string {
 
 func (e ErrorGroup) Is(target error) bool {
 	_, ok := target.(ErrorGroup)
+	return ok
+}
+
+type RedeclarationError struct {
+	PropertyName       string
+	PreviousDefinition PositionRange
+}
+
+func (e RedeclarationError) Error() string {
+	return fmt.Sprintf("property %q is already declared. (Previous declaration at %s)", e.PropertyName, e.PreviousDefinition.String())
+}
+
+func (e RedeclarationError) Is(target error) bool {
+	_, ok := target.(RedeclarationError)
+	return ok
+}
+
+type UnknownTypeError struct {
+	TypeName string
+}
+
+func (e UnknownTypeError) Error() string {
+	return fmt.Sprintf("unknown type '%s'", e.TypeName)
+}
+
+func (e UnknownTypeError) Is(target error) bool {
+	_, ok := target.(UnknownTypeError)
 	return ok
 }

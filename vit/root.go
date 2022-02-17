@@ -25,7 +25,10 @@ func (r *Root) String() string {
 	return fmt.Sprintf("Root{%s}", r.id)
 }
 
-func (r *Root) DefineProperty(name string, vitType string, expression string, position *PositionRange) bool {
+// DefineProperty creates a new property on the component.
+// On failure it returns either a RedeclarationError or UnknownTypeError.
+// TODO: currently properties can be redefined. Make a decision on that behaviour and update the documentation accordingly (inclusing the Component interface).
+func (r *Root) DefineProperty(name string, vitType string, expression string, position *PositionRange) error {
 	switch vitType {
 	case "int":
 		if expression == "" {
@@ -45,6 +48,8 @@ func (r *Root) DefineProperty(name string, vitType string, expression string, po
 		} else {
 			r.properties[name] = NewStringValue(expression, position)
 		}
+	case "alias":
+		r.properties[name] = NewAliasValue(expression, position)
 	default:
 		if _, ok := r.enumerations[vitType]; ok {
 			if expression == "" {
@@ -52,11 +57,11 @@ func (r *Root) DefineProperty(name string, vitType string, expression string, po
 			} else {
 				r.properties[name] = NewIntValue(expression, position)
 			}
-			return true
+			return nil
 		}
-		return false
+		return UnknownTypeError{TypeName: vitType}
 	}
-	return true
+	return nil
 }
 
 func (r *Root) DefineEnum(enum Enumeration) bool {
@@ -71,6 +76,14 @@ func (r *Root) Property(key string) (interface{}, bool) {
 	v, ok := r.properties[key]
 	if ok {
 		return v.GetValue(), true
+	}
+	return nil, false
+}
+
+func (r *Root) InternalProperty(key string) (Value, bool) {
+	v, ok := r.properties[key]
+	if ok {
+		return v, true
 	}
 	return nil, false
 }
@@ -176,4 +189,26 @@ func (r *Root) ID() string {
 
 func (r *Root) root() *Root {
 	return r
+}
+
+// finish put's the final touches on an instantiated component.
+// It is quaranteed that all other surrounding components are instantiated just not necessarily finished.
+// This needs to be reimplemented by each component.
+func (r *Root) finish() error {
+	for _, props := range r.properties {
+		if alias, ok := props.(*AliasValue); ok {
+			err := alias.Update(r)
+			if err != nil {
+				return fmt.Errorf("alias error: %w", err)
+			}
+		}
+	}
+
+	for _, child := range r.children {
+		err := child.finish()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

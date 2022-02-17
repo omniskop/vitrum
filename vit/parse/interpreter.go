@@ -117,6 +117,7 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 	return instances, nil
 }
 
+// instantiateCustomComponent creates a component described by a componentDefinition and wraps it in a Custom component with the given id.
 func instantiateCustomComponent(def *componentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
 	comp, err := instantiateComponent(def, components)
 	if err != nil {
@@ -158,8 +159,8 @@ func populateComponent(instance vit.Component, def *componentDefinition, compone
 	for _, prop := range def.properties {
 		if prop.vitType != "" {
 			// this defines a new property
-			if ok := instance.DefineProperty(prop.identifier[0], prop.vitType, prop.expression, &prop.position); !ok {
-				return genericErrorf(prop.position, "property %q is already defined", prop.identifier[0])
+			if err := instance.DefineProperty(prop.identifier[0], prop.vitType, prop.expression, &prop.position); err != nil {
+				return genericError{err: err, position: prop.position}
 			}
 			// instance.SetProperty(prop.identifier[0], prop.expression)
 		} else if len(prop.identifier) == 1 {
@@ -169,6 +170,7 @@ func populateComponent(instance vit.Component, def *componentDefinition, compone
 			}
 		} else {
 			// assign property with qualifier
+			// TODO: make this universal
 			if prop.identifier[0] == "anchors" {
 				exp := vit.NewExpression(prop.expression, &prop.position)
 				a, _ := instance.Property("anchors")

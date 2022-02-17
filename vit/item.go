@@ -53,6 +53,27 @@ func (i *Item) Property(key string) (interface{}, bool) {
 	}
 }
 
+func (i *Item) InternalProperty(key string) (Value, bool) {
+	switch key {
+	case "width":
+		return &i.width, true
+	case "height":
+		return &i.height, true
+	case "stuff":
+		return &i.stuff, true
+	// case "anchors": // TODO: fix this
+	// return &i.anchors, true
+	case "x":
+		return &i.x, true
+	case "y":
+		return &i.y, true
+	case "z":
+		return &i.z, true
+	default:
+		return i.Root.InternalProperty(key)
+	}
+}
+
 func (i *Item) MustProperty(key string) interface{} {
 	v, ok := i.Property(key)
 	if !ok {
@@ -183,4 +204,23 @@ func (i *Item) Anchors() Anchors {
 
 func (i *Item) SetAnchors() Anchors {
 	return i.anchors
+}
+
+func (i *Item) finish() error {
+	for _, props := range i.properties {
+		if alias, ok := props.(*AliasValue); ok {
+			err := alias.Update(i)
+			if err != nil {
+				return fmt.Errorf("alias error: %w", err)
+			}
+		}
+	}
+
+	for _, child := range i.children {
+		err := child.finish()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

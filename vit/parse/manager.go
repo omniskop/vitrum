@@ -95,6 +95,10 @@ func (m *Manager) Run() error {
 
 	m.mainComponent = components[0]
 
+	err = vit.FinishComponent(m.mainComponent)
+	if err != nil {
+		return err
+	}
 	evaluateStaticExpressions(documents)
 
 evaluateExpressions:
