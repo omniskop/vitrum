@@ -255,12 +255,20 @@ func (v *AliasValue) GetExpression() *Expression {
 	return NewExpression(v.Expression, v.Position)
 }
 
-func (v *AliasValue) AddDependent(exp *Expression) {}
+func (v *AliasValue) AddDependent(exp *Expression) {
+	if v.other == nil {
+		v.other.AddDependent(exp)
+	}
+}
 
-func (v *AliasValue) RemoveDependent(exp *Expression) {}
+func (v *AliasValue) RemoveDependent(exp *Expression) {
+	if v.other == nil {
+		v.other.RemoveDependent(exp)
+	}
+}
 
 func (v *AliasValue) ShouldEvaluate() bool {
-	return v.other == nil
+	return v.other == nil || v.other.ShouldEvaluate()
 }
 
 func (v *AliasValue) Err() error {

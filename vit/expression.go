@@ -69,7 +69,7 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	// NOTE: Currently we don't update other expression that depend on out value.
+	// NOTE: Currently we don't update other expression that depend on our value.
 	// This is due to the fact that this should already have happened when this expression was marked as dirty.
 	// In the future this might turn out to not be sufficient and if dependents will be marked as dirty in here in the future we should
 	// consider removing that part of the code in MakeDirty.
