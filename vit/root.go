@@ -156,6 +156,12 @@ func (r *Root) AddChild(child Component) {
 	r.children = append(r.children, child)
 }
 
+// AddChildButKeepParent adds the given component as a child but doesn't change the child's parent.
+// SHOULD ONLY BE CALLED FROM OTHER COMPONENTS THAT EMBED THIS ROOT.
+func (r *Root) AddChildButKeepParent(child Component) {
+	r.children = append(r.children, child)
+}
+
 func (r *Root) SetParent(parent Component) {
 	r.parent = parent
 }
@@ -175,21 +181,60 @@ func (r *Root) UpdateExpressions() (int, ErrorGroup) {
 	return sum, errors
 }
 
+// UpdatePropertiesInContext updates all properties with the given component as a context.
+// SHOULD ONLY BE CALLED FROM OTHER COMPONENTS THAT EMBED THIS ROOT.
+func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
+	var sum int
+	var errs ErrorGroup
+	for name, prop := range r.properties {
+		if prop.ShouldEvaluate() {
+			sum++
+			err := prop.Update(context)
+			if err != nil {
+				errs.Add(NewExpressionError("Rectangle", name, r.id, *prop.GetExpression(), err))
+			}
+		}
+	}
+	return sum, errs
+}
+
 func (r *Root) ID() string {
 	return r.id
 }
 
-func (r *Root) root() *Root {
+func (r *Root) RootC() *Root {
 	return r
 }
 
 // finish put's the final touches on an instantiated component.
-// It is quaranteed that all other surrounding components are instantiated just not necessarily finished.
+// It is guaranteed that all other surrounding components are instantiated just not necessarily finished.
 // This needs to be reimplemented by each component.
 func (r *Root) finish() error {
 	for _, props := range r.properties {
 		if alias, ok := props.(*AliasValue); ok {
 			err := alias.Update(r)
+			if err != nil {
+				return fmt.Errorf("alias error: %w", err)
+			}
+		}
+	}
+
+	for _, child := range r.children {
+		err := child.finish()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// FinishInContext put's the final touches on an instantiated component.
+// It is guaranteed that all other surrounding components are instantiated just not necessarily finished.
+// SHOULD ONLY BE CALLED FROM OTHER COMPONENTS THAT EMBED THIS ROOT.
+func (r *Root) FinishInContext(context Component) error {
+	for _, props := range r.properties {
+		if alias, ok := props.(*AliasValue); ok {
+			err := alias.Update(context)
 			if err != nil {
 				return fmt.Errorf("alias error: %w", err)
 			}

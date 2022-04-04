@@ -23,13 +23,13 @@ func (i *DocumentInstantiator) Instantiate(id string, components vit.ComponentCo
 // ResolveVariable tries to find static attributes of the document's component.
 // It implements the script.VariableResolver interface.
 func (i *DocumentInstantiator) ResolveVariable(name string) (interface{}, bool) {
-	for _, prop := range i.doc.components[0].properties {
-		if prop.static && len(prop.identifier) == 1 && prop.identifier[0] == name {
+	for _, prop := range i.doc.Components[0].Properties {
+		if prop.Static && len(prop.Identifier) == 1 && prop.Identifier[0] == name {
 			return prop.staticValue, true
 		}
 	}
 
-	for _, enum := range i.doc.components[0].enumerations {
+	for _, enum := range i.doc.Components[0].Enumerations {
 		if enum.Embedded {
 			// If this enum is embedded we immediately search if it contains this variable. If it doesn't that's not an issue
 			v, ok := enum.ResolveVariable(name)
@@ -45,7 +45,7 @@ func (i *DocumentInstantiator) ResolveVariable(name string) (interface{}, bool) 
 }
 
 func (i *DocumentInstantiator) Name() string {
-	return i.doc.name
+	return i.doc.Name
 }
 
 // LibraryInstantiator implements the vit.AbstractComponent interface for a specific component defined in a vit library.

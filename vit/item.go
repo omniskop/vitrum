@@ -120,42 +120,42 @@ func (i *Item) UpdateExpressions() (int, ErrorGroup) {
 		sum++
 		err := i.width.Update(i)
 		if err != nil {
-			errs.Add(newExpressionError("Item", "width", i.id, i.width.Expression, err))
+			errs.Add(NewExpressionError("Item", "width", i.id, i.width.Expression, err))
 		}
 	}
 	if i.height.ShouldEvaluate() {
 		sum++
 		err := i.height.Update(i)
 		if err != nil {
-			errs.Add(newExpressionError("Item", "height", i.id, i.height.Expression, err))
+			errs.Add(NewExpressionError("Item", "height", i.id, i.height.Expression, err))
 		}
 	}
 	if i.stuff.ShouldEvaluate() {
 		sum++
 		err := i.stuff.Update(i)
 		if err != nil {
-			errs.Add(newExpressionError("Item", "stuff", i.id, i.stuff.Expression, err))
+			errs.Add(NewExpressionError("Item", "stuff", i.id, i.stuff.Expression, err))
 		}
 	}
 	if i.x.ShouldEvaluate() {
 		sum++
 		err := i.x.Update(i)
 		if err != nil {
-			errs.Add(newExpressionError("Item", "x", i.id, i.x.Expression, err))
+			errs.Add(NewExpressionError("Item", "x", i.id, i.x.Expression, err))
 		}
 	}
 	if i.y.ShouldEvaluate() {
 		sum++
 		err := i.y.Update(i)
 		if err != nil {
-			errs.Add(newExpressionError("Item", "y", i.id, i.y.Expression, err))
+			errs.Add(NewExpressionError("Item", "y", i.id, i.y.Expression, err))
 		}
 	}
 	if i.z.ShouldEvaluate() {
 		sum++
 		err := i.z.Update(i)
 		if err != nil {
-			errs.Add(newExpressionError("Item", "z", i.id, i.z.Expression, err))
+			errs.Add(NewExpressionError("Item", "z", i.id, i.z.Expression, err))
 		}
 	}
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
@@ -164,7 +164,7 @@ func (i *Item) UpdateExpressions() (int, ErrorGroup) {
 			sum++
 			err := prop.Update(i)
 			if err != nil {
-				errs.Add(newExpressionError("Item", name, i.id, *prop.GetExpression(), err))
+				errs.Add(NewExpressionError("Item", name, i.id, *prop.GetExpression(), err))
 			}
 		}
 	}

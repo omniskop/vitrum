@@ -15,13 +15,13 @@ func evaluateStaticExpressions(documents vit.ComponentContainer) {
 			continue
 		}
 		doc := docInst.doc
-		for i := 0; i < len(doc.components); i++ {
-			for c := 0; c < len(doc.components[i].properties); c++ {
-				prop := &doc.components[i].properties[c]
-				if !prop.static || prop.staticValue != nil {
+		for i := 0; i < len(doc.Components); i++ {
+			for c := 0; c < len(doc.Components[i].Properties); c++ {
+				prop := &doc.Components[i].Properties[c]
+				if !prop.Static || prop.staticValue != nil {
 					continue
 				}
-				val, err := script.RunContained(prop.expression, staticVariableResolver{documents, doc.components[i]})
+				val, err := script.RunContained(prop.Expression, staticVariableResolver{documents, doc.Components[i]})
 				if err != nil {
 					fmt.Println("1>", err)
 					continue
@@ -35,7 +35,7 @@ func evaluateStaticExpressions(documents vit.ComponentContainer) {
 
 type staticVariableResolver struct {
 	documents vit.ComponentContainer
-	component *componentDefinition
+	component *ComponentDefinition
 }
 
 func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool) {
@@ -43,12 +43,12 @@ func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool)
 		return comp, true
 	}
 
-	for _, prop := range r.component.properties {
-		if prop.static && len(prop.identifier) == 1 && prop.identifier[0] == name {
+	for _, prop := range r.component.Properties {
+		if prop.Static && len(prop.Identifier) == 1 && prop.Identifier[0] == name {
 			if prop.staticValue != nil {
 				return prop.staticValue, true
 			}
-			val, err := script.RunContained(prop.expression, r)
+			val, err := script.RunContained(prop.Expression, r)
 			if err != nil {
 				fmt.Println("2>", err)
 				return nil, false
@@ -58,7 +58,7 @@ func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool)
 		}
 	}
 
-	for _, enum := range r.component.enumerations {
+	for _, enum := range r.component.Enumerations {
 		if enum.Name == name {
 			// enum fullfills the script.VariableSource interface and can be returned
 			return enum, true

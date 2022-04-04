@@ -1,5 +1,10 @@
 vitrum
 vitrum.exe
+gencmd
+gencmd.exe
+
+# generated files
+*_gen.go
 
 # visual studio code
 .vscode

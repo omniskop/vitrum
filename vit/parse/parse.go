@@ -110,7 +110,7 @@ func Parse(tokens *tokenBuffer) (file *VitDocument, err error) {
 
 	file = new(VitDocument)
 
-	file.imports, err = parseImports(tokens)
+	file.Imports, err = parseImports(tokens)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +127,8 @@ scanComponents:
 		case unitTypeEOF:
 			break scanComponents
 		case unitTypeComponent:
-			component := parsedUnit.value.(*componentDefinition)
-			file.components = append(file.components, component)
+			component := parsedUnit.value.(*ComponentDefinition)
+			file.Components = append(file.Components, component)
 		default:
 			return nil, parseErrorf(parsedUnit.position, "unexpected %v in global scope", parsedUnit.kind)
 		}
@@ -263,17 +263,17 @@ scanLineIdentifier:
 				return nilUnit(), err
 			}
 			component, err := parseComponent(t.literal, tokens)
-			return propertyUnit(component.position, property{
+			return propertyUnit(component.position, Property{
 				position:   vit.NewRangeFromStartToEnd(startingPosition, t.position.End()),
-				identifier: literalsToStrings(lineIdentifier),
-				component:  component,
+				Identifier: literalsToStrings(lineIdentifier),
+				Component:  component,
 			}), err
 		case tokenExpression:
 			// value of the property is set by an expression
-			return propertyUnit(t.position, property{
+			return propertyUnit(t.position, Property{
 				position:   vit.NewRangeFromStartToEnd(startingPosition, t.position.End()),
-				identifier: literalsToStrings(lineIdentifier),
-				expression: t.literal,
+				Identifier: literalsToStrings(lineIdentifier),
+				Expression: t.literal,
 			}), nil
 		default:
 			return nilUnit(), unexpectedToken(t, tokenIdentifier, tokenExpression)
@@ -287,9 +287,9 @@ scanLineIdentifier:
 
 // parseComponent parses the content of a component and returns a component definition.
 // It takes the name of the component as parameter.
-func parseComponent(identifier string, tokens *tokenBuffer) (*componentDefinition, error) {
-	c := &componentDefinition{
-		name: identifier,
+func parseComponent(identifier string, tokens *tokenBuffer) (*ComponentDefinition, error) {
+	c := &ComponentDefinition{
+		BaseName: identifier,
 	}
 
 	// read units and store them correspondingly until we reach the end of the component
@@ -302,29 +302,29 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*componentDefinitio
 		case unitTypeComponentEnd: // the component has ended
 			return c, nil
 		case unitTypeProperty: // property declaration/definition
-			prop := parsedUnit.value.(property)
+			prop := parsedUnit.value.(Property)
 			// check if this property has the identifier "id" and handle it specially
-			if len(prop.identifier) == 1 && prop.identifier[0] == "id" {
+			if len(prop.Identifier) == 1 && prop.Identifier[0] == "id" {
 				// TODO: validate that the expression is a valid id. Calculations are not allowed
-				c.id = prop.expression
+				c.ID = prop.Expression
 			} else {
 				// check if the property has already been defined before
-				if c.identifierIsKnown(prop.identifier) {
+				if c.identifierIsKnown(prop.Identifier) {
 					// TODO: theoretically we could get and show the position of the previous declaration here
-					return c, parseErrorf(prop.position, "identifier %v is already defined", prop.identifier)
+					return c, parseErrorf(prop.position, "identifier %v is already defined", prop.Identifier)
 				}
 				// save it in the component
-				c.properties = append(c.properties, prop)
+				c.Properties = append(c.Properties, prop)
 			}
 		case unitTypeEnum: // an enumeration
 			enum := parsedUnit.value.(vit.Enumeration)
 			if c.identifierIsKnown([]string{enum.Name}) {
 				return c, parseErrorf(parsedUnit.position, "identifier %q is already defined", enum.Name)
 			}
-			c.enumerations = append(c.enumerations, enum)
+			c.Enumerations = append(c.Enumerations, enum)
 		case unitTypeComponent: // child component
-			child := parsedUnit.value.(*componentDefinition)
-			c.children = append(c.children, child)
+			child := parsedUnit.value.(*ComponentDefinition)
+			c.Children = append(c.Children, child)
 		default:
 			return c, parseErrorf(parsedUnit.position, "unexpected %v while parsing unit", parsedUnit.kind)
 		}
@@ -375,24 +375,24 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 }
 
 // parseProperty parses a property declaration/definition with the given modifiers
-func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit.Position) (property, error) {
+func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit.Position) (Property, error) {
 	// read the type of the property
 	typeToken, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
-		return property{}, err
+		return Property{}, err
 	}
 
 	// property name
 	identifier, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
-		return property{}, err
+		return Property{}, err
 	}
 
-	prop := property{
-		identifier: []string{identifier.literal},
-		vitType:    typeToken.literal,
-		readOnly:   stringSliceContains(modifiers, "readonly"),
-		static:     stringSliceContains(modifiers, "static"),
+	prop := Property{
+		Identifier: []string{identifier.literal},
+		VitType:    typeToken.literal,
+		ReadOnly:   stringSliceContains(modifiers, "readonly"),
+		Static:     stringSliceContains(modifiers, "static"),
 		position:   vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()),
 	}
 
@@ -402,21 +402,21 @@ func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit
 	case tokenNewline:
 		return prop, nil // property is finished with no value
 	default:
-		return property{}, unexpectedToken(tokens.next(), tokenColon, tokenNewline)
+		return Property{}, unexpectedToken(tokens.next(), tokenColon, tokenNewline)
 	}
 
 	// read the value (expression that will determine the value)
 	expression, err := expectToken(tokens.next, tokenExpression)
 	if err != nil {
-		return property{}, err
+		return Property{}, err
 	}
-	prop.expression = expression.literal
+	prop.Expression = expression.literal
 	prop.position.SetEnd(expression.position.End())
 
 	// remove any newlines or semicolons
 	_, err = expectToken(tokens.next, tokenNewline, tokenSemicolon)
 	if err != nil {
-		return property{}, err
+		return Property{}, err
 	}
 
 	return prop, nil

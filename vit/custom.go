@@ -10,7 +10,7 @@ type custom struct {
 func NewCustom(id string, name string, parent Component) *custom {
 	return &custom{
 		Component:     parent,
-		RootComponent: parent.root(),
+		RootComponent: parent.RootC(),
 		id:            id,
 		name:          name,
 	}
@@ -38,7 +38,7 @@ func (c *custom) UpdateExpressions() (int, ErrorGroup) {
 			sum++
 			err := prop.Update(c)
 			if err != nil {
-				errs.Add(newExpressionError(c.name, name, c.id, *prop.GetExpression(), err))
+				errs.Add(NewExpressionError(c.name, name, c.id, *prop.GetExpression(), err))
 			}
 		}
 	}

@@ -259,7 +259,7 @@ type ExpressionError struct {
 	err           error
 }
 
-func newExpressionError(componentName string, propertyName string, componentID string, expression Expression, err error) ExpressionError {
+func NewExpressionError(componentName string, propertyName string, componentID string, expression Expression, err error) ExpressionError {
 	return ExpressionError{
 		ComponentName: componentName,
 		ComponentID:   componentID,

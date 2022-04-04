@@ -6,6 +6,8 @@ import (
 	"github.com/omniskop/vitrum/vit/script"
 )
 
+//go:generate go run github.com/omniskop/vitrum/vit/generator/gencmd -i sources/Rectangle.vit -o rectangle_gen.go -p github.com/omniskop/vitrum/vit
+
 // Component describes a generic vit component
 type Component interface {
 	DefineProperty(name string, vitType string, expression string, position *PositionRange) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
@@ -22,7 +24,7 @@ type Component interface {
 	String() string                                                           // Returns a short string representation of this component
 	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
 
-	root() *Root // returns the root of this component
+	RootC() *Root // returns the root of this component
 	finish() error
 }
 

@@ -79,7 +79,7 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 	if err != nil {
 		return nil, err
 	}
-	doc.name = componentName
+	doc.Name = componentName
 
 	return doc, nil
 }
@@ -87,7 +87,7 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 // interpret takes the parsed document and creates the appropriate component tree.
 // The returned error will always be of type ParseError
 func interpret(document VitDocument, id string, components vit.ComponentContainer) ([]vit.Component, error) {
-	for _, imp := range document.imports {
+	for _, imp := range document.Imports {
 		if len(imp.file) != 0 {
 			// file import
 			return nil, genericErrorf(imp.position, "not yet implemented")
@@ -106,8 +106,8 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 	}
 
 	var instances []vit.Component
-	for _, comp := range document.components {
-		instance, err := instantiateCustomComponent(comp, id, document.name, components)
+	for _, comp := range document.Components {
+		instance, err := instantiateCustomComponent(comp, id, document.Name, components)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 }
 
 // instantiateCustomComponent creates a component described by a componentDefinition and wraps it in a Custom component with the given id.
-func instantiateCustomComponent(def *componentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
+func instantiateCustomComponent(def *ComponentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
 	comp, err := instantiateComponent(def, components)
 	if err != nil {
 		return nil, err
@@ -130,12 +130,12 @@ func instantiateCustomComponent(def *componentDefinition, id string, name string
 }
 
 // instantiateComponent creates a component described by a componentDefinition.
-func instantiateComponent(def *componentDefinition, components vit.ComponentContainer) (vit.Component, error) {
-	src, ok := components.Get(def.name)
+func instantiateComponent(def *ComponentDefinition, components vit.ComponentContainer) (vit.Component, error) {
+	src, ok := components.Get(def.BaseName)
 	if !ok {
-		return nil, unknownComponentError{def.name}
+		return nil, unknownComponentError{def.BaseName}
 	}
-	instance, err := src.Instantiate(def.id, components.JustGlobal())
+	instance, err := src.Instantiate(def.ID, components.JustGlobal())
 	if err != nil {
 		return nil, componentError{src, err}
 	}
@@ -149,29 +149,29 @@ func instantiateComponent(def *componentDefinition, components vit.ComponentCont
 }
 
 // populateComponent takes a fresh component instance as well as it's definition and populates all attributes and children with their correct values.
-func populateComponent(instance vit.Component, def *componentDefinition, components vit.ComponentContainer) error {
-	for _, enum := range def.enumerations {
+func populateComponent(instance vit.Component, def *ComponentDefinition, components vit.ComponentContainer) error {
+	for _, enum := range def.Enumerations {
 		if !instance.DefineEnum(enum) {
 			return genericErrorf(enum.Position, "enum %q already defined", enum.Name)
 		}
 	}
 
-	for _, prop := range def.properties {
-		if prop.vitType != "" {
+	for _, prop := range def.Properties {
+		if prop.VitType != "" {
 			// this defines a new property
-			if err := instance.DefineProperty(prop.identifier[0], prop.vitType, prop.expression, &prop.position); err != nil {
+			if err := instance.DefineProperty(prop.Identifier[0], prop.VitType, prop.Expression, &prop.position); err != nil {
 				return genericError{err: err, position: prop.position}
 			}
 			// instance.SetProperty(prop.identifier[0], prop.expression)
-		} else if len(prop.identifier) == 1 {
+		} else if len(prop.Identifier) == 1 {
 			// simple property assignment
-			if ok := instance.SetProperty(prop.identifier[0], prop.expression, &prop.position); !ok {
-				return genericErrorf(prop.position, "unknown property %q of component %q", prop.identifier[0], def.name)
+			if ok := instance.SetProperty(prop.Identifier[0], prop.Expression, &prop.position); !ok {
+				return genericErrorf(prop.position, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
 			}
 		} else {
 			// assign property with qualifier
 			// TODO: make this universal
-			if prop.identifier[0] == "anchors" {
+			if prop.Identifier[0] == "anchors" {
 				// TODO: fix this
 				// exp := vit.NewExpression(prop.expression, &prop.position)
 				// a, _ := instance.Property("anchors")
@@ -180,7 +180,7 @@ func populateComponent(instance vit.Component, def *componentDefinition, compone
 		}
 	}
 
-	for _, childDef := range def.children {
+	for _, childDef := range def.Children {
 		childInstance, err := instantiateComponent(childDef, components)
 		if err != nil {
 			return err

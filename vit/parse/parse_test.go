@@ -198,25 +198,25 @@ Item {
 `
 
 var validDocumentold = &VitDocument{
-	imports: []importStatement{
+	Imports: []importStatement{
 		{namespace: []string{"One"}, version: "1.23"},
 		{namespace: []string{"Two", "Three"}, version: "4.56"},
 	},
-	components: []*componentDefinition{
+	Components: []*ComponentDefinition{
 		{
-			name: "Item",
-			id:   "rect",
-			properties: []property{
-				{identifier: []string{"anchors", "left"}, expression: "parent.left + 10"},
-				{identifier: []string{"affe"}, component: &componentDefinition{name: "Item", properties: []property{{identifier: []string{"one"}, expression: "1"}}}},
-				{identifier: []string{"local"}, vitType: "bool", expression: "true"},
+			BaseName: "Item",
+			ID:       "rect",
+			Properties: []Property{
+				{Identifier: []string{"anchors", "left"}, Expression: "parent.left + 10"},
+				{Identifier: []string{"affe"}, Component: &ComponentDefinition{BaseName: "Item", Properties: []Property{{Identifier: []string{"one"}, Expression: "1"}}}},
+				{Identifier: []string{"local"}, VitType: "bool", Expression: "true"},
 			},
-			children: []*componentDefinition{
+			Children: []*ComponentDefinition{
 				{
-					name: "Label",
-					properties: []property{
-						{identifier: []string{"wrapMode"}, expression: "Text.WordWrap"},
-						{identifier: []string{"text"}, expression: `"What a wonderful world"`},
+					BaseName: "Label",
+					Properties: []Property{
+						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap"},
+						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`},
 					},
 				},
 			},
@@ -225,66 +225,66 @@ var validDocumentold = &VitDocument{
 }
 
 var validDocument = &VitDocument{
-	imports: []importStatement{
+	Imports: []importStatement{
 		{namespace: []string{"One"}, version: "1.23", position: vit.PositionRange{FilePath: "test", StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
 		{namespace: []string{"Two", "Three"}, version: "4.56", position: vit.PositionRange{FilePath: "test", StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
 	},
-	components: []*componentDefinition{
+	Components: []*ComponentDefinition{
 		{
 			position: vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
-			name:     "Item",
-			id:       "rect",
-			properties: []property{
+			BaseName: "Item",
+			ID:       "rect",
+			Properties: []Property{
 				{
 					position:    vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
-					identifier:  []string{"anchors", "left"},
-					expression:  "parent.left + 10",
-					component:   (*componentDefinition)(nil),
-					readOnly:    false,
-					static:      false,
+					Identifier:  []string{"anchors", "left"},
+					Expression:  "parent.left + 10",
+					Component:   (*ComponentDefinition)(nil),
+					ReadOnly:    false,
+					Static:      false,
 					staticValue: interface{}(nil),
 				},
 				{
 					position:   vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 14, EndColumn: 34},
-					identifier: []string{"affe"},
-					component: &componentDefinition{
+					Identifier: []string{"affe"},
+					Component: &ComponentDefinition{
 						position: vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
-						name:     "Item",
-						id:       "",
-						properties: []property{
+						BaseName: "Item",
+						ID:       "",
+						Properties: []Property{
 							{
 								position:   vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
-								identifier: []string{"one"},
-								vitType:    "", expression: "1", component: (*componentDefinition)(nil),
-								readOnly:    false,
-								static:      false,
+								Identifier: []string{"one"},
+								VitType:    "", Expression: "1", Component: (*ComponentDefinition)(nil),
+								ReadOnly:    false,
+								Static:      false,
 								staticValue: interface{}(nil),
 							},
 						},
-						children:     []*componentDefinition(nil),
-						enumerations: []vit.Enumeration(nil),
+						Children:     []*ComponentDefinition(nil),
+						Enumerations: []vit.Enumeration(nil),
 					},
-					readOnly:    false,
-					static:      false,
+					ReadOnly:    false,
+					Static:      false,
 					staticValue: interface{}(nil),
 				},
 				{
 					position:    vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 26},
-					identifier:  []string{"local"},
-					vitType:     "bool",
-					expression:  "true",
-					component:   (*componentDefinition)(nil),
-					readOnly:    false,
-					static:      false,
+					Identifier:  []string{"local"},
+					VitType:     "bool",
+					Expression:  "true",
+					Component:   (*ComponentDefinition)(nil),
+					ReadOnly:    false,
+					Static:      false,
 					staticValue: interface{}(nil),
 				},
 			},
-			children: []*componentDefinition{
+			Children: []*ComponentDefinition{
 				{
-					name: "Label",
-					properties: []property{
-						{identifier: []string{"wrapMode"}, expression: "Text.WordWrap", position: vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31}},
-						{identifier: []string{"text"}, expression: `"What a wonderful world"`, position: vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38}},
+					BaseName: "Label",
+					Properties: []Property{
+						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap", position: vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31}},
+						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`, position: vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38}},
 					},
 				},
 			},
@@ -300,7 +300,7 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	options := []cmp.Option{cmp.AllowUnexported(VitDocument{}, componentDefinition{}, property{}, importStatement{})}
+	options := []cmp.Option{cmp.AllowUnexported(VitDocument{}, ComponentDefinition{}, Property{}, importStatement{})}
 	if !cmp.Equal(validDocument, doc, options...) {
 		t.Log("Parsed document deviated from expected result:")
 		t.Log("- expected")

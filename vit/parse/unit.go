@@ -46,7 +46,7 @@ func eofUnit(position vit.Position) unit {
 	return unit{vit.NewRangeFromPosition(position), unitTypeEOF, nil}
 }
 
-func componentUnit(position vit.PositionRange, comp *componentDefinition) unit {
+func componentUnit(position vit.PositionRange, comp *ComponentDefinition) unit {
 	return unit{position, unitTypeComponent, comp}
 }
 
@@ -54,7 +54,7 @@ func componentEndUnit(position vit.Position) unit {
 	return unit{vit.NewRangeFromPosition(position), unitTypeComponentEnd, nil}
 }
 
-func propertyUnit(position vit.PositionRange, prop property) unit {
+func propertyUnit(position vit.PositionRange, prop Property) unit {
 	return unit{position, unitTypeProperty, prop}
 }
 

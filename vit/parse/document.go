@@ -9,22 +9,22 @@ import (
 
 // VitDocument contains everything there is to know about a parsed vit file
 type VitDocument struct {
-	name       string            // Name of the file without extension. Usually the name of the component this file describes.
-	imports    []importStatement // all imported libraries and files
-	components []*componentDefinition
+	Name       string            // Name of the file without extension. Usually the name of the component this file describes.
+	Imports    []importStatement // all imported libraries and files
+	Components []*ComponentDefinition
 }
 
 // String creates a human readable string representation of the vit document
 func (d VitDocument) String() string {
 	var out strings.Builder
 	out.WriteString("{\r\n\tImports:")
-	for _, imp := range d.imports {
+	for _, imp := range d.Imports {
 		out.WriteString(fmt.Sprintf(" %v", imp))
 	}
 
 	out.WriteString("\r\n\tComponents: \r\n")
 
-	for _, comp := range d.components {
+	for _, comp := range d.Components {
 		out.WriteString(fmt.Sprintf("\t\t%v\r\n", comp))
 	}
 
@@ -59,27 +59,27 @@ func (s importStatement) String() string {
 	return out.String()
 }
 
-// componentDefinition contains everything about a component that is defined in a vit file
-type componentDefinition struct {
+// ComponentDefinition contains everything about a component that is defined in a vit file
+type ComponentDefinition struct {
 	position     vit.PositionRange
-	name         string                 // name of the instantiated component
-	id           string                 // custom id of the component
-	properties   []property             // all explicitly defined or declared properties
-	children     []*componentDefinition // child components
-	enumerations []vit.Enumeration      // all explicitly defined enumerations
+	BaseName     string                 // name of the instantiated base component
+	ID           string                 // custom id of the component
+	Properties   []Property             // all explicitly defined or declared properties
+	Children     []*ComponentDefinition // child components
+	Enumerations []vit.Enumeration      // all explicitly defined enumerations
 }
 
 // identifierIsKnown returns true of the given identifier has already been defined
-func (d *componentDefinition) identifierIsKnown(identifier []string) bool {
+func (d *ComponentDefinition) identifierIsKnown(identifier []string) bool {
 	if len(identifier) == 0 {
 		return false
 	}
-	for _, p := range d.properties {
-		if stringSlicesEqual(p.identifier, identifier) {
+	for _, p := range d.Properties {
+		if stringSlicesEqual(p.Identifier, identifier) {
 			return true
 		}
 	}
-	for _, e := range d.enumerations {
+	for _, e := range d.Enumerations {
 		if e.Name == identifier[0] {
 			return true
 		}
@@ -89,23 +89,23 @@ func (d *componentDefinition) identifierIsKnown(identifier []string) bool {
 }
 
 // String returns a human readable string representation of the component definition
-func (d *componentDefinition) String() string {
+func (d *ComponentDefinition) String() string {
 	if d == nil {
 		return "<nil>"
 	}
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s { ", d.name))
+	s.WriteString(fmt.Sprintf("%s { ", d.BaseName))
 
-	for _, p := range d.properties {
+	for _, p := range d.Properties {
 		s.WriteString(fmt.Sprintf("%s, ", p.String()))
 	}
 
-	if len(d.children) == 0 {
+	if len(d.Children) == 0 {
 
-	} else if len(d.children) == 1 {
-		s.WriteString(fmt.Sprintf("%d child", len(d.children)))
+	} else if len(d.Children) == 1 {
+		s.WriteString(fmt.Sprintf("%d child", len(d.Children)))
 	} else {
-		s.WriteString(fmt.Sprintf("%d children", len(d.children)))
+		s.WriteString(fmt.Sprintf("%d children", len(d.Children)))
 	}
 
 	// TODO: add other fields
@@ -115,28 +115,28 @@ func (d *componentDefinition) String() string {
 	return s.String()
 }
 
-// property contains everything about a defined or declared property
-type property struct {
+// Property contains everything about a defined or declared Property
+type Property struct {
 	position    vit.PositionRange    // position of the property declaration
-	identifier  []string             // Identifier of this property. This will usually be only one value but can contain multiple parts for example with 'Anchors.fill'
-	vitType     string               // data type of the property in vit terms, not go
-	expression  string               // Expression string that defines the property. Can be empty.
-	component   *componentDefinition // Only set if this properties type is a component.
-	readOnly    bool                 // Readonly properties are statically defined on the component itself and cannot be changed directly. They will however be recalculated if one of the expressions dependencies should change.
-	static      bool                 // Static properties are defined on the component itself. They will only be evaluated once when the component is loaded and are constant from that point on.
+	Identifier  []string             // Identifier of this property. This will usually be only one value but can contain multiple parts for example with 'Anchors.fill'
+	VitType     string               // data type of the property in vit terms, not go
+	Expression  string               // Expression string that defines the property. Can be empty.
+	Component   *ComponentDefinition // Only set if this properties type is a component.
+	ReadOnly    bool                 // Readonly properties are statically defined on the component itself and cannot be changed directly. They will however be recalculated if one of the expressions dependencies should change.
+	Static      bool                 // Static properties are defined on the component itself. They will only be evaluated once when the component is loaded and are constant from that point on.
 	staticValue interface{}          // The evaluated value of a static property.
 }
 
 // String returns a human readable string representation of the property
-func (p property) String() string {
-	ident := strings.Join(p.identifier, ".")
-	if p.component != nil {
-		return fmt.Sprintf("%s (%s): %v", ident, p.vitType, p.component)
+func (p Property) String() string {
+	ident := strings.Join(p.Identifier, ".")
+	if p.Component != nil {
+		return fmt.Sprintf("%s (%s): %v", ident, p.VitType, p.Component)
 	}
 
-	return fmt.Sprintf("%s (%s): %s", ident, p.vitType, p.expression)
+	return fmt.Sprintf("%s (%s): %s", ident, p.VitType, p.Expression)
 }
 
-func (p property) Position() vit.PositionRange {
+func (p Property) Position() vit.PositionRange {
 	return p.position
 }
