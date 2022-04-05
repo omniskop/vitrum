@@ -1,10 +1,7 @@
-vitrum
-vitrum.exe
-gencmd
-gencmd.exe
-
-# generated files
-*_gen.go
+/vitrum
+/vitrum.exe
+/gencmd
+/gencmd.exe
 
 # visual studio code
 .vscode
