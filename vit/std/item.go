@@ -1,30 +1,34 @@
-package vit
+package std
 
-import "fmt"
+import (
+	"fmt"
+
+	vit "github.com/omniskop/vitrum/vit"
+)
 
 type Item struct {
-	Root
+	vit.Root
 	id string
 
-	width   IntValue
-	height  IntValue
-	stuff   IntValue // TODO: delete
-	anchors Anchors
-	x       FloatValue
-	y       FloatValue
-	z       FloatValue
+	width   vit.IntValue
+	height  vit.IntValue
+	stuff   vit.IntValue // TODO: delete
+	anchors vit.Anchors
+	x       vit.FloatValue
+	y       vit.FloatValue
+	z       vit.FloatValue
 }
 
-func NewItem(id string, scope ComponentContainer) *Item {
+func NewItem(id string, scope vit.ComponentContainer) *Item {
 	return &Item{
-		Root:   NewRoot(id, scope),
+		Root:   vit.NewRoot(id, scope),
 		id:     id,
-		width:  *NewIntValue("", nil),
-		height: *NewIntValue("", nil),
-		stuff:  *NewIntValue("", nil),
-		x:      *NewFloatValue("", nil),
-		y:      *NewFloatValue("", nil),
-		z:      *NewFloatValue("", nil),
+		width:  *vit.NewIntValue("", nil),
+		height: *vit.NewIntValue("", nil),
+		stuff:  *vit.NewIntValue("", nil),
+		x:      *vit.NewFloatValue("", nil),
+		y:      *vit.NewFloatValue("", nil),
+		z:      *vit.NewFloatValue("", nil),
 	}
 }
 
@@ -32,7 +36,7 @@ func (i *Item) String() string {
 	return fmt.Sprintf("Item{%s}", i.id)
 }
 
-func (i *Item) Property(key string) (Value, bool) {
+func (i *Item) Property(key string) (vit.Value, bool) {
 	switch key {
 	case "width":
 		return &i.width, true
@@ -41,8 +45,8 @@ func (i *Item) Property(key string) (Value, bool) {
 	case "stuff":
 		return &i.stuff, true
 	// TODO: fix this
-	// case "anchors":
-	// 	return &i.anchors, true
+	// case "vit.Anchors":
+	// 	return &i.vit.Anchors, true
 	case "x":
 		return &i.x, true
 	case "y":
@@ -54,7 +58,7 @@ func (i *Item) Property(key string) (Value, bool) {
 	}
 }
 
-func (i *Item) MustProperty(key string) Value {
+func (i *Item) MustProperty(key string) vit.Value {
 	v, ok := i.Property(key)
 	if !ok {
 		panic(fmt.Errorf("MustProperty called with unknown key %q", key))
@@ -62,7 +66,7 @@ func (i *Item) MustProperty(key string) Value {
 	return v
 }
 
-func (i *Item) SetProperty(key string, value interface{}, position *PositionRange) bool {
+func (i *Item) SetProperty(key string, value interface{}, position *vit.PositionRange) bool {
 	// fmt.Printf("[Item] set %q: %v\n", key, value)
 	switch key {
 	case "width":
@@ -71,8 +75,8 @@ func (i *Item) SetProperty(key string, value interface{}, position *PositionRang
 		i.height.Expression.ChangeCode(value.(string), position)
 	case "stuff":
 		i.stuff.Expression.ChangeCode(value.(string), position)
-	case "anchors":
-		i.anchors = value.(Anchors)
+	case "vit.Anchors":
+		i.anchors = value.(vit.Anchors)
 	case "x":
 		i.x.Expression.ChangeCode(value.(string), position)
 	case "y":
@@ -95,7 +99,7 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 		return i.height, true
 	case "stuff":
 		return i.stuff, true
-	case "anchors":
+	case "vit.Anchors":
 		return &i.anchors, true
 	case "x":
 		return i.x, true
@@ -108,69 +112,63 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 	return i.Root.ResolveVariable(key)
 }
 
-func (i *Item) AddChild(child Component) {
+func (i *Item) AddChild(child vit.Component) {
 	child.SetParent(i)
-	i.children = append(i.children, child)
+	// i.children = append(i.children, child)
 }
 
-func (i *Item) UpdateExpressions() (int, ErrorGroup) {
-	var errs ErrorGroup
+func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
+	var errs vit.ErrorGroup
 	var sum int
 	if i.width.ShouldEvaluate() {
 		sum++
 		err := i.width.Update(i)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "width", i.id, i.width.Expression, err))
+			errs.Add(vit.NewExpressionError("Item", "width", i.id, i.width.Expression, err))
 		}
 	}
 	if i.height.ShouldEvaluate() {
 		sum++
 		err := i.height.Update(i)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "height", i.id, i.height.Expression, err))
+			errs.Add(vit.NewExpressionError("Item", "height", i.id, i.height.Expression, err))
 		}
 	}
 	if i.stuff.ShouldEvaluate() {
 		sum++
 		err := i.stuff.Update(i)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "stuff", i.id, i.stuff.Expression, err))
+			errs.Add(vit.NewExpressionError("Item", "stuff", i.id, i.stuff.Expression, err))
 		}
 	}
 	if i.x.ShouldEvaluate() {
 		sum++
 		err := i.x.Update(i)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "x", i.id, i.x.Expression, err))
+			errs.Add(vit.NewExpressionError("Item", "x", i.id, i.x.Expression, err))
 		}
 	}
 	if i.y.ShouldEvaluate() {
 		sum++
 		err := i.y.Update(i)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "y", i.id, i.y.Expression, err))
+			errs.Add(vit.NewExpressionError("Item", "y", i.id, i.y.Expression, err))
 		}
 	}
 	if i.z.ShouldEvaluate() {
 		sum++
 		err := i.z.Update(i)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "z", i.id, i.z.Expression, err))
+			errs.Add(vit.NewExpressionError("Item", "z", i.id, i.z.Expression, err))
 		}
 	}
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	for name, prop := range i.Root.properties {
-		if prop.ShouldEvaluate() {
-			sum++
-			err := prop.Update(i)
-			if err != nil {
-				errs.Add(NewExpressionError("Item", name, i.id, *prop.GetExpression(), err))
-			}
-		}
-	}
-	n, moreErrs := i.Root.UpdateExpressions()
-	errs.AddGroup(moreErrs)
+	n, err := i.UpdatePropertiesInContext(i)
 	sum += n
+	errs.AddGroup(err)
+	n, err = i.Root.UpdateExpressions()
+	sum += n
+	errs.AddGroup(err)
 	return sum, errs
 }
 
@@ -178,29 +176,14 @@ func (i *Item) ID() string {
 	return i.id
 }
 
-func (i *Item) Anchors() Anchors {
+func (i *Item) Anchors() vit.Anchors {
 	return i.anchors
 }
 
-func (i *Item) SetAnchors() Anchors {
+func (i *Item) SetAnchors() vit.Anchors {
 	return i.anchors
 }
 
 func (i *Item) finish() error {
-	for _, props := range i.properties {
-		if alias, ok := props.(*AliasValue); ok {
-			err := alias.Update(i)
-			if err != nil {
-				return fmt.Errorf("alias error: %w", err)
-			}
-		}
-	}
-
-	for _, child := range i.children {
-		err := child.finish()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return i.RootC().FinishInContext(i)
 }

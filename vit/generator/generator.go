@@ -12,6 +12,7 @@ import (
 )
 
 const vitPackage = "github.com/omniskop/vitrum/vit"
+const stdPackage = "github.com/omniskop/vitrum/vit/std"
 
 func GenerateFromFileAndSave(srcPath string, packageName string, dstPath string) error {
 	doc, err := parseVit(srcPath)
@@ -23,9 +24,17 @@ func GenerateFromFileAndSave(srcPath string, packageName string, dstPath string)
 	if err != nil {
 		return fmt.Errorf("unable to create destination file: %w", err)
 	}
-	defer dstFile.Close()
 
-	return GenerateFromDocument(doc, packageName, dstFile)
+	err = GenerateFromDocument(doc, packageName, dstFile)
+	dstFile.Close()
+	if err != nil {
+		err2 := os.Remove(dstPath)
+		if err2 != nil {
+			fmt.Fprintln(os.Stderr, "unable to remove output file again:", err2)
+		}
+		return err
+	}
+	return nil
 }
 
 func Generate(src io.Reader, srcPath string, packageName string, dst io.Writer) error {
@@ -85,13 +94,13 @@ func getComponentName(fileName string) string {
 
 func generateComponent(f *jen.File, compName string, comp *parse.ComponentDefinition) {
 	properties := []jen.Code{
-		jen.Qual(vitPackage, comp.BaseName),
+		jen.Qual(stdPackage, comp.BaseName),
 		jen.Id("id").String(),
 		jen.Line(),
 	}
 	// we could use jen.Dict here but I wan't to preserve the property order
 	propertyInstantiations := []jen.Code{
-		jen.Line().Id(comp.BaseName).Op(":").Op("*").Qual(vitPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("scope").Op(")"),
+		jen.Line().Id(comp.BaseName).Op(":").Op("*").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("scope").Op(")"),
 		jen.Line().Id("id").Op(":").Id("id"),
 	}
 
@@ -254,7 +263,7 @@ func generateComponent(f *jen.File, compName string, comp *parse.ComponentDefini
 			g.Id("n").Op(",").Id("err").Op(":=").Id("r").Dot("UpdatePropertiesInContext").Call(jen.Id(receiverName))
 			g.Id("sum").Op("+=").Id("n")
 			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))
-			g.Id("n").Op(",").Id("err").Op("=").Id("r").Dot("Item").Dot("UpdateExpressions").Call()
+			g.Id("n").Op(",").Id("err").Op("=").Id("r").Dot(comp.BaseName).Dot("UpdateExpressions").Call()
 			g.Id("sum").Op("+=").Id("n")
 			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))
 			g.Return(jen.Id("sum"), jen.Id("errs"))
@@ -314,7 +323,9 @@ func vitTypeInfo(vitType string) (*jen.Statement, *jen.Statement) {
 		return jen.Op("*").Qual(vitPackage, "BoolValue"), jen.Qual(vitPackage, "NewBoolValue")
 	case "color":
 		return jen.Op("*").Qual(vitPackage, "ColorValue"), jen.Qual(vitPackage, "NewColorValue")
+	case "any":
+		return jen.Op("*").Qual(vitPackage, "AnyValue"), jen.Qual(vitPackage, "NewAnyValue")
 	default:
-		panic(fmt.Errorf("unknown vit type %q", vitType))
+		return jen.Op("*").Qual(vitPackage, vitType), jen.Qual(vitPackage, fmt.Sprintf("New%sValue", vitType))
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/std"
 )
 
 // A Library describes defines one or more components that can be used in other files
@@ -22,12 +23,12 @@ func resolveLibraryImport(namespace []string) (Library, error) {
 	switch namespace[0] {
 	case "Vit":
 		if len(namespace) == 1 {
-			return vit.StdLib{}, nil
+			return std.StdLib{}, nil
 		}
 	case "QtQuick":
-		return vit.StdLib{}, nil
+		return std.StdLib{}, nil
 	case "Dark":
-		return vit.StdLib{}, nil
+		return std.StdLib{}, nil
 	}
 
 	return nil, fmt.Errorf("unknown library %q", strings.Join(namespace, "."))
