@@ -22,12 +22,12 @@ type Component interface {
 	String() string                                                           // Returns a short string representation of this component
 	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
 
-	RootC() *Root // returns the root of this component
-	finish() error
+	RootC() *Root  // returns the root of this component
+	Finish() error // Finishes the component instantiation. Should only be called by components that embed this one.
 }
 
 func FinishComponent(comp Component) error {
-	return comp.finish()
+	return comp.Finish()
 }
 
 type Enumeration struct {

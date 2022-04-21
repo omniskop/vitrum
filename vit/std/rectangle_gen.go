@@ -25,7 +25,7 @@ func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 }
 
 func (r *Rectangle) String() string {
-	return fmt.Sprintf("Rectangle{%s}", r.id)
+	return fmt.Sprintf("Rectangle(%s)", r.id)
 }
 
 func (r *Rectangle) Property(key string) (vit.Value, bool) {
@@ -77,7 +77,7 @@ func (r *Rectangle) AddChild(child vit.Component) {
 	r.AddChildButKeepParent(child)
 }
 
-func (r *Rectangle) UpdateExpression() (int, vit.ErrorGroup) {
+func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
@@ -110,6 +110,6 @@ func (r *Rectangle) ID() string {
 	return r.id
 }
 
-func (r *Rectangle) finish() error {
+func (r *Rectangle) Finish() error {
 	return r.RootC().FinishInContext(r)
 }

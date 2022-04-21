@@ -184,6 +184,6 @@ func (i *Item) SetAnchors() vit.Anchors {
 	return i.anchors
 }
 
-func (i *Item) finish() error {
+func (i *Item) Finish() error {
 	return i.RootC().FinishInContext(i)
 }

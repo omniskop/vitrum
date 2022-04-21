@@ -206,10 +206,10 @@ func (r *Root) RootC() *Root {
 	return r
 }
 
-// finish put's the final touches on an instantiated component.
+// Finish put's the final touches on an instantiated component.
 // It is guaranteed that all other surrounding components are instantiated just not necessarily finished.
 // This needs to be reimplemented by each component.
-func (r *Root) finish() error {
+func (r *Root) Finish() error {
 	for _, props := range r.properties {
 		if alias, ok := props.(*AliasValue); ok {
 			err := alias.Update(r)
@@ -220,7 +220,7 @@ func (r *Root) finish() error {
 	}
 
 	for _, child := range r.children {
-		err := child.finish()
+		err := child.Finish()
 		if err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func (r *Root) FinishInContext(context Component) error {
 	}
 
 	for _, child := range r.children {
-		err := child.finish()
+		err := child.Finish()
 		if err != nil {
 			return err
 		}

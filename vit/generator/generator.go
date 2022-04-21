@@ -279,10 +279,10 @@ func generateComponent(f *jen.File, compName string, comp *parse.ComponentDefini
 		Block(jen.Return(jen.Id(receiverName).Dot("id"))).
 		Line()
 
-	// finish() error
+	// Finish() error
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).
-		Id("finish").
+		Id("Finish").
 		Params().
 		Params(jen.Error()).
 		Block(

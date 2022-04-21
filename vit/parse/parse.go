@@ -516,7 +516,7 @@ start:
 	return t
 }
 
-// expectToken ready the next token and checks if it is of one of the given types.
+// expectToken reads the next token and checks if it is of one of the given types.
 // If not it returns a unexpectedToken error wrapped in a parseError.
 func expectToken(nextToken tokenSource, tTypes ...tokenType) (token, error) {
 	t := nextToken()

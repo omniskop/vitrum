@@ -50,8 +50,8 @@ func (v *IntValue) Update(context Component) error {
 	return nil
 }
 
-func (c *IntValue) GetValue() interface{} {
-	return c.Value
+func (v *IntValue) GetValue() interface{} {
+	return v.Value
 }
 
 // ========================================= Float Value ===========================================
@@ -274,3 +274,37 @@ func (v *AliasValue) ShouldEvaluate() bool {
 func (v *AliasValue) Err() error {
 	return nil
 }
+
+// ========================================== Any Value ============================================
+
+type AnyValue struct {
+	Expression
+	Value interface{}
+}
+
+func NewAnyValue(expression string, position *PositionRange) *AnyValue {
+	v := new(AnyValue)
+	if expression == "" {
+		v.Expression = *NewExpression("null", position)
+	} else {
+		v.Expression = *NewExpression(expression, position)
+	}
+	return v
+}
+
+func (v *AnyValue) Update(context Component) error {
+	val, err := v.Expression.Evaluate(context)
+	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
+		return err
+	}
+	v.Value = val
+	return nil
+}
+
+func (c *AnyValue) GetValue() interface{} {
+	return c.Value
+}
+
