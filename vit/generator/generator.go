@@ -135,7 +135,7 @@ func generateComponent(f *jen.File, compName string, comp *parse.ComponentDefini
 		Params().
 		Params(jen.String()).
 		Block(
-			jen.Return(jen.Qual("fmt", "Sprintf").Call(jen.Lit("Rectangle{%s}"), jen.Id("r").Dot("id"))),
+			jen.Return(jen.Qual("fmt", "Sprintf").Call(jen.Lit(compName+"(%s)"), jen.Id("r").Dot("id"))),
 		).
 		Line()
 
@@ -233,10 +233,10 @@ func generateComponent(f *jen.File, compName string, comp *parse.ComponentDefini
 		).
 		Line()
 
-	// .UpdateExpression() (int, ErrorGroup)
+	// .UpdateExpressions() (int, ErrorGroup)
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).
-		Id("UpdateExpression").
+		Id("UpdateExpressions").
 		Params().
 		Params(jen.Int(), jen.Qual(vitPackage, "ErrorGroup")).
 		BlockFunc(func(g *jen.Group) {
@@ -323,7 +323,7 @@ func vitTypeInfo(vitType string) (*jen.Statement, *jen.Statement) {
 		return jen.Op("*").Qual(vitPackage, "BoolValue"), jen.Qual(vitPackage, "NewBoolValue")
 	case "color":
 		return jen.Op("*").Qual(vitPackage, "ColorValue"), jen.Qual(vitPackage, "NewColorValue")
-	case "any":
+	case "var":
 		return jen.Op("*").Qual(vitPackage, "AnyValue"), jen.Qual(vitPackage, "NewAnyValue")
 	default:
 		return jen.Op("*").Qual(vitPackage, vitType), jen.Qual(vitPackage, fmt.Sprintf("New%sValue", vitType))
