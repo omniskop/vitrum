@@ -21,6 +21,7 @@ type Component interface {
 	ID() string                                                               // Returns the id of this component
 	String() string                                                           // Returns a short string representation of this component
 	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
+	As(*Component) bool                                                       // Returns true if this component is of the same type as the given parameter. It also changes the parameter to point to this component.
 
 	RootC() *Root  // returns the root of this component
 	Finish() error // Finishes the component instantiation. Should only be called by components that embed this one.

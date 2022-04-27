@@ -202,6 +202,14 @@ func (r *Root) ID() string {
 	return r.id
 }
 
+func (r *Root) As(target *Component) bool {
+	if _, ok := (*target).(*Root); ok {
+		*target = r
+		return true
+	}
+	return false
+}
+
 func (r *Root) RootC() *Root {
 	return r
 }

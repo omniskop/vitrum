@@ -53,3 +53,11 @@ func (c *custom) UpdateExpressions() (int, ErrorGroup) {
 func (c *custom) ID() string {
 	return c.id
 }
+
+func (c *custom) As(target *Component) bool {
+	if _, ok := (*target).(*custom); ok {
+		*target = c
+		return true
+	}
+	return c.Component.As(target)
+}

@@ -270,6 +270,21 @@ func generateComponent(f *jen.File, compName string, comp *parse.ComponentDefini
 		}).
 		Line()
 
+	// .As(*Component) (bool)
+	f.Func().
+		Params(jen.Id(receiverName).Op("*").Id(compName)).
+		Id("As").
+		Params(jen.Id("target").Op("*").Qual(vitPackage, "Component")).
+		Params(jen.Bool()).
+		Block(
+			jen.If(jen.List(jen.Id("_"), jen.Id("ok")).Op(":=").Parens(jen.Op("*").Id("target")).Op(".").Parens(jen.Op("*").Id(compName)).Op(";").Id("ok")).Block(
+				jen.Op("*").Id("target").Op("=").Id("r"),
+				jen.Return(jen.True()),
+			),
+			jen.Return(jen.Id("r").Dot("Item").Dot("As").Call(jen.Id("target"))),
+		).
+		Line()
+
 	// ID() string
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).

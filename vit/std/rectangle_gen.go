@@ -106,6 +106,14 @@ func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 	return sum, errs
 }
 
+func (r *Rectangle) As(target *vit.Component) bool {
+	if _, ok := (*target).(*Rectangle); ok {
+		*target = r
+		return true
+	}
+	return r.Item.As(target)
+}
+
 func (r *Rectangle) ID() string {
 	return r.id
 }
