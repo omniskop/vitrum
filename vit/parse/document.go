@@ -115,6 +115,17 @@ func (d *ComponentDefinition) String() string {
 	return s.String()
 }
 
+type ComponentInstantiator struct {
+	definition *ComponentDefinition
+	context    vit.ComponentContainer
+}
+
+var _ vit.Instantiator = (*ComponentInstantiator)(nil)
+
+func (i ComponentInstantiator) Instantiate() (vit.Component, error) {
+	return instantiateComponent(i.definition, i.context)
+}
+
 // Property contains everything about a defined or declared Property
 type Property struct {
 	position    vit.PositionRange    // position of the property declaration

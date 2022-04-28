@@ -308,3 +308,50 @@ func (c *AnyValue) GetValue() interface{} {
 	return c.Value
 }
 
+// ======================================= Component Value =========================================
+
+type ComponentValue struct {
+	Value   Instantiator
+	Changed bool
+}
+
+func NewComponentValue(component Instantiator, position *PositionRange) *ComponentValue {
+	return &ComponentValue{
+		Value:   component,
+		Changed: true,
+	}
+}
+
+func (v *ComponentValue) ChangeComponent(component Instantiator) {
+	v.Value = component
+	v.Changed = true
+}
+
+func (v *ComponentValue) Update(context Component) error {
+	v.Changed = false
+	return nil
+}
+
+func (v *ComponentValue) GetValue() interface{} {
+	return v.Value
+}
+
+func (v *ComponentValue) MakeDirty(stack []*Expression) {
+	v.Changed = true
+}
+
+func (v *ComponentValue) GetExpression() *Expression {
+	return NewExpression("", nil)
+}
+
+func (v *ComponentValue) AddDependent(exp *Expression) {}
+
+func (v *ComponentValue) RemoveDependent(exp *Expression) {}
+
+func (v *ComponentValue) ShouldEvaluate() bool {
+	return v.Changed
+}
+
+func (v *ComponentValue) Err() error {
+	return nil
+}

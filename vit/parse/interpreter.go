@@ -165,7 +165,16 @@ func populateComponent(instance vit.Component, def *ComponentDefinition, compone
 			// instance.SetProperty(prop.identifier[0], prop.expression)
 		} else if len(prop.Identifier) == 1 {
 			// simple property assignment
-			if ok := instance.SetProperty(prop.Identifier[0], prop.Expression, &prop.position); !ok {
+			var value interface{}
+			if prop.Component != nil {
+				value = ComponentInstantiator{
+					definition: prop.Component,
+					context:    components,
+				}
+			} else {
+				value = prop.Expression
+			}
+			if ok := instance.SetProperty(prop.Identifier[0], value, &prop.position); !ok {
 				return genericErrorf(prop.position, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
 			}
 		} else {

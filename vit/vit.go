@@ -31,6 +31,10 @@ func FinishComponent(comp Component) error {
 	return comp.Finish()
 }
 
+type Instantiator interface {
+	Instantiate() (Component, error)
+}
+
 type Enumeration struct {
 	Name     string
 	Embedded bool
