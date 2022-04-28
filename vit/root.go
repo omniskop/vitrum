@@ -156,6 +156,16 @@ func (r *Root) AddChild(child Component) {
 	r.children = append(r.children, child)
 }
 
+func (r *Root) RemoveChild(child Component) {
+	for i, c := range r.children {
+		if c == child {
+			r.children = append(r.children[:i], r.children[i+1:]...)
+			child.SetParent(nil)
+			return
+		}
+	}
+}
+
 // AddChildButKeepParent adds the given component as a child but doesn't change the child's parent.
 // SHOULD ONLY BE CALLED FROM OTHER COMPONENTS THAT EMBED THIS ROOT.
 func (r *Root) AddChildButKeepParent(child Component) {
