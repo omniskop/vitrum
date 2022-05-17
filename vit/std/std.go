@@ -9,7 +9,7 @@ type StdLib struct {
 }
 
 func (l StdLib) ComponentNames() []string {
-	return []string{"Item", "Rectangle"}
+	return []string{"Item", "Rectangle", "Repeater", "Container"}
 }
 
 func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContainer) (vit.Component, bool) {
@@ -18,6 +18,10 @@ func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContaine
 		return NewItem(id, scope), true
 	case "Rectangle":
 		return NewRectangle(id, scope), true
+	case "Repeater":
+		return NewRepeater(id, scope), true
+	case "Container":
+		return NewContainer(id, scope), true
 	}
 	return nil, false
 }

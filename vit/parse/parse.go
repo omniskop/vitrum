@@ -127,7 +127,7 @@ scanComponents:
 		case unitTypeEOF:
 			break scanComponents
 		case unitTypeComponent:
-			component := parsedUnit.value.(*ComponentDefinition)
+			component := parsedUnit.value.(*vit.ComponentDefinition)
 			file.Components = append(file.Components, component)
 		default:
 			return nil, parseErrorf(parsedUnit.position, "unexpected %v in global scope", parsedUnit.kind)
@@ -235,51 +235,54 @@ scanLineIdentifier:
 		}
 	}
 
+scanAgain:
 	// find out what this line is about
 	switch t := tokens.next(); t.tokenType {
+	case tokenNewline:
+		goto scanAgain
+
 	case tokenPeriod:
 		// we have a qualified line identifier like "one.two"
 		goto scanLineIdentifier // scan the next identifier
 		// TODO: think about removing this goto and just scanning the next identifier here and jumping to the start of this switch again
 		//       because by jumping all the way up again we run a bunch of code that would only be applicable for the first identifier of the line
+
 	case tokenLeftBrace:
 		// new component definition
 		if len(lineIdentifier) == 0 {
 			// TODO: i think this can be valid; but it would not be possible to occur right now
 		} else if len(lineIdentifier) == 1 {
 			component, err := parseComponent(lineIdentifier[0].literal, tokens)
-			return componentUnit(component.position, component), err
+			return componentUnit(component.Pos, component), err
 		} else {
 			return nilUnit(), ParseError{lineIdentifier[1].position, fmt.Errorf("qualified identifier is not allowed for components")}
 		}
+
 	case tokenColon:
 		// property
 		t := tokens.next()
-		switch t.tokenType {
-		case tokenIdentifier:
-			// value of the property is a component
-			_, err := expectToken(tokens.next, tokenLeftBrace)
-			if err != nil {
-				return nilUnit(), err
-			}
-			component, err := parseComponent(t.literal, tokens)
-			return propertyUnit(component.position, Property{
-				position:   vit.NewRangeFromStartToEnd(startingPosition, t.position.End()),
-				Identifier: literalsToStrings(lineIdentifier),
-				Component:  component,
-			}), err
-		case tokenExpression:
-			// value of the property is set by an expression
-			return propertyUnit(t.position, Property{
-				position:   vit.NewRangeFromStartToEnd(startingPosition, t.position.End()),
-				Identifier: literalsToStrings(lineIdentifier),
-				Expression: t.literal,
-			}), nil
-		default:
-			return nilUnit(), unexpectedToken(t, tokenIdentifier, tokenExpression)
+
+		value, err := parsePropertyValueFromExpression(t)
+		if err != nil {
+			return nilUnit(), err
 		}
+		property := vit.PropertyDefinition{
+			Pos:        vit.NewRangeFromStartToEnd(startingPosition, t.position.End()),
+			Identifier: literalsToStrings(lineIdentifier),
+			Expression: t.literal,
+		}
+		switch value.valueType {
+		case valueTypeExpression:
+			// nothing needs to be done
+		case valueTypeComponent:
+			property.Components = []*vit.ComponentDefinition{value.component}
+		case valueTypeList:
+			property.Components = value.componentList()
+		}
+		return propertyUnit(property.Pos, property), nil
+
 	default:
-		return nilUnit(), unexpectedToken(t, tokenPeriod, tokenLeftBrace, tokenColon, tokenIdentifier)
+		return nilUnit(), unexpectedToken(t, tokenPeriod, tokenLeftBrace, tokenColon, tokenIdentifier, tokenNewline)
 	}
 
 	return nilUnit(), nil
@@ -287,8 +290,8 @@ scanLineIdentifier:
 
 // parseComponent parses the content of a component and returns a component definition.
 // It takes the name of the component as parameter.
-func parseComponent(identifier string, tokens *tokenBuffer) (*ComponentDefinition, error) {
-	c := &ComponentDefinition{
+func parseComponent(identifier string, tokens *tokenBuffer) (*vit.ComponentDefinition, error) {
+	c := &vit.ComponentDefinition{
 		BaseName: identifier,
 	}
 
@@ -302,28 +305,28 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*ComponentDefinitio
 		case unitTypeComponentEnd: // the component has ended
 			return c, nil
 		case unitTypeProperty: // property declaration/definition
-			prop := parsedUnit.value.(Property)
+			prop := parsedUnit.value.(vit.PropertyDefinition)
 			// check if this property has the identifier "id" and handle it specially
 			if len(prop.Identifier) == 1 && prop.Identifier[0] == "id" {
 				// TODO: validate that the expression is a valid id. Calculations are not allowed
 				c.ID = prop.Expression
 			} else {
 				// check if the property has already been defined before
-				if c.identifierIsKnown(prop.Identifier) {
+				if c.IdentifierIsKnown(prop.Identifier) {
 					// TODO: theoretically we could get and show the position of the previous declaration here
-					return c, parseErrorf(prop.position, "identifier %v is already defined", prop.Identifier)
+					return c, parseErrorf(prop.Pos, "identifier %v is already defined", prop.Identifier)
 				}
 				// save it in the component
 				c.Properties = append(c.Properties, prop)
 			}
 		case unitTypeEnum: // an enumeration
 			enum := parsedUnit.value.(vit.Enumeration)
-			if c.identifierIsKnown([]string{enum.Name}) {
+			if c.IdentifierIsKnown([]string{enum.Name}) {
 				return c, parseErrorf(parsedUnit.position, "identifier %q is already defined", enum.Name)
 			}
 			c.Enumerations = append(c.Enumerations, enum)
 		case unitTypeComponent: // child component
-			child := parsedUnit.value.(*ComponentDefinition)
+			child := parsedUnit.value.(*vit.ComponentDefinition)
 			c.Children = append(c.Children, child)
 		default:
 			return c, parseErrorf(parsedUnit.position, "unexpected %v while parsing unit", parsedUnit.kind)
@@ -348,7 +351,7 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 			if err != nil {
 				return nilUnit(), err
 			}
-			return propertyUnit(prop.position, prop), nil
+			return propertyUnit(prop.Pos, prop), nil
 		case "enum":
 			// this attribute is an enumeration
 			en, err := parseEnum(tokens, modifiers, startingPosition)
@@ -374,49 +377,77 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 	}
 }
 
-// parseProperty parses a property declaration/definition with the given modifiers
-func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit.Position) (Property, error) {
+// parseProperty parses a property declaration/definition with the given modifiers.
+// Note: This will not be called for property assignments.
+func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit.Position) (vit.PropertyDefinition, error) {
 	// read the type of the property
-	typeToken, err := expectToken(tokens.next, tokenIdentifier)
-	if err != nil {
-		return Property{}, err
+	var listDimensions int
+start:
+	typeToken := tokens.next()
+	if typeToken.tokenType == tokenLeftBracket {
+		// opening bracket found, this is a list
+		_, err := expectToken(tokens.next, tokenRightBracket)
+		if err != nil {
+			// a closing bracket could not be found
+			return vit.PropertyDefinition{}, err
+		}
+		// this is indeed a list
+		listDimensions++
+		goto start // go back to reading the property type
+	} else if typeToken.tokenType != tokenIdentifier {
+		// we neither found a list nor a simple type identifier
+		return vit.PropertyDefinition{}, unexpectedToken(typeToken, tokenLeftBracket, tokenIdentifier)
 	}
 
 	// property name
 	identifier, err := expectToken(tokens.next, tokenIdentifier)
 	if err != nil {
-		return Property{}, err
+		return vit.PropertyDefinition{}, err
 	}
 
-	prop := Property{
-		Identifier: []string{identifier.literal},
-		VitType:    typeToken.literal,
-		ReadOnly:   stringSliceContains(modifiers, "readonly"),
-		Static:     stringSliceContains(modifiers, "static"),
-		position:   vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()),
+	prop := vit.PropertyDefinition{
+		Identifier:     []string{identifier.literal},
+		VitType:        typeToken.literal,
+		ListDimensions: listDimensions,
+		ReadOnly:       stringSliceContains(modifiers, "readonly"),
+		Static:         stringSliceContains(modifiers, "static"),
+		Pos:            vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()),
 	}
 
 	// read the next token and determine if a value will follow
 	switch tokens.next().tokenType {
 	case tokenColon: // continue to read the value
-	case tokenNewline:
+	case tokenNewline, tokenSemicolon:
 		return prop, nil // property is finished with no value
 	default:
-		return Property{}, unexpectedToken(tokens.next(), tokenColon, tokenNewline)
+		return vit.PropertyDefinition{}, unexpectedToken(tokens.next(), tokenColon, tokenNewline, tokenSemicolon)
 	}
 
-	// read the value (expression that will determine the value)
-	expression, err := expectToken(tokens.next, tokenExpression)
+	// read the value ...
+	t, err := expectToken(tokens.next, tokenExpression)
 	if err != nil {
-		return Property{}, err
+		return vit.PropertyDefinition{}, err
 	}
-	prop.Expression = expression.literal
-	prop.position.SetEnd(expression.position.End())
+
+	// ... and parse it
+	value, err := parsePropertyValueFromExpression(t)
+	if err != nil {
+		return prop, err
+	}
+	prop.Pos.SetEnd(t.position.End())
+
+	if value.valueType == valueTypeExpression {
+		prop.Expression = t.literal
+	} else if value.valueType == valueTypeComponent {
+		prop.Components = []*vit.ComponentDefinition{value.component}
+	} else {
+		prop.Components = value.componentList()
+	}
 
 	// remove any newlines or semicolons
 	_, err = expectToken(tokens.next, tokenNewline, tokenSemicolon)
 	if err != nil {
-		return Property{}, err
+		return vit.PropertyDefinition{}, err
 	}
 
 	return prop, nil
@@ -561,17 +592,4 @@ func stringSliceContains(list []string, element string) bool {
 		}
 	}
 	return false
-}
-
-// unexpectedToken returns true if two string slices equal and false otherwise
-func stringSlicesEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, e := range a {
-		if e != b[i] {
-			return false
-		}
-	}
-	return true
 }

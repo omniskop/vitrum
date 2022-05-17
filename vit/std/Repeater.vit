@@ -1,0 +1,8 @@
+
+Item {
+    property int count
+    // property Component delegate
+    property var model
+
+    property []component items
+}

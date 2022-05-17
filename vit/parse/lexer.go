@@ -27,6 +27,13 @@ func (e LexError) Is(subject error) bool {
 	return ok
 }
 
+func unexpectedEOF(pos vit.Position) LexError {
+	return LexError{
+		pos: pos,
+		msg: "unexpected end of file",
+	}
+}
+
 type ReadError struct {
 	err error
 }
@@ -63,7 +70,7 @@ func LexAll(input io.Reader, filePath string) ([]token, error) {
 type lexer struct {
 	source              *bufio.Reader
 	filePath            string
-	pos                 vit.Position
+	pos                 vit.Position // position of the rune that will be read next
 	previousPosition    vit.Position
 	expressionFollowing bool // weather the next scanned part should be an expression
 }
@@ -77,6 +84,16 @@ func NewLexer(input io.Reader, filePath string) *lexer {
 			Line:     1,
 			Column:   1,
 		},
+	}
+}
+
+// NewLexerAtPosition returns a new lexer that will already start at the given position.
+// This can be used to improve error messages if a lexer only parses a small portion of a bigger file.
+func NewLexerAtPosition(input io.Reader, position vit.Position) *lexer {
+	return &lexer{
+		source:   bufio.NewReader(input),
+		filePath: position.FilePath,
+		pos:      position,
 	}
 }
 
@@ -211,7 +228,7 @@ func (l *lexer) Lex() (token, error) {
 				return token{}, err
 			}
 			if r == '/' || r == '*' {
-				err = l.skipComment(r == '*')
+				_, err = l.readComment(r == '*')
 				if err != nil {
 					return token{}, err
 				}
@@ -231,227 +248,185 @@ func (l *lexer) Lex() (token, error) {
 	}
 }
 
-// scanExpression will scan the input for an expression. The returned token can either be an expression or a literal.
-// The returned error is either of type LexError or ReadError.
-//
-// Expressions will not be dissected in detail because it is potentially JavaScript code that will be handled separately.
-// We will still need to keep track of braces and strings though so we know where the expression ends.
-// An expression can also be just a single line or a block expression that is surrounded by curly braces, in which case it would be a function.
-//
-// But it is also possible to have a component as a value and we will need to detect that and handle it differently.
-// We will detect that by checking that the expression only contains spaces and/or valid runes for a literal
-// followed by a left brace. This *could* also match valid JavaScript code but I don't see a reason to assume that that would ever be usefull code in a vit file.
-//
-// It also removes line and block comments. This is required in the case of a vit component.
-// This will also be applied to JavaScript code, which should be fine I think, but it could potentially be changed if it should cause any issues.
+// scanExpression will scan the input for an expression.
+// Expressions won't be dissected in detail because it is potentially JavaScript code that will be handled separately.
 func (l *lexer) scanExpression() (token, error) {
+	// we ignore spaces and tabs at the start
+	_, err := l.skip(' ', '\t')
+	if err != nil {
+		return token{}, err
+	}
+
 	t := token{
 		tokenType: tokenExpression,
 		position:  vit.NewRangeFromPosition(l.pos),
 	}
 
-startExpressionScan:
-
-	var blockExpression bool // is this expression encapsulated in braces
-	var str strings.Builder
-
-	// read in all spaces until the expression starts and check if it is encapsulated in braces
-	for {
-		r, pos, err := l.nextRune()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return t, nil // just return the empty expression
-			}
-
-			return token{}, err
-		}
-		if unicode.IsSpace(r) { // also matches newlines
-			continue
-		} else if r == '{' {
-			blockExpression = true
-		}
-		t.position = vit.NewRangeFromPosition(pos)
-		l.unreadRune() // put whatever we just read back
-		break
+	str, pos, err := l.readExpressionUntil('\n', ';', '}')
+	if err != nil {
+		return t, err
 	}
+	t.literal = str // theoretically we could trim spaces at the end here, but we would need to change a lot of tests
+	t.position.SetEnd(pos)
+	return t, nil
+}
 
-	// Now read the actual expression.
-	// A simple expression ends with a semicolon, a new line or a closing brace.
-	// A block expression is only terminated by a closing brace.
-	// We need to keep track of opened strings to make sure that we ignore terminating runes inside them.
-	// For example it is valid for a newline character to be inside a string without terminating the expression.
-	var openBraces int           // number of open braces ('{') that have yet to be closed
-	var insideString bool        // weather or not we are inside a string
-	var stringDelimiter rune     // which rune started the string (either ', ` or ")
-	var escaped bool             // weather the next rune is escaped
-	var previousPosition = l.pos // the vit.Position of the previous rune
-	var potentialComment bool    // set to true if we encountered a / in the last rune
-	// couldBeLiteral is true if all read runes until this point would be a valid literal.
-	// We need to check this because properties can also hold components which would start with a literal.
-	var couldBeLiteral = !blockExpression // only if it's not a block expression
-	// If we thought that the read runes couldn't be a literal because the last read character was a / we will store the vit.Position of that slash here.
-	var literalFailedBecauseOfSlashAt int = -1
-
+// readString will read a JavaScript string from the input.
+// It should be called after the first quote (which must be passed as an argument) has been read.
+func (l *lexer) readString(delimiter rune) (string, vit.Position, error) {
+	var out strings.Builder
+	var lastRune rune
 	for {
 		r, pos, err := l.nextRune()
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				if blockExpression {
-					return t, LexError{pos, "unexpected end of file, expecting closing brace"}
-				} else {
-					t.position.SetEnd(previousPosition)
-					t.literal = str.String()
-					return t, nil
-				}
-			}
-
-			return token{}, err
+			return "", pos, err
 		}
+		out.WriteRune(r)
 
-		if couldBeLiteral {
-			if r == '{' {
-				// this is not an expression but a vit component
-				// we will report a literal token and leave
-
-				l.unreadRune() // put the brace back so it can be read on the next call to Lex
-				// remove potential spaces or newlines around the literal
-				value := strings.Trim(str.String(), " \n")
-				// value can now only contain characters appearing on the same line
-				// thus we can calculate the end like this:
-				end := t.position.Start()
-				end.Column += len(value) - 1 // -1 because we wan't the location of the last rune not the following one
-				t.position.SetEnd(end)
-				return token{
-					tokenIdentifier,
-					value,
-					t.position,
-				}, nil
-			}
-			// if this is not a valid literal rune, space or newline ...
-			if !validLiteralRune(r, str.Len() == 0) && r != ' ' && r != '\n' {
-				// ... this has no longer the potential to be a vit component
-				if r == '/' {
-					// if it is a / we will note the vit.Position in case that this is just the start of a comment
-					literalFailedBecauseOfSlashAt = pos.Column
-				}
-				couldBeLiteral = false
-			}
-		}
-
-		// if we are inside a string ...
-		if insideString {
-			// ... and this rune should not be escaped and is the same rune that started the string ...
-			if !escaped && r == stringDelimiter {
-				// ... then we are out of the string
-				insideString = false
-			}
-			// go to the next rune as we will not parse any special characters inside a string
+		if lastRune == '\\' { // if this rune was escaped
 			goto continueLoop
+		} else if r == delimiter {
+			return out.String(), pos, nil
+		} else if delimiter == '`' && lastRune == '$' && r == '{' { // only important if this is a raw string
+			str, pos, err := l.readExpressionUntil('}')
+			if err != nil {
+				return "", pos, err
+			}
+			out.WriteString(str)
 		}
-
-		// we are not inside a string here
-
-		// now figure out if this is a special character
-		switch r {
-		case '"', '\'', '`': // opening a string
-			insideString = true
-			stringDelimiter = r
-		case '{':
-			openBraces++
-		case '}':
-			openBraces--
-			// if we closed the last brace ...
-			if openBraces <= 0 {
-				// ... the expression has ended
-				if blockExpression {
-					// if it is a block expression the closing brace is part of it
-					str.WriteRune(r)
-					t.position.SetEnd(pos)
-				} else {
-					// As this is not a block expression we assume that this closing brace ends the component whose property we are reading.
-					// Thus we will put the brace back and return here.
-					t.position.SetEnd(previousPosition)
-					l.unreadRune()
-				}
-				t.literal = str.String()
-				return t, nil
-			}
-		case '\n', ';':
-			// inline expressions end here
-			if !blockExpression {
-				t.position.SetEnd(previousPosition)
-				l.unreadRune()
-				t.literal = str.String()
-				return t, nil
-			}
-		case '/':
-			if potentialComment {
-				// a line comment started
-				t.position.SetEnd(previousPosition)
-				t.position.EndColumn-- // remove first '/'; we can just go back one rune because we now that we can't be at the start of a line
-				err := l.skipComment(false)
-				t.literal = str.String()
-				if len(t.literal) == 0 { // should never happen
-					return t, err
-				}
-				// cut away the first '/' at the end of the literal
-				t.literal = t.literal[:len(t.literal)-1]
-				return t, err // expression ended here
-			}
-			potentialComment = true
-			goto continueLoop
-		case '*':
-			if potentialComment {
-				// a block comment started
-				t.position.SetEnd(previousPosition)
-				l.unreadRune()
-				err := l.skipComment(true)
-				if err != nil {
-					return t, err
-				}
-				s := str.String()
-				if len(s) > 0 { // should always be the case
-					str.Reset()
-					str.WriteString(s[:len(s)-1]) // cut away the '/' before the * at the end of the literal
-				}
-				if len(s) == 1 && !blockExpression {
-					// if the only thing scanned so far was the first '/' of the comment we restart scanning of the expression like it had just started
-					// this gives more accurate vit.Position of the actual expression without the comment
-					goto startExpressionScan
-				}
-				// if we decided that the scanned text could not be a literal just because we found the preceding '/', reset couldBeLiteral here.
-				if literalFailedBecauseOfSlashAt == pos.Column-1 {
-					couldBeLiteral = true
-					literalFailedBecauseOfSlashAt = -1
-				}
-
-				// continue with the expression
-				goto continueLoopWithoutRune
-			}
-		}
-
-		potentialComment = false // reset; if we just set this to true we jumped over this
 
 	continueLoop:
-		str.WriteRune(r)
-	continueLoopWithoutRune:
-		previousPosition = pos
+		lastRune = r
 	}
 }
 
-// skipSpaces skips all spaces and newlines. It returns the vit.Position of the first non-space character.
-// That rune will still be in the source as unreadRune will be called at the end.
-func (l *lexer) skipSpaces() (vit.Position, error) {
+func (l *lexer) readExpressionUntil(stopRunes ...rune) (string, vit.Position, error) {
+	var out strings.Builder
+	var bracketType rune      // type of the outer most bracket we are tracking. It will contain the rune that is expected to close the bracket. (one of ')', ']' or '}' )
+	var openBrackets int      // number brackets (which one is specified in bracketType) that have been opened
+	var potentialComment bool // set to true if we encountered a '/' in the last rune
 	for {
 		r, pos, err := l.nextRune()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return pos, fmt.Errorf("unexpected end of file")
+				if openBrackets > 0 {
+					// theoretically we could return an error here, but we will just take the expresssion as is
+					// return "", pos, LexError{pos, fmt.Sprintf("unexpected end of file, expected '%s'", string(bracketType))}
+					return out.String(), l.previousPosition, nil
+				} else {
+					return out.String(), l.previousPosition, nil
+				}
 			}
 
-			return pos, fmt.Errorf("unexpected error: %w", err)
+			return "", pos, err
+		}
+
+		// check if we reached the end of the expression
+		if openBrackets == 0 && containsRune(stopRunes, r) {
+			l.unreadRune()
+			return out.String(), l.previousPosition, nil
+		}
+
+		out.WriteRune(r)
+
+		// check if a string starts here ...
+		if r == '\'' || r == '"' || r == '`' {
+			// ... and if so read all of it
+			str, pos, err := l.readString(r)
+			if err != nil {
+				return "", pos, err
+			}
+			out.WriteString(str)
+			continue
+		}
+
+		// check if this might be the start of a comment
+		if potentialComment {
+			if r == '/' || r == '*' {
+				// a line comment started
+				str, err := l.readComment(r == '*')
+				if err != nil {
+					return "", pos, err
+				}
+				out.WriteString(str)
+				continue
+			} else {
+				potentialComment = false
+			}
+		} else if r == '/' {
+			potentialComment = true
+			continue
+		}
+
+		// if we are waiting for a bracket to close...
+		if openBrackets > 0 {
+			// ... and if this is the right type of bracket ...
+			if bracketType == r {
+				// ... mark it as closed ...
+				openBrackets--
+				// ... and check if it was the last one we expected
+				if openBrackets == 0 {
+					bracketType = 0
+				}
+			}
+		} else {
+			// we are currently not inside of a bracket so we need to check if a new one starts here
+			switch r {
+			case '(':
+				bracketType = ')'
+				openBrackets++
+			case '[':
+				bracketType = ']'
+				openBrackets++
+			case '{':
+				bracketType = '}'
+				openBrackets++
+			}
+		}
+	}
+}
+
+func containsRune(set []rune, r rune) bool {
+	for _, s := range set {
+		if s == r {
+			return true
+		}
+	}
+	return false
+}
+
+// skipSpaceLikes skips all spaces and newlines. It returns the vit.Position of the first non-space character.
+// That rune will still be in the source as unreadRune will be called at the end.
+func (l *lexer) skipSpaceLikes() (vit.Position, error) {
+	for {
+		r, pos, err := l.nextRune()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return pos, nil
+			}
+
+			return pos, err
 		}
 		if !unicode.IsSpace(r) { // also matches newlines
+			l.unreadRune()
+			return pos, nil
+		}
+	}
+}
+
+// skip skips all provided runes. It returns the vit.Position of the first non-skipped rune.
+// That rune will still be in the source as unreadRune will be called at the end.
+func (l *lexer) skip(runes ...rune) (vit.Position, error) {
+	for {
+		r, pos, err := l.nextRune()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return pos, nil
+			}
+
+			return pos, err
+		}
+		if !containsRune(runes, r) {
 			l.unreadRune()
 			return pos, nil
 		}
@@ -534,27 +509,32 @@ func (l *lexer) scanIdentifier(first rune) (token, error) {
 	}
 }
 
-// skipComment reads all runes until the end of the comment.
-func (l *lexer) skipComment(multiLineComment bool) error {
+// readComment reads all runes until the end of the comment.
+// It returns the read comment excluding the runes that started it (as it will be called after the comment has already started).
+// For multiline comments the output WILL include the '*/' and the end of the comment.
+// For single line comments the output WILL NOT include the newline that ended the comment.
+func (l *lexer) readComment(multiLineComment bool) (string, error) {
+	var out strings.Builder
 	var starFound bool // only required for multiline comments
 	for {
-		r, _, err := l.nextRune()
+		r, pos, err := l.nextRune()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				if multiLineComment {
-					return fmt.Errorf("unexpected end of file")
+					return "", unexpectedEOF(pos)
 				}
 				// a singe line comment can be the last thing in a file
-				return nil
+				return out.String(), nil
 			}
-			return fmt.Errorf("unexpected error: %w", err)
+			return "", err
 		}
 
 		if multiLineComment {
+			out.WriteRune(r)
 			if r == '*' {
 				starFound = true
 			} else if starFound && r == '/' {
-				return nil // reached end of multiline comment
+				break // reached end of multiline comment
 			} else {
 				starFound = false
 			}
@@ -562,10 +542,13 @@ func (l *lexer) skipComment(multiLineComment bool) error {
 			if r == '\n' {
 				// we have reached the end of the line
 				l.unreadRune()
-				return nil
+				break
 			}
+			out.WriteRune(r) // only add the rune after we checked if it's a newline
 		}
 	}
+
+	return out.String(), nil
 }
 
 // scanNumber scans a number token.

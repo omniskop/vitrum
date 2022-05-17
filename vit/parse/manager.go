@@ -149,8 +149,8 @@ func FormatError(err error) string {
 
 	var pErr ParseError
 	if errors.As(err, &pErr) {
-		// If the error chain contains a parseError we will use it's position to create a report.
-		return fmt.Sprintf("%v\r\n\r\n%s", err, gErr.position.Report())
+		// If the error chain contains a parseError we will use it to create a report.
+		return fmt.Sprintf("%v\r\n\r\n%s", err, pErr.Report())
 	}
 
 	var eErr vit.ExpressionError

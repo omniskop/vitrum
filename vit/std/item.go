@@ -114,7 +114,7 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 
 func (i *Item) AddChild(child vit.Component) {
 	child.SetParent(i)
-	// i.children = append(i.children, child)
+	i.Root.AddChildButKeepParent(child)
 }
 
 func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {

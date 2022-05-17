@@ -65,6 +65,10 @@ func (e genericError) Unwrap() error {
 	return e.err
 }
 
+func init() {
+	vit.InstantiateComponent = instantiateComponent
+}
+
 // parseFile parsed a given file into a document with the given component name.
 func parseFile(fileName string, componentName string) (*VitDocument, error) {
 	file, err := os.Open(fileName)
@@ -118,7 +122,7 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 }
 
 // instantiateCustomComponent creates a component described by a componentDefinition and wraps it in a Custom component with the given id.
-func instantiateCustomComponent(def *ComponentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
+func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
 	comp, err := instantiateComponent(def, components)
 	if err != nil {
 		return nil, err
@@ -130,7 +134,7 @@ func instantiateCustomComponent(def *ComponentDefinition, id string, name string
 }
 
 // instantiateComponent creates a component described by a componentDefinition.
-func instantiateComponent(def *ComponentDefinition, components vit.ComponentContainer) (vit.Component, error) {
+func instantiateComponent(def *vit.ComponentDefinition, components vit.ComponentContainer) (vit.Component, error) {
 	src, ok := components.Get(def.BaseName)
 	if !ok {
 		return nil, unknownComponentError{def.BaseName}
@@ -149,7 +153,7 @@ func instantiateComponent(def *ComponentDefinition, components vit.ComponentCont
 }
 
 // populateComponent takes a fresh component instance as well as it's definition and populates all attributes and children with their correct values.
-func populateComponent(instance vit.Component, def *ComponentDefinition, components vit.ComponentContainer) error {
+func populateComponent(instance vit.Component, def *vit.ComponentDefinition, components vit.ComponentContainer) error {
 	for _, enum := range def.Enumerations {
 		if !instance.DefineEnum(enum) {
 			return genericErrorf(enum.Position, "enum %q already defined", enum.Name)
@@ -159,23 +163,14 @@ func populateComponent(instance vit.Component, def *ComponentDefinition, compone
 	for _, prop := range def.Properties {
 		if prop.VitType != "" {
 			// this defines a new property
-			if err := instance.DefineProperty(prop.Identifier[0], prop.VitType, prop.Expression, &prop.position); err != nil {
-				return genericError{err: err, position: prop.position}
+			if err := instance.DefineProperty(prop); err != nil {
+				return err
 			}
 			// instance.SetProperty(prop.identifier[0], prop.expression)
 		} else if len(prop.Identifier) == 1 {
 			// simple property assignment
-			var value interface{}
-			if prop.Component != nil {
-				value = ComponentInstantiator{
-					definition: prop.Component,
-					context:    components,
-				}
-			} else {
-				value = prop.Expression
-			}
-			if ok := instance.SetProperty(prop.Identifier[0], value, &prop.position); !ok {
-				return genericErrorf(prop.position, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
+			if ok := instance.SetProperty(prop.Identifier[0], prop, &prop.Pos); !ok {
+				return genericErrorf(prop.Pos, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
 			}
 		} else {
 			// assign property with qualifier

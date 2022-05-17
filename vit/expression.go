@@ -10,6 +10,7 @@ import (
 // indicates that an expression was not evaluated fully because it read from another expression that has been marked as dirty
 var unsettledDependenciesError = errors.New("unsettled dependencies")
 
+// Expression contains JavaScript code that can be executed to get a value
 type Expression struct {
 	code         string
 	dirty        bool
@@ -247,6 +248,19 @@ func castFloat(val interface{}) (float64, bool) {
 		return float64(n), true
 	default:
 		return 0, false
+	}
+}
+
+func castList[ElementType Value](val interface{}) ([]ElementType, bool) {
+	switch list := val.(type) {
+	case []Value:
+		result := make([]ElementType, len(list))
+		for i, v := range list {
+			result[i] = v.(ElementType)
+		}
+		return result, true
+	default:
+		return nil, false
 	}
 }
 

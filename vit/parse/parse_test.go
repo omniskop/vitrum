@@ -202,19 +202,19 @@ var validDocumentold = &VitDocument{
 		{namespace: []string{"One"}, version: "1.23"},
 		{namespace: []string{"Two", "Three"}, version: "4.56"},
 	},
-	Components: []*ComponentDefinition{
+	Components: []*vit.ComponentDefinition{
 		{
 			BaseName: "Item",
 			ID:       "rect",
-			Properties: []Property{
+			Properties: []vit.PropertyDefinition{
 				{Identifier: []string{"anchors", "left"}, Expression: "parent.left + 10"},
-				{Identifier: []string{"affe"}, Component: &ComponentDefinition{BaseName: "Item", Properties: []Property{{Identifier: []string{"one"}, Expression: "1"}}}},
+				{Identifier: []string{"affe"}, Components: []*vit.ComponentDefinition{{BaseName: "Item", Properties: []vit.PropertyDefinition{{Identifier: []string{"one"}, Expression: "1"}}}}},
 				{Identifier: []string{"local"}, VitType: "bool", Expression: "true"},
 			},
-			Children: []*ComponentDefinition{
+			Children: []*vit.ComponentDefinition{
 				{
 					BaseName: "Label",
-					Properties: []Property{
+					Properties: []vit.PropertyDefinition{
 						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap"},
 						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`},
 					},
@@ -229,62 +229,63 @@ var validDocument = &VitDocument{
 		{namespace: []string{"One"}, version: "1.23", position: vit.PositionRange{FilePath: "test", StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
 		{namespace: []string{"Two", "Three"}, version: "4.56", position: vit.PositionRange{FilePath: "test", StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
 	},
-	Components: []*ComponentDefinition{
+	Components: []*vit.ComponentDefinition{
 		{
-			position: vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
+			Pos:      vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
 			BaseName: "Item",
 			ID:       "rect",
-			Properties: []Property{
+			Properties: []vit.PropertyDefinition{
 				{
-					position:    vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
+					Pos:         vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
 					Identifier:  []string{"anchors", "left"},
 					Expression:  "parent.left + 10",
-					Component:   (*ComponentDefinition)(nil),
+					Components:  nil,
 					ReadOnly:    false,
 					Static:      false,
-					staticValue: interface{}(nil),
+					StaticValue: interface{}(nil),
 				},
 				{
-					position:   vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 14, EndColumn: 34},
+					Pos:        vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 16, EndColumn: 5},
 					Identifier: []string{"affe"},
-					Component: &ComponentDefinition{
-						position: vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
+					Expression: "/*#invalid stuff#*/ Item {\n        one: 1\n    }",
+					Components: []*vit.ComponentDefinition{{
+						Pos:      vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
 						BaseName: "Item",
 						ID:       "",
-						Properties: []Property{
+						Properties: []vit.PropertyDefinition{
 							{
-								position:   vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
+								Pos:        vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
 								Identifier: []string{"one"},
-								VitType:    "", Expression: "1", Component: (*ComponentDefinition)(nil),
+								VitType:    "", Expression: "1", Components: nil,
 								ReadOnly:    false,
 								Static:      false,
-								staticValue: interface{}(nil),
+								StaticValue: interface{}(nil),
 							},
 						},
-						Children:     []*ComponentDefinition(nil),
+						Children:     []*vit.ComponentDefinition(nil),
 						Enumerations: []vit.Enumeration(nil),
-					},
+					}},
 					ReadOnly:    false,
 					Static:      false,
-					staticValue: interface{}(nil),
+					StaticValue: interface{}(nil),
 				},
 				{
-					position:    vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 26},
+					Pos:         vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 26},
 					Identifier:  []string{"local"},
 					VitType:     "bool",
 					Expression:  "true",
-					Component:   (*ComponentDefinition)(nil),
+					Components:  nil,
 					ReadOnly:    false,
 					Static:      false,
-					staticValue: interface{}(nil),
+					StaticValue: interface{}(nil),
 				},
 			},
-			Children: []*ComponentDefinition{
+			Children: []*vit.ComponentDefinition{
 				{
 					BaseName: "Label",
-					Properties: []Property{
-						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap", position: vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31}},
-						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`, position: vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38}},
+					Properties: []vit.PropertyDefinition{
+						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap", Pos: vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31}},
+						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`, Pos: vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38}},
 					},
 				},
 			},
@@ -300,7 +301,7 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	options := []cmp.Option{cmp.AllowUnexported(VitDocument{}, ComponentDefinition{}, Property{}, importStatement{})}
+	options := []cmp.Option{cmp.AllowUnexported(VitDocument{}, vit.ComponentDefinition{}, vit.PropertyDefinition{}, importStatement{})}
 	if !cmp.Equal(validDocument, doc, options...) {
 		t.Log("Parsed document deviated from expected result:")
 		t.Log("- expected")

@@ -25,7 +25,7 @@ func (i *DocumentInstantiator) Instantiate(id string, components vit.ComponentCo
 func (i *DocumentInstantiator) ResolveVariable(name string) (interface{}, bool) {
 	for _, prop := range i.doc.Components[0].Properties {
 		if prop.Static && len(prop.Identifier) == 1 && prop.Identifier[0] == name {
-			return prop.staticValue, true
+			return prop.StaticValue, true
 		}
 	}
 

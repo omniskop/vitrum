@@ -6,9 +6,14 @@ import (
 	"github.com/omniskop/vitrum/vit/script"
 )
 
+// This will be set by the parser package at initialization.
+// It is ugly but we can't use circular dependencies.
+// Right now the alternative would be to pass a type from the parser package to every vit component specifically for this purpose and that's not really what I want to do either.
+var InstantiateComponent func(*ComponentDefinition, ComponentContainer) (Component, error)
+
 // Component describes a generic vit component
 type Component interface {
-	DefineProperty(name string, vitType string, expression string, position *PositionRange) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
+	DefineProperty(PropertyDefinition) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
 	Property(name string) (Value, bool)                                       // returns the property with the given name, and a boolean indicating whether the property exists
 	MustProperty(name string) Value                                           // same as Property but panics if the property doesn't exist
@@ -29,10 +34,6 @@ type Component interface {
 
 func FinishComponent(comp Component) error {
 	return comp.Finish()
-}
-
-type Instantiator interface {
-	Instantiate() (Component, error)
 }
 
 type Enumeration struct {

@@ -18,7 +18,7 @@ func evaluateStaticExpressions(documents vit.ComponentContainer) {
 		for i := 0; i < len(doc.Components); i++ {
 			for c := 0; c < len(doc.Components[i].Properties); c++ {
 				prop := &doc.Components[i].Properties[c]
-				if !prop.Static || prop.staticValue != nil {
+				if !prop.Static || prop.StaticValue != nil {
 					continue
 				}
 				val, err := script.RunContained(prop.Expression, staticVariableResolver{documents, doc.Components[i]})
@@ -26,7 +26,7 @@ func evaluateStaticExpressions(documents vit.ComponentContainer) {
 					fmt.Println("1>", err)
 					continue
 				}
-				prop.staticValue = val
+				prop.StaticValue = val
 			}
 		}
 		documents.Global[componentName] = &DocumentInstantiator{doc}
@@ -35,7 +35,7 @@ func evaluateStaticExpressions(documents vit.ComponentContainer) {
 
 type staticVariableResolver struct {
 	documents vit.ComponentContainer
-	component *ComponentDefinition
+	component *vit.ComponentDefinition
 }
 
 func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool) {
@@ -45,15 +45,15 @@ func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool)
 
 	for _, prop := range r.component.Properties {
 		if prop.Static && len(prop.Identifier) == 1 && prop.Identifier[0] == name {
-			if prop.staticValue != nil {
-				return prop.staticValue, true
+			if prop.StaticValue != nil {
+				return prop.StaticValue, true
 			}
 			val, err := script.RunContained(prop.Expression, r)
 			if err != nil {
 				fmt.Println("2>", err)
 				return nil, false
 			}
-			prop.staticValue = val
+			prop.StaticValue = val
 			return val, true
 		}
 	}

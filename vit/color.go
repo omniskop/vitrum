@@ -22,6 +22,10 @@ func NewColorValue(expression string, position *PositionRange) *ColorValue {
 	return v
 }
 
+func (v *ColorValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
+}
+
 func (v *ColorValue) Update(context Component) error {
 	val, err := v.Expression.Evaluate(context)
 	if err != nil {

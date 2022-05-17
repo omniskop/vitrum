@@ -28,38 +28,43 @@ func (r *Root) String() string {
 // DefineProperty creates a new property on the component.
 // On failure it returns either a RedeclarationError or UnknownTypeError.
 // TODO: currently properties can be redefined. Make a decision on that behaviour and update the documentation accordingly (inclusing the Component interface).
-func (r *Root) DefineProperty(name string, vitType string, expression string, position *PositionRange) error {
-	switch vitType {
+func (r *Root) DefineProperty(propDef PropertyDefinition) error {
+	name := propDef.Identifier[0]
+	switch propDef.VitType {
 	case "int":
-		if expression == "" {
-			r.properties[name] = NewIntValue("", position)
+		if propDef.Expression == "" {
+			r.properties[name] = NewIntValue("", &propDef.Pos)
 		} else {
-			r.properties[name] = NewIntValue(expression, position)
+			r.properties[name] = NewIntValue(propDef.Expression, &propDef.Pos)
 		}
 	case "float":
-		if expression == "" {
-			r.properties[name] = NewFloatValue("", position)
+		if propDef.Expression == "" {
+			r.properties[name] = NewFloatValue("", &propDef.Pos)
 		} else {
-			r.properties[name] = NewFloatValue(expression, position)
+			r.properties[name] = NewFloatValue(propDef.Expression, &propDef.Pos)
 		}
 	case "string":
-		if expression == "" {
-			r.properties[name] = NewStringValue("", position)
+		if propDef.Expression == "" {
+			r.properties[name] = NewStringValue("", &propDef.Pos)
 		} else {
-			r.properties[name] = NewStringValue(expression, position)
+			r.properties[name] = NewStringValue(propDef.Expression, &propDef.Pos)
 		}
 	case "alias":
-		r.properties[name] = NewAliasValue(expression, position)
+		r.properties[name] = NewAliasValue(propDef.Expression, &propDef.Pos)
+	case "component":
+		r.properties[name] = NewComponentValue(propDef.Components[0], &propDef.Pos)
+	case "any":
+		r.properties[name] = NewAnyValue(propDef.Expression, &propDef.Pos)
 	default:
-		if _, ok := r.enumerations[vitType]; ok {
-			if expression == "" {
-				r.properties[name] = NewIntValue("", position)
+		if _, ok := r.enumerations[propDef.VitType]; ok {
+			if propDef.Expression == "" {
+				r.properties[name] = NewIntValue("", &propDef.Pos)
 			} else {
-				r.properties[name] = NewIntValue(expression, position)
+				r.properties[name] = NewIntValue(propDef.Expression, &propDef.Pos)
 			}
 			return nil
 		}
-		return UnknownTypeError{TypeName: vitType}
+		return UnknownTypeError{TypeName: propDef.VitType}
 	}
 	return nil
 }
@@ -88,11 +93,17 @@ func (r *Root) MustProperty(key string) Value {
 	return v
 }
 
-func (r *Root) SetProperty(key string, value interface{}, position *PositionRange) bool {
-	if _, ok := r.properties[key]; !ok {
+func (r *Root) SetProperty(key string, newValue interface{}, position *PositionRange) bool {
+	prop, ok := r.properties[key]
+	if !ok {
 		return false
 	}
-	r.properties[key].GetExpression().ChangeCode(value.(string), position)
+	switch actual := newValue.(type) {
+	case string:
+		prop.GetExpression().ChangeCode(actual, position)
+	case PropertyDefinition:
+		prop.SetFromProperty(actual)
+	}
 	return true
 }
 
@@ -206,6 +217,11 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 		}
 	}
 	return sum, errs
+}
+
+// InstantiateInScope will instantiate the given component in the scope of this root component.
+func (r *Root) InstantiateInScope(comp *ComponentDefinition) (Component, error) {
+	return InstantiateComponent(comp, r.scope)
 }
 
 func (r *Root) ID() string {

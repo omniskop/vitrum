@@ -7,6 +7,7 @@ import (
 )
 
 type Value interface {
+	SetFromProperty(PropertyDefinition)
 	Update(context Component) error
 	GetValue() interface{}
 	MakeDirty([]*Expression)
@@ -15,6 +16,55 @@ type Value interface {
 	RemoveDependent(*Expression)
 	ShouldEvaluate() bool
 	Err() error
+}
+
+func ValueConstructorForType(vitType string, expression string, position *PositionRange) {
+
+}
+
+// ========================================= List Value ============================================
+
+type ListValue[ElementType Value] struct {
+	Expression
+	Value []ElementType
+}
+
+func NewListValue[ElementType Value](expression string, position *PositionRange) *ListValue[ElementType] {
+	v := new(ListValue[ElementType])
+	if expression == "" {
+		v.Expression = *NewExpression("[]", position)
+	} else {
+		v.Expression = *NewExpression(expression, position)
+	}
+	return v
+}
+
+func (c *ListValue[ElementType]) SetFromProperty(prop PropertyDefinition) {
+	c.Expression.ChangeCode(prop.Expression, &prop.Pos)
+}
+
+func (v *ListValue[ElementType]) Update(context Component) error {
+	val, err := v.Expression.Evaluate(context)
+	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
+		return err
+	}
+	castVal, ok := castList[ElementType](val)
+	if !ok {
+		return fmt.Errorf("did not evaluate to expected type list but %T instead", val)
+	}
+	v.Value = castVal
+	return nil
+}
+
+func (v *ListValue[ElementType]) GetValue() interface{} {
+	var out []interface{}
+	for _, element := range v.Value {
+		out = append(out, element.GetValue())
+	}
+	return out
 }
 
 // ========================================== Int Value ============================================
@@ -32,6 +82,10 @@ func NewIntValue(expression string, position *PositionRange) *IntValue {
 		v.Expression = *NewExpression(expression, position)
 	}
 	return v
+}
+
+func (v *IntValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
 }
 
 func (v *IntValue) Update(context Component) error {
@@ -71,6 +125,10 @@ func NewFloatValue(expression string, position *PositionRange) *FloatValue {
 	return v
 }
 
+func (v *FloatValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
+}
+
 func (v *FloatValue) Update(context Component) error {
 	val, err := v.Expression.Evaluate(context)
 	if err != nil {
@@ -106,6 +164,10 @@ func NewStringValue(expression string, position *PositionRange) *StringValue {
 		v.Expression = *NewExpression(expression, position)
 	}
 	return v
+}
+
+func (v *StringValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
 }
 
 func (v *StringValue) Update(context Component) error {
@@ -154,6 +216,10 @@ func NewAliasValue(expression string, position *PositionRange) *AliasValue {
 	v.Position = position
 	v.Expression = expression
 	return v
+}
+
+func (v *AliasValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression = prop.Expression
 }
 
 func (v *AliasValue) Update(context Component) error {
@@ -292,6 +358,10 @@ func NewAnyValue(expression string, position *PositionRange) *AnyValue {
 	return v
 }
 
+func (v *AnyValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
+}
+
 func (v *AnyValue) Update(context Component) error {
 	val, err := v.Expression.Evaluate(context)
 	if err != nil {
@@ -311,25 +381,41 @@ func (c *AnyValue) GetValue() interface{} {
 // ======================================= Component Value =========================================
 
 type ComponentValue struct {
-	Value   Instantiator
+	Value   *ComponentDefinition
 	Changed bool
+	err     error
 }
 
-func NewComponentValue(component Instantiator, position *PositionRange) *ComponentValue {
+func NewComponentValue(component *ComponentDefinition, position *PositionRange) *ComponentValue {
 	return &ComponentValue{
 		Value:   component,
 		Changed: true,
 	}
 }
 
-func (v *ComponentValue) ChangeComponent(component Instantiator) {
+func (v *ComponentValue) ChangeComponent(component *ComponentDefinition) {
 	v.Value = component
+	v.Changed = true
+	v.err = nil
+}
+
+func (v *ComponentValue) SetFromProperty(prop PropertyDefinition) {
+	if len(prop.Components) == 0 {
+		v.Value = nil
+		v.err = nil
+	} else if len(prop.Components) == 1 {
+		v.Value = prop.Components[0]
+		v.err = nil
+	} else {
+		v.Value = prop.Components[0]
+		v.err = fmt.Errorf("cannot assign multiple components to a single component value at %s", prop.Pos.String())
+	}
 	v.Changed = true
 }
 
 func (v *ComponentValue) Update(context Component) error {
 	v.Changed = false
-	return nil
+	return v.err
 }
 
 func (v *ComponentValue) GetValue() interface{} {
@@ -354,4 +440,60 @@ func (v *ComponentValue) ShouldEvaluate() bool {
 
 func (v *ComponentValue) Err() error {
 	return nil
+}
+
+// ========================================= Static List ===========================================
+
+type StaticBaseValue struct {
+	Changed bool
+}
+
+func (v *StaticBaseValue) SetFromProperty(prop PropertyDefinition) {
+	v.Changed = true
+}
+
+func (v *StaticBaseValue) Update(context Component) error {
+	v.Changed = false
+	return nil
+}
+
+func (v *StaticBaseValue) MakeDirty(stack []*Expression) {
+	v.Changed = true
+}
+
+func (v *StaticBaseValue) GetExpression() *Expression {
+	return NewExpression("", nil)
+}
+
+func (v *StaticBaseValue) AddDependent(exp *Expression) {}
+
+func (v *StaticBaseValue) RemoveDependent(exp *Expression) {}
+
+func (v *StaticBaseValue) ShouldEvaluate() bool {
+	return v.Changed
+}
+
+func (v *StaticBaseValue) Err() error {
+	return nil
+}
+
+type StaticListValue[ElementType Value] struct {
+	StaticBaseValue
+	Items []ElementType
+}
+
+func NewStaticListValue[ElementType Value](items []ElementType, position *PositionRange) *StaticListValue[ElementType] {
+	return &StaticListValue[ElementType]{
+		StaticBaseValue: StaticBaseValue{true},
+		Items:           items,
+	}
+}
+
+func (v *StaticListValue[ElementType]) GetValue() interface{} {
+	return v.Items
+}
+
+func (v *StaticListValue[ElementType]) Set(value []ElementType) {
+	v.Items = value
+	v.Changed = true
 }
