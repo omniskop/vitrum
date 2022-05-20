@@ -22,7 +22,9 @@ type Expression struct {
 }
 
 func NewExpression(code string, position *PositionRange) *Expression {
-	prog, err := script.NewScript("expression", code)
+	// The parenthesis around the code are needed to make sure we get the correct value from all expressions.
+	// For example objects (e.g. {one: 1}) would return the number '1' instead of a map.
+	prog, err := script.NewScript("expression", fmt.Sprintf("(%s)", code))
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +100,7 @@ func (e *Expression) MakeDirty(stack []*Expression) {
 }
 
 func (e *Expression) ChangeCode(code string, position *PositionRange) {
-	e.program, e.err = script.NewScript("expression", code)
+	e.program, e.err = script.NewScript("expression", fmt.Sprintf("(%s)", code))
 	if e.err != nil {
 		fmt.Printf("[expression] code error %q: %v\r\n", code, e.err)
 		return

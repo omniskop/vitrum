@@ -53,7 +53,7 @@ func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 		r.properties[name] = NewAliasValue(propDef.Expression, &propDef.Pos)
 	case "component":
 		r.properties[name] = NewComponentValue(propDef.Components[0], &propDef.Pos)
-	case "any":
+	case "var":
 		r.properties[name] = NewAnyValue(propDef.Expression, &propDef.Pos)
 	default:
 		if _, ok := r.enumerations[propDef.VitType]; ok {

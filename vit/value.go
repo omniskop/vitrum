@@ -18,8 +18,20 @@ type Value interface {
 	Err() error
 }
 
-func ValueConstructorForType(vitType string, expression string, position *PositionRange) {
-
+func ValueConstructorForType(vitType string, value interface{}, position *PositionRange) (Value, error) {
+	switch vitType {
+	case "string":
+		return NewStringValue(value.(string), position), nil
+	case "int":
+		return NewIntValue(value.(string), position), nil
+	case "float":
+		return NewFloatValue(value.(string), position), nil
+	case "var":
+		return NewAnyValue(value.(string), position), nil
+	case "component":
+		return NewComponentValue(value.(*ComponentDefinition), position), nil
+	}
+	return nil, UnknownTypeError{vitType}
 }
 
 // ========================================= List Value ============================================
