@@ -13,7 +13,7 @@ type Item struct {
 	width   vit.IntValue
 	height  vit.IntValue
 	stuff   vit.IntValue // TODO: delete
-	anchors vit.Anchors
+	anchors vit.AnchorsValue
 	x       vit.FloatValue
 	y       vit.FloatValue
 	z       vit.FloatValue
@@ -44,9 +44,8 @@ func (i *Item) Property(key string) (vit.Value, bool) {
 		return &i.height, true
 	case "stuff":
 		return &i.stuff, true
-	// TODO: fix this
-	// case "vit.Anchors":
-	// 	return &i.vit.Anchors, true
+	case "anchors":
+		return &i.anchors, true
 	case "x":
 		return &i.x, true
 	case "y":
@@ -75,8 +74,9 @@ func (i *Item) SetProperty(key string, value interface{}, position *vit.Position
 		i.height.Expression.ChangeCode(value.(string), position)
 	case "stuff":
 		i.stuff.Expression.ChangeCode(value.(string), position)
-	case "vit.Anchors":
-		i.anchors = value.(vit.Anchors)
+	case "anchors":
+		panic("not implemented")
+		// i.anchors = value.(vit.ObjectValue)
 	case "x":
 		i.x.Expression.ChangeCode(value.(string), position)
 	case "y":
@@ -99,7 +99,7 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 		return i.height, true
 	case "stuff":
 		return i.stuff, true
-	case "vit.Anchors":
+	case "anchors":
 		return &i.anchors, true
 	case "x":
 		return i.x, true
@@ -107,6 +107,11 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 		return i.y, true
 	case "z":
 		return i.z, true
+	}
+
+	value, ok := i.anchors.Property(key)
+	if ok {
+		return value, true
 	}
 
 	return i.Root.ResolveVariable(key)
@@ -174,14 +179,6 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 
 func (i *Item) ID() string {
 	return i.id
-}
-
-func (i *Item) Anchors() vit.Anchors {
-	return i.anchors
-}
-
-func (i *Item) SetAnchors() vit.Anchors {
-	return i.anchors
 }
 
 func (i *Item) Finish() error {

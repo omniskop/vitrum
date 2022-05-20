@@ -180,12 +180,18 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, com
 			}
 		} else {
 			// assign property with qualifier
-			// TODO: make this universal
+			// TODO: make this universal?
 			if prop.Identifier[0] == "anchors" {
-				// TODO: fix this
-				// exp := vit.NewExpression(prop.expression, &prop.position)
-				// a, _ := instance.Property("anchors")
-				// a.GetValue().(*vit.Anchors).SetProperty(prop.identifier[1], exp)
+				v, ok := instance.Property(prop.Identifier[0])
+				if !ok {
+					return genericErrorf(prop.Pos, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
+				}
+				anchors, ok := v.(*vit.AnchorsValue)
+				if !ok {
+					return genericErrorf(prop.Pos, "cannot assign to non object-property %q of component %q", prop.Identifier[0], def.BaseName)
+				}
+
+				anchors.SetProperty(prop.Identifier[1], prop.Expression, &prop.Pos)
 			}
 		}
 	}

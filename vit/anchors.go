@@ -1,5 +1,17 @@
 package vit
 
+/*
+	Layout hierarchy: (from most important to least)
+	- Fill through 'fill'
+	- Centering through 'centerIn'
+	- Positioning through 'left', 'right', 'top', 'bottom', 'horizontalCenter', 'verticalCenter'
+	- Sizing through 'width', 'height'
+
+	Margins:
+	- are applicable to 'fill', but not 'centerIn'
+	- A specific margin (through 'leftMargin', 'rightMargin', 'topMargin', 'bottomMargin') overrides the general 'margins'
+*/
+
 type AnchorLine byte
 
 const (
@@ -12,116 +24,160 @@ const (
 	AnchorVerticalCenter
 )
 
-type Anchors struct {
-	AlignWhenCentered      bool
-	Baseline               AnchorLine
-	BaselineOffset         float64
-	Bottom                 AnchorLine
-	BottomMargin           float64
-	CenterIn               Component
-	Fill                   Component
-	HorizonzalCenter       AnchorLine
-	HorizonzalCenterOffset float64
-	Left                   AnchorLine
-	LeftMargin             float64
-	Margins                float64
-	Right                  AnchorLine
-	RightMargin            float64
-	Top                    AnchorLine
-	TopMargin              float64
-	VerticalCenter         AnchorLine
-	VerticalCenterOffset   float64
+type AnchorsValue struct {
+	Expression
+	AlignWhenCentered      BoolValue
+	Baseline               FloatValue
+	BaselineOffset         FloatValue
+	Bottom                 FloatValue
+	BottomMargin           FloatValue
+	CenterIn               ComponentValue
+	Fill                   ComponentValue
+	HorizontalCenter       FloatValue
+	HorizontalCenterOffset FloatValue
+	Left                   FloatValue
+	LeftMargin             FloatValue
+	Margins                FloatValue
+	Right                  FloatValue
+	RightMargin            FloatValue
+	Top                    FloatValue
+	TopMargin              FloatValue
+	VerticalCenter         FloatValue
+	VerticalCenterOffset   FloatValue
 }
 
-func NewAnchors() Anchors {
-	return Anchors{
-		AlignWhenCentered: true,
+func NewAnchors(expression string, position *PositionRange) AnchorsValue {
+	return AnchorsValue{
+		AlignWhenCentered: *NewBoolValue("true", nil),
 	}
 }
 
-func (a *Anchors) Property(key string) interface{} {
+func (a *AnchorsValue) Property(key string) (interface{}, bool) {
 	switch key {
 	case "alignWhenCentered":
-		return a.AlignWhenCentered
+		return a.AlignWhenCentered, true
 	case "baseline":
-		return a.Baseline
+		return a.Baseline, true
 	case "baselineOffset":
-		return a.BaselineOffset
+		return a.BaselineOffset, true
 	case "bottom":
-		return a.Bottom
+		return a.Bottom, true
 	case "bottomMargin":
-		return a.BottomMargin
+		return a.BottomMargin, true
 	case "centerIn":
-		return a.CenterIn
+		return a.CenterIn, true
 	case "fill":
-		return a.Fill
+		return a.Fill, true
 	case "horizonzalCenter":
-		return a.HorizonzalCenter
+		return a.HorizontalCenter, true
 	case "horizonzalCenterOffset":
-		return a.HorizonzalCenterOffset
+		return a.HorizontalCenterOffset, true
 	case "left":
-		return a.Left
+		return a.Left, true
 	case "leftMargin":
-		return a.LeftMargin
+		return a.LeftMargin, true
 	case "margins":
-		return a.Margins
+		return a.Margins, true
 	case "right":
-		return a.Right
+		return a.Right, true
 	case "rightMargin":
-		return a.RightMargin
+		return a.RightMargin, true
 	case "top":
-		return a.Top
+		return a.Top, true
 	case "topMargin":
-		return a.TopMargin
+		return a.TopMargin, true
 	case "verticalCenter":
-		return a.VerticalCenter
+		return a.VerticalCenter, true
 	case "verticalCenterOffset":
-		return a.VerticalCenterOffset
+		return a.VerticalCenterOffset, true
 	}
-	return nil
+	return nil, false
 }
 
-func (a *Anchors) SetProperty(key string, value interface{}) bool {
-	return true
+func (a *AnchorsValue) SetProperty(key string, expression string, position *PositionRange) bool {
 	switch key {
 	case "alignWhenCentered":
-		a.AlignWhenCentered = value.(bool)
+		a.AlignWhenCentered.ChangeCode(expression, position)
 	case "baseline":
-		a.Baseline = value.(AnchorLine)
+		a.Baseline.ChangeCode(expression, position)
 	case "baselineOffset":
-		a.BaselineOffset = value.(float64)
+		a.BaselineOffset.ChangeCode(expression, position)
 	case "bottom":
-		a.Bottom = value.(AnchorLine)
+		a.Bottom.ChangeCode(expression, position)
 	case "bottomMargin":
-		a.BottomMargin = value.(float64)
-	case "centerIn":
-		a.CenterIn = value.(Component)
-	case "fill":
-		a.Fill = value.(Component)
+		a.BottomMargin.ChangeCode(expression, position)
+	// case "centerIn":
+	// 	a.CenterIn.ChangeCode(expression, position)
+	// case "fill":
+	// 	a.Fill.ChangeCode(expression, position)
 	case "horizonzalCenter":
-		a.HorizonzalCenter = value.(AnchorLine)
+		a.HorizontalCenter.ChangeCode(expression, position)
 	case "horizonzalCenterOffset":
-		a.HorizonzalCenterOffset = value.(float64)
+		a.HorizontalCenterOffset.ChangeCode(expression, position)
 	case "left":
-		a.Left = value.(AnchorLine)
+		a.Left.ChangeCode(expression, position)
 	case "leftMargin":
-		a.LeftMargin = value.(float64)
+		a.LeftMargin.ChangeCode(expression, position)
 	case "margins":
-		a.Margins = value.(float64)
+		a.Margins.ChangeCode(expression, position)
 	case "right":
-		a.Right = value.(AnchorLine)
+		a.Right.ChangeCode(expression, position)
 	case "rightMargin":
-		a.RightMargin = value.(float64)
+		a.RightMargin.ChangeCode(expression, position)
 	case "top":
-		a.Top = value.(AnchorLine)
+		a.Top.ChangeCode(expression, position)
 	case "topMargin":
-		a.TopMargin = value.(float64)
+		a.TopMargin.ChangeCode(expression, position)
 	case "verticalCenter":
-		a.VerticalCenter = value.(AnchorLine)
+		a.VerticalCenter.ChangeCode(expression, position)
 	case "verticalCenterOffset":
-		a.VerticalCenterOffset = value.(float64)
+		a.VerticalCenterOffset.ChangeCode(expression, position)
 	default:
 		return false
 	}
 	return true
+}
+
+func (v *AnchorsValue) SetFromProperty(def PropertyDefinition) {
+	panic("not implemented")
+}
+
+func (v *AnchorsValue) Update(context Component) error {
+	panic("not implemented")
+}
+
+func (v *AnchorsValue) GetValue() interface{} {
+	panic("not implemented")
+	return nil
+}
+
+func (v *AnchorsValue) MakeDirty([]*Expression) {
+	panic("not implemented")
+}
+
+func (v *AnchorsValue) GetExpression() *Expression {
+	panic("not implemented")
+	return nil
+}
+
+func (v *AnchorsValue) AddDependent(dep *Expression) {
+	panic("not implemented")
+}
+
+func (v *AnchorsValue) RemoveDependent(dep *Expression) {
+	panic("not implemented")
+}
+
+func (v *AnchorsValue) ShouldEvaluate() bool {
+	panic("not implemented")
+	return false
+}
+
+func (v *AnchorsValue) Err() error {
+	panic("not implemented")
+	return nil
+}
+
+func parseAnchorLine() {
+
 }
