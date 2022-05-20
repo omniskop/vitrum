@@ -26,6 +26,8 @@ func ValueConstructorForType(vitType string, value interface{}, position *Positi
 		return NewIntValue(value.(string), position), nil
 	case "float":
 		return NewFloatValue(value.(string), position), nil
+	case "bool":
+		return NewBoolValue(value.(string), position), nil
 	case "var":
 		return NewAnyValue(value.(string), position), nil
 	case "component":
@@ -212,6 +214,61 @@ func convertJSValueToString(value interface{}) (string, bool) {
 		return strconv.FormatFloat(actual, 'f', 64, 10), true
 	}
 	return "", false
+}
+
+// ========================================= Bool Value ============================================
+
+type BoolValue struct {
+	Expression
+	Value bool
+}
+
+func NewBoolValue(expression string, position *PositionRange) *BoolValue {
+	v := new(BoolValue)
+	if expression == "" {
+		v.Expression = *NewExpression("false", position)
+	} else {
+		v.Expression = *NewExpression(expression, position)
+	}
+	return v
+}
+
+func (v *BoolValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
+}
+
+func (v *BoolValue) Update(context Component) error {
+	val, err := v.Expression.Evaluate(context)
+	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
+		return err
+	}
+	var ok bool
+	v.Value, ok = convertJSValueToBool(val)
+	if !ok {
+		return fmt.Errorf("did not evaluate to expected type string but %T instead", val)
+	}
+	return nil
+}
+
+func (c *BoolValue) GetValue() interface{} {
+	return c.Value
+}
+
+func convertJSValueToBool(value interface{}) (bool, bool) {
+	switch actual := value.(type) {
+	case bool:
+		return actual, true
+	case int64:
+		return actual != 0, true
+	case float64:
+		return actual != 0, true
+	case string:
+		return len(actual) > 0, true
+	}
+	return false, false
 }
 
 // ========================================= Alias Value ===========================================

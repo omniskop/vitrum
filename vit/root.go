@@ -49,6 +49,12 @@ func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 		} else {
 			r.properties[name] = NewStringValue(propDef.Expression, &propDef.Pos)
 		}
+	case "bool":
+		if propDef.Expression == "" {
+			r.properties[name] = NewBoolValue("", &propDef.Pos)
+		} else {
+			r.properties[name] = NewBoolValue(propDef.Expression, &propDef.Pos)
+		}
 	case "alias":
 		r.properties[name] = NewAliasValue(propDef.Expression, &propDef.Pos)
 	case "component":
