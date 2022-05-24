@@ -85,14 +85,14 @@ func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 		sum++
 		err := r.color.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Rectangle", "color", r.id, r.color.Expression, err))
+			errs.Add(vit.NewExpressionError("Rectangle", "color", r.id, *r.color.GetExpression(), err))
 		}
 	}
 	if r.radius.ShouldEvaluate() {
 		sum++
 		err := r.radius.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Rectangle", "radius", r.id, r.radius.Expression, err))
+			errs.Add(vit.NewExpressionError("Rectangle", "radius", r.id, *r.radius.GetExpression(), err))
 		}
 	}
 

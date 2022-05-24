@@ -58,7 +58,7 @@ func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 	case "alias":
 		r.properties[name] = NewAliasValue(propDef.Expression, &propDef.Pos)
 	case "component":
-		r.properties[name] = NewComponentValue(propDef.Components[0], &propDef.Pos)
+		r.properties[name] = NewComponentDefValue(propDef.Components[0], &propDef.Pos)
 	case "var":
 		r.properties[name] = NewAnyValue(propDef.Expression, &propDef.Pos)
 	default:
@@ -193,6 +193,10 @@ func (r *Root) SetParent(parent Component) {
 	r.parent = parent
 }
 
+func (r *Root) Parent() Component {
+	return r.parent
+}
+
 func (r *Root) Children() []Component {
 	return r.children
 }
@@ -287,5 +291,18 @@ func (r *Root) FinishInContext(context Component) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (r *Root) Draw(ctx DrawingContext, area Rect) error {
+	return nil
+}
+
+func (r *Root) DrawChildren(ctx DrawingContext, area Rect) error {
+
+	for _, child := range r.children {
+		child.Draw(ctx, area)
+	}
+
 	return nil
 }

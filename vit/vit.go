@@ -28,6 +28,8 @@ type Component interface {
 	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
 	As(*Component) bool                                                       // Returns true if this component is of the same type as the given parameter. It also changes the parameter to point to this component.
 
+	Draw(DrawingContext, Rect) error
+
 	RootC() *Root  // returns the root of this component
 	Finish() error // Finishes the component instantiation. Should only be called by components that embed this one.
 }

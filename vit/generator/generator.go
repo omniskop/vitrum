@@ -203,7 +203,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			jen.Switch(jen.Id("key")).Block(
 				append(mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
 					return jen.Case(jen.Lit(propId)).Block(
-						jen.Id(receiverName).Dot(propId).Dot("ChangeCode").Call(jen.Id("value").Assert(jen.String()), jen.Id("position")),
+						jen.Id(receiverName).Dot(propId).Op(".").Add(valueChange(prop.VitType, prop.ListDimensions)),
 					)
 				}),
 					jen.Default().Block(
@@ -270,7 +270,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 							jen.Lit(compName),
 							jen.Lit(propId),
 							jen.Id(receiverName).Dot("id"),
-							jen.Id(receiverName).Dot(propId).Dot("Expression"),
+							jen.Op("*").Id(receiverName).Dot(propId).Dot("GetExpression").Call(),
 							jen.Id("err"),
 						)),
 					),
@@ -351,6 +351,13 @@ func addMultiple(g *jen.Group, code []jen.Code) {
 func vitTypeInfo(vitType string, listDimensions int) (propType *jen.Statement, constructor *jen.Statement, zeroValue *jen.Statement) {
 	zeroValue = jen.Lit("") // default for most types
 	if listDimensions > 0 {
+		if vitType == "component" {
+			propType = jen.Op("*").Qual(vitPackage, "ComponentDefListValue")
+			constructor = jen.Qual(vitPackage, "NewComponentDefListValue")
+			zeroValue = jen.Nil()
+			return
+		}
+
 		elementType, _, _ := vitTypeInfo(vitType, 0)
 		propType = jen.Op("*").Qual(vitPackage, "ListValue").Types(elementType)
 		constructor = jen.Qual(vitPackage, "NewListValue").Types(elementType)
@@ -376,8 +383,8 @@ func vitTypeInfo(vitType string, listDimensions int) (propType *jen.Statement, c
 		propType = jen.Op("*").Qual(vitPackage, "AnyValue")
 		constructor = jen.Qual(vitPackage, "NewAnyValue")
 	case "component":
-		propType = jen.Op("*").Qual(vitPackage, "ComponentValue")
-		constructor = jen.Qual(vitPackage, "NewComponentValue")
+		propType = jen.Op("*").Qual(vitPackage, "ComponentDefValue")
+		constructor = jen.Qual(vitPackage, "NewComponentDefValue")
 		zeroValue = jen.Nil()
 	default:
 		upperType := firstLetterUpper(vitType)
@@ -385,6 +392,19 @@ func vitTypeInfo(vitType string, listDimensions int) (propType *jen.Statement, c
 		constructor = jen.Qual(vitPackage, fmt.Sprintf("New%sValue", upperType))
 	}
 	return
+}
+
+func valueChange(vitType string, listDimentions int) *jen.Statement {
+	switch vitType {
+	case "component":
+		if listDimentions == 0 {
+			return jen.Id("ChangeComponent").Call(jen.Id("value").Assert(jen.Index().Op("*").Qual(vitPackage, "ComponentDefinition")).Index(jen.Lit(0)))
+		} else {
+			return jen.Id("ChangeComponents").Call(jen.Id("value").Assert(jen.Index().Op("*").Qual(vitPackage, "ComponentDefinition")))
+		}
+	default:
+		return jen.Id("ChangeCode").Call(jen.Id("value").Assert(jen.String()), jen.Id("position"))
+	}
 }
 
 func firstLetterUpper(s string) string {

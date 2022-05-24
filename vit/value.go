@@ -4,7 +4,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/omniskop/vitrum/vit/script"
 )
+
+type Dependent interface {
+	MakeDirty([]*Expression)
+}
 
 type Value interface {
 	SetFromProperty(PropertyDefinition)
@@ -12,8 +18,8 @@ type Value interface {
 	GetValue() interface{}
 	MakeDirty([]*Expression)
 	GetExpression() *Expression
-	AddDependent(*Expression)
-	RemoveDependent(*Expression)
+	AddDependent(Dependent)
+	RemoveDependent(Dependent)
 	ShouldEvaluate() bool
 	Err() error
 }
@@ -31,9 +37,23 @@ func ValueConstructorForType(vitType string, value interface{}, position *Positi
 	case "var":
 		return NewAnyValue(value.(string), position), nil
 	case "component":
-		return NewComponentValue(value.(*ComponentDefinition), position), nil
+		return NewComponentDefValue(value.(*ComponentDefinition), position), nil
 	}
 	return nil, UnknownTypeError{vitType}
+}
+
+type ChangeMonitor[T Value] struct {
+	handlers []func(T)
+}
+
+func (m *ChangeMonitor[T]) OnChange(handler func(T)) {
+	m.handlers = append(m.handlers, handler)
+}
+
+func (m *ChangeMonitor[T]) triggerChange(v T) {
+	for _, handler := range m.handlers {
+		handler(v)
+	}
 }
 
 // ========================================= List Value ============================================
@@ -122,10 +142,15 @@ func (v *IntValue) GetValue() interface{} {
 	return v.Value
 }
 
+func (v *IntValue) Int() int {
+	return v.Value
+}
+
 // ========================================= Float Value ===========================================
 
 type FloatValue struct {
 	Expression
+	ChangeMonitor[*FloatValue]
 	Value float64
 }
 
@@ -160,6 +185,10 @@ func (v *FloatValue) Update(context Component) error {
 }
 
 func (c *FloatValue) GetValue() interface{} {
+	return c.Value
+}
+
+func (c *FloatValue) Float64() float64 {
 	return c.Value
 }
 
@@ -390,13 +419,13 @@ func (v *AliasValue) GetExpression() *Expression {
 	return NewExpression(v.Expression, v.Position)
 }
 
-func (v *AliasValue) AddDependent(exp *Expression) {
+func (v *AliasValue) AddDependent(exp Dependent) {
 	if v.other == nil {
 		v.other.AddDependent(exp)
 	}
 }
 
-func (v *AliasValue) RemoveDependent(exp *Expression) {
+func (v *AliasValue) RemoveDependent(exp Dependent) {
 	if v.other == nil {
 		v.other.RemoveDependent(exp)
 	}
@@ -447,28 +476,28 @@ func (c *AnyValue) GetValue() interface{} {
 	return c.Value
 }
 
-// ======================================= Component Value =========================================
+// ================================= Component Definition Value ====================================
 
-type ComponentValue struct {
+type ComponentDefValue struct {
 	Value   *ComponentDefinition
 	Changed bool
 	err     error
 }
 
-func NewComponentValue(component *ComponentDefinition, position *PositionRange) *ComponentValue {
-	return &ComponentValue{
+func NewComponentDefValue(component *ComponentDefinition, position *PositionRange) *ComponentDefValue {
+	return &ComponentDefValue{
 		Value:   component,
 		Changed: true,
 	}
 }
 
-func (v *ComponentValue) ChangeComponent(component *ComponentDefinition) {
+func (v *ComponentDefValue) ChangeComponent(component *ComponentDefinition) {
 	v.Value = component
 	v.Changed = true
 	v.err = nil
 }
 
-func (v *ComponentValue) SetFromProperty(prop PropertyDefinition) {
+func (v *ComponentDefValue) SetFromProperty(prop PropertyDefinition) {
 	if len(prop.Components) == 0 {
 		v.Value = nil
 		v.err = nil
@@ -482,39 +511,76 @@ func (v *ComponentValue) SetFromProperty(prop PropertyDefinition) {
 	v.Changed = true
 }
 
-func (v *ComponentValue) Update(context Component) error {
+func (v *ComponentDefValue) Update(context Component) error {
 	v.Changed = false
 	return v.err
 }
 
-func (v *ComponentValue) GetValue() interface{} {
+func (v *ComponentDefValue) GetValue() interface{} {
 	return v.Value
 }
 
-func (v *ComponentValue) MakeDirty(stack []*Expression) {
+func (v *ComponentDefValue) MakeDirty(stack []*Expression) {
 	v.Changed = true
 }
 
-func (v *ComponentValue) GetExpression() *Expression {
+func (v *ComponentDefValue) GetExpression() *Expression {
 	return NewExpression("", nil)
 }
 
-func (v *ComponentValue) AddDependent(exp *Expression) {}
+func (v *ComponentDefValue) AddDependent(exp Dependent) {}
 
-func (v *ComponentValue) RemoveDependent(exp *Expression) {}
+func (v *ComponentDefValue) RemoveDependent(exp Dependent) {}
 
-func (v *ComponentValue) ShouldEvaluate() bool {
+func (v *ComponentDefValue) ShouldEvaluate() bool {
 	return v.Changed
 }
 
-func (v *ComponentValue) Err() error {
+func (v *ComponentDefValue) Err() error {
 	return nil
 }
 
-// ========================================= Static List ===========================================
+// =============================== Component Definition List Value =================================
+
+type ComponentDefListValue struct {
+	StaticBaseValue
+	components []*ComponentDefinition
+}
+
+func NewComponentDefListValue(components []*ComponentDefinition, position *PositionRange) *ComponentDefListValue {
+	return &ComponentDefListValue{
+		StaticBaseValue: *NewStaticBaseValue(),
+		components:      components,
+	}
+}
+
+func (v *ComponentDefListValue) SetFromProperty(prop PropertyDefinition) {
+	v.components = prop.Components
+}
+
+func (v *ComponentDefListValue) GetValue() interface{} {
+	return v.components
+}
+
+func (v *ComponentDefListValue) ChangeComponents(components []*ComponentDefinition) {
+	v.components = components
+	v.Changed = true
+}
+
+// ====================================== Static Base Value ========================================
 
 type StaticBaseValue struct {
-	Changed bool
+	Changed      bool
+	dependencies map[Value]bool
+	dependents   map[Dependent]bool
+}
+
+func NewStaticBaseValue() *StaticBaseValue {
+	return &StaticBaseValue{
+		Changed:      true,
+		dependencies: make(map[Value]bool),
+		dependents:   make(map[Dependent]bool),
+	}
 }
 
 func (v *StaticBaseValue) SetFromProperty(prop PropertyDefinition) {
@@ -528,15 +594,23 @@ func (v *StaticBaseValue) Update(context Component) error {
 
 func (v *StaticBaseValue) MakeDirty(stack []*Expression) {
 	v.Changed = true
+	// TODO: check the stack for circular dependencies
+	for exp := range v.dependents {
+		exp.MakeDirty(stack)
+	}
 }
 
 func (v *StaticBaseValue) GetExpression() *Expression {
 	return NewExpression("", nil)
 }
 
-func (v *StaticBaseValue) AddDependent(exp *Expression) {}
+func (v *StaticBaseValue) AddDependent(dep Dependent) {
+	v.dependents[dep] = true
+}
 
-func (v *StaticBaseValue) RemoveDependent(exp *Expression) {}
+func (v *StaticBaseValue) RemoveDependent(exp Dependent) {
+	delete(v.dependents, exp)
+}
 
 func (v *StaticBaseValue) ShouldEvaluate() bool {
 	return v.Changed
@@ -553,7 +627,7 @@ type StaticListValue[ElementType Value] struct {
 
 func NewStaticListValue[ElementType Value](items []ElementType, position *PositionRange) *StaticListValue[ElementType] {
 	return &StaticListValue[ElementType]{
-		StaticBaseValue: StaticBaseValue{true},
+		StaticBaseValue: *NewStaticBaseValue(),
 		Items:           items,
 	}
 }
@@ -565,4 +639,135 @@ func (v *StaticListValue[ElementType]) GetValue() interface{} {
 func (v *StaticListValue[ElementType]) Set(value []ElementType) {
 	v.Items = value
 	v.Changed = true
+}
+
+// ======================================= Optional Value ==========================================
+
+type OptionalValue[T Value] struct {
+	ChangeMonitor[T]
+	Value T
+	isSet bool
+}
+
+func NewOptionalValue[T Value](v T) *OptionalValue[T] {
+	return &OptionalValue[T]{
+		Value: v,
+	}
+}
+
+func (v *OptionalValue[T]) IsSet() bool {
+	return v.isSet
+}
+
+func (v *OptionalValue[T]) SetFromProperty(prop PropertyDefinition) {
+	v.Value.SetFromProperty(prop)
+	v.isSet = true
+}
+
+func (v *OptionalValue[T]) Update(context Component) error {
+	return v.Value.Update(context)
+}
+
+func (v *OptionalValue[T]) GetValue() interface{} {
+	if v.isSet {
+		return v.Value.GetValue()
+	}
+	return nil
+}
+
+func (v *OptionalValue[T]) MakeDirty(stack []*Expression) {
+	v.Value.MakeDirty(stack)
+}
+
+func (v *OptionalValue[T]) GetExpression() *Expression {
+	// TODO: this won't change isSet
+	return v.Value.GetExpression()
+}
+
+func (v *OptionalValue[T]) ChangeCode(code string, position *PositionRange) {
+	v.Value.GetExpression().ChangeCode(code, position)
+	v.isSet = true
+}
+
+func (v *OptionalValue[T]) AddDependent(exp Dependent) {
+	v.Value.AddDependent(exp)
+}
+
+func (v *OptionalValue[T]) RemoveDependent(exp Dependent) {
+	v.Value.RemoveDependent(exp)
+}
+
+func (v *OptionalValue[T]) ShouldEvaluate() bool {
+	return v.Value.ShouldEvaluate()
+}
+
+func (v *OptionalValue[T]) Err() error {
+	return v.Value.Err()
+}
+
+// ================================== Component Reference Value ====================================
+
+type ComponentRefValue struct {
+	Expression
+	Value Component
+}
+
+func NewComponentRefValue(expression string, position *PositionRange) *IntValue {
+	v := new(IntValue)
+	if expression == "" {
+		v.Expression = *NewExpression("", position)
+	} else {
+		v.Expression = *NewExpression(expression, position)
+	}
+	return v
+}
+
+func (v *ComponentRefValue) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
+}
+
+func (v *ComponentRefValue) Update(context Component) error {
+	val, err := v.Expression.Evaluate(context)
+	if err != nil {
+		if err == unsettledDependenciesError {
+			return nil
+		}
+		return err
+	}
+	// TODO: maybe check if casts are valid?
+	v.Value = val.(*script.VariableBridge).Source.(*AccessCollector).context
+	return nil
+}
+
+func (v *ComponentRefValue) GetValue() interface{} {
+	return v.Value
+}
+
+func (v *ComponentRefValue) Component() Component {
+	return v.Value
+}
+
+// ===================================== Static Float Value ========================================
+
+type StaticFloatValue struct {
+	StaticBaseValue
+	value float64
+}
+
+func NewStaticFloatValue() *StaticFloatValue {
+	return &StaticFloatValue{
+		StaticBaseValue: *NewStaticBaseValue(),
+	}
+}
+
+func (v *StaticFloatValue) GetValue() interface{} {
+	return v.value
+}
+
+func (v *StaticFloatValue) Float64() float64 {
+	return v.value
+}
+
+func (v *StaticFloatValue) Set(newValue float64) {
+	v.value = newValue
 }
