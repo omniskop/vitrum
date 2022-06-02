@@ -8,20 +8,25 @@ import (
 	"github.com/omniskop/vitrum/vit/script"
 )
 
-type Dependent interface {
-	MakeDirty([]*Expression)
-}
-
 type Value interface {
-	SetFromProperty(PropertyDefinition)
-	Update(context Component) error
 	GetValue() interface{}
-	MakeDirty([]*Expression)
-	GetExpression() *Expression
+	SetFromProperty(PropertyDefinition)
 	AddDependent(Dependent)
 	RemoveDependent(Dependent)
+}
+
+type ExpressionValue interface {
+	Value
+
 	ShouldEvaluate() bool
+	Update(context Component) error
+	MakeDirty([]*Expression)
+	GetExpression() *Expression
 	Err() error
+}
+
+type Dependent interface {
+	MakeDirty([]*Expression)
 }
 
 func ValueConstructorForType(vitType string, value interface{}, position *PositionRange) (Value, error) {
@@ -432,7 +437,8 @@ func (v *AliasValue) RemoveDependent(exp Dependent) {
 }
 
 func (v *AliasValue) ShouldEvaluate() bool {
-	return v.other == nil || v.other.ShouldEvaluate()
+	expr, ok := v.other.(ExpressionValue) // if v.other is nil ok will be false
+	return ok && expr.ShouldEvaluate()
 }
 
 func (v *AliasValue) Err() error {
@@ -665,7 +671,10 @@ func (v *OptionalValue[T]) SetFromProperty(prop PropertyDefinition) {
 }
 
 func (v *OptionalValue[T]) Update(context Component) error {
-	return v.Value.Update(context)
+	if expr, ok := Value(v.Value).(ExpressionValue); ok {
+		return expr.Update(context)
+	}
+	return nil
 }
 
 func (v *OptionalValue[T]) GetValue() interface{} {
@@ -676,16 +685,23 @@ func (v *OptionalValue[T]) GetValue() interface{} {
 }
 
 func (v *OptionalValue[T]) MakeDirty(stack []*Expression) {
-	v.Value.MakeDirty(stack)
+	if expr, ok := Value(v.Value).(ExpressionValue); ok {
+		expr.MakeDirty(stack)
+	}
 }
 
 func (v *OptionalValue[T]) GetExpression() *Expression {
 	// TODO: this won't change isSet
-	return v.Value.GetExpression()
+	if expr, ok := Value(v.Value).(ExpressionValue); ok {
+		return expr.GetExpression()
+	}
+	return nil
 }
 
 func (v *OptionalValue[T]) ChangeCode(code string, position *PositionRange) {
-	v.Value.GetExpression().ChangeCode(code, position)
+	if expr, ok := Value(v.Value).(ExpressionValue); ok {
+		expr.GetExpression().ChangeCode(code, position)
+	}
 	v.isSet = true
 }
 
@@ -698,11 +714,15 @@ func (v *OptionalValue[T]) RemoveDependent(exp Dependent) {
 }
 
 func (v *OptionalValue[T]) ShouldEvaluate() bool {
-	return v.Value.ShouldEvaluate()
+	expr, ok := Value(v.Value).(ExpressionValue)
+	return ok && expr.ShouldEvaluate()
 }
 
 func (v *OptionalValue[T]) Err() error {
-	return v.Value.Err()
+	if expr, ok := Value(v.Value).(ExpressionValue); ok {
+		return expr.Err()
+	}
+	return nil
 }
 
 // ================================== Component Reference Value ====================================

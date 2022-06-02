@@ -48,7 +48,7 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	var dontStoreValue bool
 	for _, variable := range variables {
 		// fmt.Printf("\t%v\n", variable.GetExpression().code)
-		if variable.ShouldEvaluate() {
+		if expr, ok := variable.(ExpressionValue); ok && expr.ShouldEvaluate() {
 			// fmt.Printf("[expression] this expression is dirty, we will not update out value for now\n")
 			dontStoreValue = true
 		}
@@ -61,8 +61,10 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	// fmt.Printf("[expression] expression %q wrote to:\n", e.code)
 	for _, variable := range variables {
 		// fmt.Printf("\t%v\n", variable.GetExpression().code)
-		if _, ok := e.dependents[variable.GetExpression()]; !ok {
-			e.dependents[variable.GetExpression()] = true
+		if dep, ok := variable.(Dependent); ok {
+			if _, ok := e.dependents[dep]; !ok {
+				e.dependents[dep] = true
+			}
 		}
 	}
 	if dontStoreValue {

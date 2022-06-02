@@ -106,7 +106,9 @@ func (r *Root) SetProperty(key string, newValue interface{}, position *PositionR
 	}
 	switch actual := newValue.(type) {
 	case string:
-		prop.GetExpression().ChangeCode(actual, position)
+		if expr, ok := prop.(ExpressionValue); ok {
+			expr.GetExpression().ChangeCode(actual, position)
+		}
 	case PropertyDefinition:
 		prop.SetFromProperty(actual)
 	}
@@ -218,11 +220,11 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 	var sum int
 	var errs ErrorGroup
 	for name, prop := range r.properties {
-		if prop.ShouldEvaluate() {
+		if expr, ok := prop.(ExpressionValue); ok && expr.ShouldEvaluate() {
 			sum++
-			err := prop.Update(context)
+			err := expr.Update(context)
 			if err != nil {
-				errs.Add(NewExpressionError("Rectangle", name, r.id, *prop.GetExpression(), err))
+				errs.Add(NewExpressionError("Rectangle", name, r.id, *expr.GetExpression(), err))
 			}
 		}
 	}

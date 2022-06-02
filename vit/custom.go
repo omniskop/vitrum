@@ -34,11 +34,11 @@ func (c *custom) UpdateExpressions() (int, ErrorGroup) {
 	var sum int
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	for name, prop := range c.RootComponent.properties {
-		if prop.ShouldEvaluate() {
+		if expr, ok := prop.(ExpressionValue); ok && expr.ShouldEvaluate() {
 			sum++
-			err := prop.Update(c)
+			err := expr.Update(c)
 			if err != nil {
-				errs.Add(NewExpressionError(c.name, name, c.id, *prop.GetExpression(), err))
+				errs.Add(NewExpressionError(c.name, name, c.id, *expr.GetExpression(), err))
 			}
 		}
 	}
