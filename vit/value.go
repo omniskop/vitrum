@@ -520,6 +520,10 @@ func (v *ComponentDefValue) GetValue() interface{} {
 	return v.Value
 }
 
+func (v *ComponentDefValue) ComponentDefinition() *ComponentDefinition {
+	return v.Value
+}
+
 func (v *ComponentDefValue) MakeDirty(stack []*Expression) {
 	v.Changed = true
 }

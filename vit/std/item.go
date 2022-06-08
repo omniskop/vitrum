@@ -157,7 +157,7 @@ func (i *Item) AddChild(child vit.Component) {
 }
 
 func (i *Item) AddChildAfter(afterThis, addThis vit.Component) {
-	var dynType vit.Component = new(Repeater)
+	var dynType vit.Component = afterThis
 
 	for j, child := range i.Children() {
 		if child.As(&dynType) {

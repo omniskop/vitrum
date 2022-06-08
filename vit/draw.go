@@ -25,8 +25,7 @@ func Draw(comp Component) error {
 	ctx := canvas.NewContext(c)
 
 	// move origin of the context to the top left corner
-	ctx.Translate(0, 1000)
-	ctx.Scale(1, -1)
+	ctx.SetCoordSystem(canvas.CartesianIV)
 
 	comp.Draw(DrawingContext{ctx}, Rect{0, 0, 1000, 1000})
 

@@ -87,6 +87,19 @@ func (r *Repeater) AddChild(child vit.Component) {
 	r.AddChildButKeepParent(child)
 }
 
+func (r *Repeater) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
+	var targetType vit.Component = afterThis
+
+	for ind, child := range r.Children() {
+		if child.As(&targetType) {
+			addThis.SetParent(r)
+			r.AddChildAtButKeepParent(addThis, ind+1)
+			return
+		}
+	}
+	r.AddChild(addThis)
+}
+
 func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup

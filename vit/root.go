@@ -173,6 +173,19 @@ func (r *Root) AddChild(child Component) {
 	r.children = append(r.children, child)
 }
 
+func (r *Root) AddChildAfter(afterThis, addThis Component) {
+	var dynType Component = afterThis
+
+	for j, child := range r.Children() {
+		if child.As(&dynType) {
+			addThis.SetParent(r)
+			r.AddChildAtButKeepParent(addThis, j+1)
+			return
+		}
+	}
+	r.AddChild(addThis)
+}
+
 func (r *Root) RemoveChild(child Component) {
 	for i, c := range r.children {
 		if c == child {
@@ -187,6 +200,10 @@ func (r *Root) RemoveChild(child Component) {
 // SHOULD ONLY BE CALLED FROM OTHER COMPONENTS THAT EMBED THIS ROOT.
 func (r *Root) AddChildButKeepParent(child Component) {
 	r.children = append(r.children, child)
+}
+
+func (r *Root) AddChildAtButKeepParent(child Component, index int) {
+	r.children = append(r.children[:index], append([]Component{child}, r.children[index:]...)...)
 }
 
 func (r *Root) SetParent(parent Component) {

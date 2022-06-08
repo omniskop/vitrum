@@ -11,16 +11,16 @@ type Rectangle struct {
 	Item
 	id string
 
-	color  *vit.ColorValue
-	radius *vit.FloatValue
+	color  vit.ColorValue
+	radius vit.FloatValue
 }
 
 func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 	return &Rectangle{
 		Item:   *NewItem(id, scope),
 		id:     id,
-		color:  vit.NewColorValue("Vit.RGB(0, 0, 0)", nil),
-		radius: vit.NewFloatValue("5", nil),
+		color:  *vit.NewColorValue("Vit.RGB(0, 0, 0)", nil),
+		radius: *vit.NewFloatValue("5", nil),
 	}
 }
 
@@ -31,9 +31,9 @@ func (r *Rectangle) String() string {
 func (r *Rectangle) Property(key string) (vit.Value, bool) {
 	switch key {
 	case "color":
-		return r.color, true
+		return &r.color, true
 	case "radius":
-		return r.radius, true
+		return &r.radius, true
 	default:
 		return r.Item.Property(key)
 	}
@@ -64,9 +64,9 @@ func (r *Rectangle) ResolveVariable(key string) (interface{}, bool) {
 	case r.id:
 		return r, true
 	case "color":
-		return r.color, true
+		return &r.color, true
 	case "radius":
-		return r.radius, true
+		return &r.radius, true
 	default:
 		return r.Item.ResolveVariable(key)
 	}
@@ -75,6 +75,19 @@ func (r *Rectangle) ResolveVariable(key string) (interface{}, bool) {
 func (r *Rectangle) AddChild(child vit.Component) {
 	child.SetParent(r)
 	r.AddChildButKeepParent(child)
+}
+
+func (r *Rectangle) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
+	var targetType vit.Component = afterThis
+
+	for ind, child := range r.Children() {
+		if child.As(&targetType) {
+			addThis.SetParent(r)
+			r.AddChildAtButKeepParent(addThis, ind+1)
+			return
+		}
+	}
+	r.AddChild(addThis)
 }
 
 func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {

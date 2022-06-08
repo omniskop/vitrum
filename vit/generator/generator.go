@@ -279,6 +279,25 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		).
 		Line()
 
+	// .AddChildAfter(afterThis, addThis Component)
+	f.Func().
+		Params(jen.Id(receiverName).Op("*").Id(compName)).
+		Id("AddChildAfter").
+		Params(jen.Id("afterThis").Qual(vitPackage, "Component"), jen.Id("addThis").Qual(vitPackage, "Component")).
+		Block(
+			jen.Var().Id("targetType").Qual(vitPackage, "Component").Op("=").Id("afterThis"),
+			jen.Line(),
+			jen.For(jen.List(jen.Id("ind"), jen.Id("child")).Op(":=").Range().Id(receiverName).Dot("Children").Call()).Block(
+				jen.If(jen.Id("child").Dot("As").Call(jen.Op("&").Id("targetType"))).Block(
+					jen.Id("addThis").Dot("SetParent").Call(jen.Id(receiverName)),
+					jen.Id(receiverName).Dot("AddChildAtButKeepParent").Call(jen.Id("addThis"), jen.Id("ind").Op("+").Lit(1)),
+					jen.Return(),
+				),
+			),
+			jen.Id(receiverName).Dot("AddChild").Call(jen.Id("addThis")),
+		).
+		Line()
+
 	// .UpdateExpressions() (int, ErrorGroup)
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).

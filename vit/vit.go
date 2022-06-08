@@ -21,12 +21,13 @@ type Component interface {
 	ResolveVariable(name string) (interface{}, bool)                          // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
 	ResolveID(id string) (Component, bool)                                    // Recursively searches the children for a component with the given id. It does not check itself, only it's children!
 	AddChild(Component)                                                       // Adds the given component as a child and also set's their parent to this component
-	Children() []Component                                                    // Returns all children of this component
-	SetParent(Component)                                                      // Sets the parent of this component to the given component
-	ID() string                                                               // Returns the id of this component
-	String() string                                                           // Returns a short string representation of this component
-	UpdateExpressions() (int, ErrorGroup)                                     // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
-	As(*Component) bool                                                       // Returns true if this component is of the same type as the given parameter. It also changes the parameter to point to this component.
+	AddChildAfter(Component, Component)
+	Children() []Component                // Returns all children of this component
+	SetParent(Component)                  // Sets the parent of this component to the given component
+	ID() string                           // Returns the id of this component
+	String() string                       // Returns a short string representation of this component
+	UpdateExpressions() (int, ErrorGroup) // Recursively reevaluate all expressions that got dirty. Returns the number of reevaluated expression (includes potential failed ones)
+	As(*Component) bool                   // Returns true if this component is of the same type as the given parameter. It also changes the parameter to point to this component.
 
 	Draw(DrawingContext, Rect) error
 
