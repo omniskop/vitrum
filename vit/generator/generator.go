@@ -99,23 +99,36 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		jen.Id("id").String(),
 		jen.Line(),
 	}
+
+	// All property instantiations
 	// we could use jen.Dict here but I wan't to preserve the property order
 	propertyInstantiations := []jen.Code{
 		jen.Line().Id(comp.BaseName).Op(":").Op("*").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("scope").Op(")"),
 		jen.Line().Id("id").Op(":").Id("id"),
 	}
 
+	// name of the variable that will hold the receiver of the components methods
 	receiverName := strings.ToLower(string(compName[0]))
 
+	// setup all properties for the struct definition as well as the instantiations
 	for _, prop := range comp.Properties {
 		propType, propConstructor, propValue := vitTypeInfo(prop.VitType, prop.ListDimensions)
-		properties = append(properties, jen.Id(prop.Identifier[0]).Add(propType))
 
+		// properties for struct definition
+		if typeString, ok := prop.Tags["gen-type"]; ok {
+			properties = append(properties, jen.Id(prop.Identifier[0]).Id(typeString))
+		} else {
+			properties = append(properties, jen.Id(prop.Identifier[0]).Add(propType))
+		}
+
+		// default value of the property that will be set in the constructor
 		var defaultValue *jen.Statement = propValue
 
 		if len(prop.Components) == 1 {
+			// this property holds a single component
 			defaultValue = generateComponentDefinition(prop.Components[0])
 		} else if len(prop.Components) > 1 {
+			// this property holds multiple components
 			defaultValue = jen.Op("[")
 			for i, comp := range prop.Components {
 				if i > 0 {
@@ -125,10 +138,16 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			}
 			defaultValue.Op("]")
 		} else if prop.Expression != "" {
+			// this property holds an expression
 			defaultValue = jen.Lit(prop.Expression)
 		}
 
-		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(prop.Identifier[0]).Op(":").Add(propConstructor.Call(defaultValue, jen.Nil())))
+		// property instantiation
+		if init, ok := prop.Tags["gen-initializer"]; ok {
+			propertyInstantiations = append(propertyInstantiations, jen.Line().Id(prop.Identifier[0]).Op(":").Id(init))
+		} else {
+			propertyInstantiations = append(propertyInstantiations, jen.Line().Id(prop.Identifier[0]).Op(":").Add(propConstructor.Call(defaultValue, jen.Nil())))
+		}
 	}
 
 	propertyInstantiations = append(propertyInstantiations, jen.Line())
@@ -166,8 +185,11 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Block(
 			jen.Switch(jen.Id("key")).Block(
 				append(mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
+					if _, ok := prop.Tags["gen-unreadable"]; ok {
+						return nil // don't add unreadable properties
+					}
 					return jen.Case(jen.Lit(propId)).Block(
-						jen.Return(jen.Id(receiverName).Dot(propId), jen.True()),
+						jen.Return(jen.Op("&").Id(receiverName).Dot(propId), jen.True()),
 					)
 				}),
 					jen.Default().Block(
@@ -202,6 +224,9 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Block(
 			jen.Switch(jen.Id("key")).Block(
 				append(mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
+					if prop.ReadOnly {
+						return nil // don't add readonly properties
+					}
 					return jen.Case(jen.Lit(propId)).Block(
 						jen.Id(receiverName).Dot(propId).Op(".").Add(valueChange(prop.VitType, prop.ListDimensions)),
 					)
@@ -228,8 +253,11 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 						jen.Return(jen.Id(receiverName), jen.True()),
 					),
 					mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
+						if _, ok := prop.Tags["gen-unreadable"]; ok {
+							return nil // don't add unreadable properties
+						}
 						return jen.Case(jen.Lit(propId)).Block(
-							jen.Return(jen.Id(receiverName).Dot(propId), jen.True()),
+							jen.Return(jen.Op("&").Id(receiverName).Dot(propId), jen.True()),
 						)
 					}),
 					jen.Default().Block(
@@ -262,6 +290,13 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			g.Var().Id("errs").Qual(vitPackage, "ErrorGroup")
 			g.Line()
 			addMultiple(g, mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
+				if _, ok := prop.Tags["gen-type"]; ok {
+					return nil
+				}
+				var changeHandler jen.Code
+				if handlerName, ok := prop.Tags["gen-onchange"]; ok {
+					changeHandler = jen.Id(receiverName).Dot(handlerName).Call()
+				}
 				return jen.If(jen.Id("r").Dot(propId).Dot("ShouldEvaluate").Call()).Block(
 					jen.Id("sum").Op("++"),
 					jen.Id("err").Op(":=").Id("r").Id(".").Id(propId).Dot("Update").Call(jen.Id(receiverName)),
@@ -274,6 +309,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 							jen.Id("err"),
 						)),
 					),
+					changeHandler,
 				)
 			}))
 			g.Line()
@@ -341,10 +377,12 @@ func prepend(first jen.Code, rest []jen.Code, tail ...jen.Code) []jen.Code {
 	return append([]jen.Code{first}, append(rest, tail...)...)
 }
 
-// add multiple adds all code to the group as separate statements
+// addMultiple adds all code to the group as separate statements
 func addMultiple(g *jen.Group, code []jen.Code) {
 	for _, c := range code {
-		g.Add(c)
+		if c != nil {
+			g.Add(c)
+		}
 	}
 }
 
@@ -352,39 +390,39 @@ func vitTypeInfo(vitType string, listDimensions int) (propType *jen.Statement, c
 	zeroValue = jen.Lit("") // default for most types
 	if listDimensions > 0 {
 		if vitType == "component" {
-			propType = jen.Op("*").Qual(vitPackage, "ComponentDefListValue")
-			constructor = jen.Qual(vitPackage, "NewComponentDefListValue")
+			propType = jen.Qual(vitPackage, "ComponentDefListValue")
+			constructor = jen.Op("*").Qual(vitPackage, "NewComponentDefListValue")
 			zeroValue = jen.Nil()
 			return
 		}
 
 		elementType, _, _ := vitTypeInfo(vitType, 0)
-		propType = jen.Op("*").Qual(vitPackage, "ListValue").Types(elementType)
-		constructor = jen.Qual(vitPackage, "NewListValue").Types(elementType)
+		propType = jen.Qual(vitPackage, "ListValue").Types(elementType)
+		constructor = jen.Op("*").Qual(vitPackage, "NewListValue").Types(elementType)
 		return
 	}
 	switch vitType {
 	case "string":
-		propType = jen.Op("*").Qual(vitPackage, "StringValue")
-		constructor = jen.Qual(vitPackage, "NewStringValue")
+		propType = jen.Qual(vitPackage, "StringValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewStringValue")
 	case "int":
-		propType = jen.Op("*").Qual(vitPackage, "IntValue")
-		constructor = jen.Qual(vitPackage, "NewIntValue")
+		propType = jen.Qual(vitPackage, "IntValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewIntValue")
 	case "float":
-		propType = jen.Op("*").Qual(vitPackage, "FloatValue")
-		constructor = jen.Qual(vitPackage, "NewFloatValue")
+		propType = jen.Qual(vitPackage, "FloatValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewFloatValue")
 	case "bool":
-		propType = jen.Op("*").Qual(vitPackage, "BoolValue")
-		constructor = jen.Qual(vitPackage, "NewBoolValue")
+		propType = jen.Qual(vitPackage, "BoolValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewBoolValue")
 	case "color":
-		propType = jen.Op("*").Qual(vitPackage, "ColorValue")
-		constructor = jen.Qual(vitPackage, "NewColorValue")
+		propType = jen.Qual(vitPackage, "ColorValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewColorValue")
 	case "var":
-		propType = jen.Op("*").Qual(vitPackage, "AnyValue")
-		constructor = jen.Qual(vitPackage, "NewAnyValue")
+		propType = jen.Qual(vitPackage, "AnyValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewAnyValue")
 	case "component":
-		propType = jen.Op("*").Qual(vitPackage, "ComponentDefValue")
-		constructor = jen.Qual(vitPackage, "NewComponentDefValue")
+		propType = jen.Qual(vitPackage, "ComponentDefValue")
+		constructor = jen.Op("*").Qual(vitPackage, "NewComponentDefValue")
 		zeroValue = jen.Nil()
 	default:
 		upperType := firstLetterUpper(vitType)

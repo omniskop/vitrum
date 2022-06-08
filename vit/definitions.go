@@ -68,11 +68,12 @@ type PropertyDefinition struct {
 	Expression string                 // Expression string that defines the property. Can be empty.
 	Components []*ComponentDefinition // Only set if this properties type is a component or list of components.
 
-	VitType        string      // data type of the property in vit terms, not go
-	ListDimensions int         // If this property is a list this indicated the Number of dimensions it has. 0 means that it's not a list at all.
-	ReadOnly       bool        // Readonly properties are statically defined on the component itself and cannot be changed directly. They will however be recalculated if one of the expressions dependencies should change.
-	Static         bool        // Static properties are defined on the component itself. They will only be evaluated once when the component is loaded and are constant from that point on.
-	StaticValue    interface{} // The evaluated value of a static property.
+	VitType        string            // data type of the property in vit terms, not go
+	ListDimensions int               // If this property is a list this indicated the Number of dimensions it has. 0 means that it's not a list at all.
+	ReadOnly       bool              // Readonly properties are statically defined on the component itself and cannot be changed directly. They will however be recalculated if one of the expressions dependencies should change.
+	Static         bool              // Static properties are defined on the component itself. They will only be evaluated once when the component is loaded and are constant from that point on.
+	StaticValue    interface{}       // The evaluated value of a static property.
+	Tags           map[string]string // optional tags of the property
 }
 
 // String returns a human readable string representation of the property

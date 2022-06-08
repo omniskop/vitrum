@@ -78,6 +78,15 @@ var keywords = map[string]bool{
 	"embedded": true,
 }
 
+// a list of known modifiers that can be applied to component attributes
+var knownModifiers = map[string]bool{
+	"default":  true,
+	"required": true,
+	"readonly": true,
+	"static":   true,
+	"embedded": true,
+}
+
 // A tokenSource is a function that returns tokens
 type tokenSource func() token
 
@@ -227,10 +236,11 @@ scanLineIdentifier:
 		return nilUnit(), unexpectedToken(t, tokenIdentifier)
 	}
 
-	// check if the scanned identifier is a keyword
+	// check if the scanned identifier is a keyword or a tag
 	if len(lineIdentifier) == 1 {
 		startingPosition = lineIdentifier[0].position.Start()
-		if _, ok := keywords[lineIdentifier[0].literal]; ok {
+		// if this starts with a '#' it is a tag and thus also marks the start of an attribute declaration
+		if _, ok := keywords[lineIdentifier[0].literal]; lineIdentifier[0].literal[0] == '#' || ok {
 			return parseAttributeDeclaration(lineIdentifier[0], tokens)
 		}
 	}
@@ -338,7 +348,7 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*vit.ComponentDefin
 // The provided token should be the first word that has already been read from the line. (Which has determined that this will be an attribute declaration)
 func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 	// We will collect modifiers that are listed before the actual attribute type is specified
-	var modifiers []string
+	var modifiers [][]string
 	var err error
 	var startingPosition = t.position.Start()
 
@@ -361,25 +371,46 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 			return enumUnit(en.Position, en), nil
 		default:
 			// a modifier
-			for _, m := range modifiers {
-				if m == t.literal {
-					return nilUnit(), parseErrorf(t.position, "duplicate modifier %q", t.literal)
-				}
-			}
-			modifiers = append(modifiers, t.literal)
-		}
+			modifierName := t.literal
 
-		// read the next word
-		t, err = expectToken(tokens.next, tokenIdentifier)
-		if err != nil {
-			return nilUnit(), err
+			// check if this modifier has been set before
+			if modifiersContain(modifiers, modifierName) {
+				return nilUnit(), parseErrorf(t.position, "duplicate modifier %q", t.literal)
+			}
+
+			// read the next token, which is either the next identifier or an assignment to this modifier
+			t, err = expectToken(tokens.next, tokenIdentifier, tokenAssignment)
+			if err != nil {
+				return nilUnit(), err
+			}
+
+			if t.tokenType == tokenAssignment {
+				// it is an assignment to we read the following string
+				t, err = expectToken(tokens.next, tokenString)
+				if err != nil {
+					return nilUnit(), err
+				}
+
+				// add this formatted to the modifiers
+				modifiers = append(modifiers, []string{modifierName, t.literal})
+
+				// read the next token
+				t, err = expectToken(tokens.next, tokenIdentifier, tokenAssignment)
+				if err != nil {
+					return nilUnit(), err
+				}
+			} else {
+				// store this simple modifier
+				modifiers = append(modifiers, []string{modifierName})
+				// t now already contains the next token
+			}
 		}
 	}
 }
 
 // parseProperty parses a property declaration/definition with the given modifiers.
 // Note: This will not be called for property assignments.
-func parseProperty(tokens *tokenBuffer, modifiers []string, startingPosition vit.Position) (vit.PropertyDefinition, error) {
+func parseProperty(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.PropertyDefinition, error) {
 	// read the type of the property
 	var listDimensions int
 start:
@@ -405,13 +436,20 @@ start:
 		return vit.PropertyDefinition{}, err
 	}
 
+	unknownModifiers, tags := dissectModifiers(modifiers)
+
+	for _, m := range unknownModifiers {
+		return vit.PropertyDefinition{}, genericErrorf(vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()), "unknown modifier %q", m)
+	}
+
 	prop := vit.PropertyDefinition{
 		Identifier:     []string{identifier.literal},
 		VitType:        typeToken.literal,
 		ListDimensions: listDimensions,
-		ReadOnly:       stringSliceContains(modifiers, "readonly"),
-		Static:         stringSliceContains(modifiers, "static"),
+		ReadOnly:       modifiersContain(modifiers, "readonly"),
+		Static:         modifiersContain(modifiers, "static"),
 		Pos:            vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()),
+		Tags:           tags,
 	}
 
 	// read the next token and determine if a value will follow
@@ -454,10 +492,10 @@ start:
 }
 
 // parseEnum parses an enumeration declaration with the given modifiers
-func parseEnum(tokens *tokenBuffer, modifiers []string, startingPosition vit.Position) (vit.Enumeration, error) {
+func parseEnum(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.Enumeration, error) {
 	enum := vit.Enumeration{
 		Values:   make(map[string]int),
-		Embedded: stringSliceContains(modifiers, "embedded"),
+		Embedded: modifiersContain(modifiers, "embedded"),
 	}
 
 	// name
@@ -592,4 +630,32 @@ func stringSliceContains(list []string, element string) bool {
 		}
 	}
 	return false
+}
+
+// modifiersContain checks if the list of modifiers contains the given element.
+// Every item in the list must at least have a length of 1
+func modifiersContain(list [][]string, element string) bool {
+	for _, e := range list {
+		if e[0] == element {
+			return true
+		}
+	}
+	return false
+}
+
+// dissectModifiers takes attribute modifiers and returns all tags and all unknown modifiers.
+func dissectModifiers(modifiers [][]string) (unknown []string, tags map[string]string) {
+	tags = make(map[string]string)
+	for _, m := range modifiers {
+		if m[0][0] == '#' { // this is a tag
+			if len(m) == 2 {
+				tags[m[0][1:]] = m[1] // with a value
+			} else {
+				tags[m[0][1:]] = "" // without a value
+			}
+		} else if _, ok := knownModifiers[m[0]]; !ok { // an unknown modifier
+			unknown = append(unknown, m[0])
+		}
+	}
+	return
 }

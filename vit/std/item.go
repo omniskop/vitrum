@@ -156,6 +156,19 @@ func (i *Item) AddChild(child vit.Component) {
 	i.Root.AddChildButKeepParent(child)
 }
 
+func (i *Item) AddChildAfter(afterThis, addThis vit.Component) {
+	var dynType vit.Component = new(Repeater)
+
+	for j, child := range i.Children() {
+		if child.As(&dynType) {
+			addThis.SetParent(i)
+			i.AddChildAtButKeepParent(addThis, j+1)
+			return
+		}
+	}
+	i.AddChild(addThis)
+}
+
 func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 	var errs vit.ErrorGroup
 	var sum int
@@ -263,6 +276,14 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 
 func (i *Item) ID() string {
 	return i.id
+}
+
+func (i *Item) As(target *vit.Component) bool {
+	if _, ok := (*target).(*Item); ok {
+		*target = i
+		return true
+	}
+	return false
 }
 
 func (i *Item) Finish() error {
@@ -452,5 +473,6 @@ func (i *Item) setAllOffsets() {
 }
 
 func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {
+	i.DrawChildren(ctx, area)
 	return nil
 }

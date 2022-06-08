@@ -140,7 +140,7 @@ func instantiateComponent(def *vit.ComponentDefinition, components vit.Component
 	if !ok {
 		return nil, unknownComponentError{def.BaseName}
 	}
-	instance, err := src.Instantiate(def.ID, components.JustGlobal())
+	instance, err := src.Instantiate(def.ID, components)
 	if err != nil {
 		return nil, componentError{src, err}
 	}

@@ -1,8 +1,22 @@
 
-Item {
-    property int count
-    // property Component delegate
-    property var model
+/*
 
-    property []component items
+Custom Properties:
+	name
+	type
+	initializer
+	readable?
+	writable?
+	resolvable?
+	How to update
+	
+*/
+
+Item {
+    #gen-onchange="evaluateInternals" property int count
+    #gen-onchange="evaluateInternals" property component delegate
+    #gen-onchange="evaluateInternals" property var model
+
+    // readonly property var items
+    readonly #gen-type="[]RepeaterItem" #gen-initializer="[]RepeaterItem{}" #gen-unreadable property var items
 }
