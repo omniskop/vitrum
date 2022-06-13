@@ -10,9 +10,8 @@ type Item struct {
 	vit.Root
 	id string
 
-	width            vit.IntValue
-	height           vit.IntValue
-	stuff            vit.IntValue // TODO: delete
+	width            vit.FloatValue
+	height           vit.FloatValue
 	anchors          vit.AnchorsValue
 	x                vit.FloatValue
 	y                vit.FloatValue
@@ -29,9 +28,8 @@ func NewItem(id string, scope vit.ComponentContainer) *Item {
 	i := &Item{
 		Root:             vit.NewRoot(id, scope),
 		id:               id,
-		width:            *vit.NewIntValue("", nil),
-		height:           *vit.NewIntValue("", nil),
-		stuff:            *vit.NewIntValue("", nil),
+		width:            *vit.NewFloatValue("", nil),
+		height:           *vit.NewFloatValue("", nil),
 		anchors:          *vit.NewAnchors("", nil),
 		x:                *vit.NewFloatValue("", nil),
 		y:                *vit.NewFloatValue("", nil),
@@ -57,8 +55,6 @@ func (i *Item) Property(key string) (vit.Value, bool) {
 		return &i.width, true
 	case "height":
 		return &i.height, true
-	case "stuff":
-		return &i.stuff, true
 	case "anchors":
 		return &i.anchors, true
 	case "x":
@@ -99,8 +95,6 @@ func (i *Item) SetProperty(key string, value interface{}, position *vit.Position
 		i.width.Expression.ChangeCode(value.(string), position)
 	case "height":
 		i.height.Expression.ChangeCode(value.(string), position)
-	case "stuff":
-		i.stuff.Expression.ChangeCode(value.(string), position)
 	case "anchors":
 		panic("not implemented")
 		// i.anchors = value.(vit.ObjectValue)
@@ -124,8 +118,6 @@ func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 		return &i.width, true
 	case "height":
 		return &i.height, true
-	case "stuff":
-		return &i.stuff, true
 	case "anchors":
 		return &i.anchors, true
 	case "x":
@@ -184,13 +176,6 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		err := i.height.Update(i)
 		if err != nil {
 			errs.Add(vit.NewExpressionError("Item", "height", i.id, i.height.Expression, err))
-		}
-	}
-	if i.stuff.ShouldEvaluate() {
-		sum++
-		err := i.stuff.Update(i)
-		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "stuff", i.id, i.stuff.Expression, err))
 		}
 	}
 	if i.x.ShouldEvaluate() {
@@ -324,15 +309,15 @@ func (i *Item) layouting() {
 	}
 	if i.anchors.CenterIn.GetValue() != nil {
 		i.left.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.left.SetOffset(float64(-i.width.Int()) / 2)
+		i.left.SetOffset(float64(-i.width.Float64()) / 2)
 		i.horizontalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
 		i.right.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.right.SetOffset(float64(i.width.Int()) / 2)
+		i.right.SetOffset(float64(i.width.Float64()) / 2)
 		i.top.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.top.SetOffset(float64(-i.height.Int()) / 2)
+		i.top.SetOffset(float64(-i.height.Float64()) / 2)
 		i.verticalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
 		i.bottom.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.bottom.SetOffset(float64(i.height.Int()) / 2)
+		i.bottom.SetOffset(float64(i.height.Float64()) / 2)
 		i.left.SetOffset(0)
 		if i.anchors.HorizontalCenterOffset.IsSet() {
 			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value.Float64())
@@ -359,9 +344,9 @@ func (i *Item) layouting() {
 			left += i.anchors.LeftMargin.GetValue().(float64)
 		}
 		i.left.SetAbsolute(left)
-		i.horizontalCenter.SetAbsolute(left + float64(i.width.Int())/2)
+		i.horizontalCenter.SetAbsolute(left + float64(i.width.Float64())/2)
 		i.horizontalCenter.SetOffset(0)
-		i.right.SetAbsolute(left + float64(i.width.Int()))
+		i.right.SetAbsolute(left + float64(i.width.Float64()))
 		i.right.SetOffset(0)
 		didHorizintal = true
 	}
@@ -371,9 +356,9 @@ func (i *Item) layouting() {
 		if i.anchors.HorizontalCenterOffset.IsSet() {
 			horizontalCenter += i.anchors.HorizontalCenterOffset.GetValue().(float64)
 		}
-		i.left.SetAbsolute(horizontalCenter - float64(i.width.Int())/2)
+		i.left.SetAbsolute(horizontalCenter - float64(i.width.Float64())/2)
 		i.horizontalCenter.SetAbsolute(horizontalCenter)
-		i.right.SetAbsolute(horizontalCenter + float64(i.width.Int())/2)
+		i.right.SetAbsolute(horizontalCenter + float64(i.width.Float64())/2)
 		didHorizintal = true
 	}
 
@@ -382,8 +367,8 @@ func (i *Item) layouting() {
 		if i.anchors.RightMargin.IsSet() {
 			right -= i.anchors.RightMargin.GetValue().(float64)
 		}
-		i.left.SetAbsolute(right - float64(i.width.Int()))
-		i.horizontalCenter.SetAbsolute(right - float64(i.width.Int())/2)
+		i.left.SetAbsolute(right - float64(i.width.Float64()))
+		i.horizontalCenter.SetAbsolute(right - float64(i.width.Float64())/2)
 		i.right.SetAbsolute(right)
 		didHorizintal = true
 	}
@@ -394,8 +379,8 @@ func (i *Item) layouting() {
 			top += i.anchors.TopMargin.GetValue().(float64)
 		}
 		i.top.SetAbsolute(top)
-		i.verticalCenter.SetAbsolute(top + float64(i.height.Int())/2)
-		i.bottom.SetAbsolute(top + float64(i.height.Int()))
+		i.verticalCenter.SetAbsolute(top + float64(i.height.Float64())/2)
+		i.bottom.SetAbsolute(top + float64(i.height.Float64()))
 		didVertical = true
 	}
 
@@ -404,9 +389,9 @@ func (i *Item) layouting() {
 		if i.anchors.VerticalCenterOffset.IsSet() {
 			verticalCenter += i.anchors.VerticalCenterOffset.GetValue().(float64)
 		}
-		i.top.SetAbsolute(verticalCenter - float64(i.height.Int())/2)
+		i.top.SetAbsolute(verticalCenter - float64(i.height.Float64())/2)
 		i.verticalCenter.SetAbsolute(verticalCenter)
-		i.bottom.SetAbsolute(verticalCenter + float64(i.height.Int())/2)
+		i.bottom.SetAbsolute(verticalCenter + float64(i.height.Float64())/2)
 		didVertical = true
 	}
 
@@ -415,8 +400,8 @@ func (i *Item) layouting() {
 		if i.anchors.BottomMargin.IsSet() {
 			bottom -= i.anchors.BottomMargin.GetValue().(float64)
 		}
-		i.top.SetAbsolute(bottom - float64(i.height.Int()))
-		i.verticalCenter.SetAbsolute(bottom - float64(i.height.Int())/2)
+		i.top.SetAbsolute(bottom - float64(i.height.Float64()))
+		i.verticalCenter.SetAbsolute(bottom - float64(i.height.Float64())/2)
 		i.bottom.SetAbsolute(bottom)
 		didVertical = true
 	}
@@ -425,17 +410,17 @@ func (i *Item) layouting() {
 		i.left.AssignTo(i.Parent(), vit.AnchorLeft)
 		i.left.SetOffset(i.x.Float64())
 		i.horizontalCenter.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.horizontalCenter.SetOffset(i.x.Float64() + float64(i.width.Int())/2)
+		i.horizontalCenter.SetOffset(i.x.Float64() + float64(i.width.Float64())/2)
 		i.right.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.right.SetOffset(i.x.Float64() + float64(i.width.Int()))
+		i.right.SetOffset(i.x.Float64() + float64(i.width.Float64()))
 	}
 	if !didVertical {
 		i.top.AssignTo(i.Parent(), vit.AnchorTop)
 		i.top.SetOffset(i.y.Float64())
 		i.verticalCenter.AssignTo(i.Parent(), vit.AnchorTop)
-		i.verticalCenter.SetOffset(i.y.Float64() + float64(i.height.Int())/2)
+		i.verticalCenter.SetOffset(i.y.Float64() + float64(i.height.Float64())/2)
 		i.bottom.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.bottom.SetOffset(i.y.Float64() + float64(i.height.Int()))
+		i.bottom.SetOffset(i.y.Float64() + float64(i.height.Float64()))
 	}
 }
 

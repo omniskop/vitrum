@@ -62,7 +62,7 @@ type AbstractComponent interface {
 
 // ComponentContainer holds a list of abstract components
 type ComponentContainer struct {
-	Global map[string]AbstractComponent // globally defined componets
+	Global map[string]AbstractComponent // globally defined components
 	Local  map[string]AbstractComponent // components specific to the current document
 }
 
