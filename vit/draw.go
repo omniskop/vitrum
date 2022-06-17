@@ -13,6 +13,14 @@ func (r Rect) ToCanvas() canvas.Rect {
 	return canvas.Rect{r.X1, r.Y1, r.X2 - r.X1, r.Y2 - r.Y1}
 }
 
+func (r Rect) MovedX(x float64) Rect {
+	return Rect{r.X1 + x, r.Y1, r.X2 + x, r.Y2}
+}
+
+func (r Rect) MovedY(y float64) Rect {
+	return Rect{r.X1, r.Y1 + y, r.X2, r.Y2 + y}
+}
+
 type DrawingContext struct {
 	*canvas.Context
 }

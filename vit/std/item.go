@@ -22,6 +22,8 @@ type Item struct {
 	top              vit.AnchorLineValue
 	verticalCenter   vit.AnchorLineValue
 	bottom           vit.AnchorLineValue
+
+	layout *vit.Layout
 }
 
 func NewItem(id string, scope vit.ComponentContainer) *Item {
@@ -41,7 +43,7 @@ func NewItem(id string, scope vit.ComponentContainer) *Item {
 		verticalCenter:   *vit.NewAnchorLineValue(),
 		bottom:           *vit.NewAnchorLineValue(),
 	}
-	i.anchors.OnChange = i.layouting
+	i.anchors.OnChange = func() { i.layouting(0, 0) }
 	return i
 }
 
@@ -170,6 +172,9 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewExpressionError("Item", "width", i.id, i.width.Expression, err))
 		}
+		w := i.width.Float64()
+		h := i.height.Float64()
+		i.layout.SetTargetSize(&w, &h)
 	}
 	if i.height.ShouldEvaluate() {
 		sum++
@@ -177,6 +182,9 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewExpressionError("Item", "height", i.id, i.height.Expression, err))
 		}
+		w := i.width.Float64()
+		h := i.height.Float64()
+		i.layout.SetTargetSize(&w, &h)
 	}
 	if i.x.ShouldEvaluate() {
 		sum++
@@ -242,9 +250,18 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		}
 	}
 
+	if i.layout.PositionChanged() {
+		i.layouting(0, 0)
+		sum++
+	}
+	if i.layout.SizeChanged() {
+		i.layouting(0, 0)
+		sum++
+	}
+
 	n, err := i.anchors.UpdateExpressions(i)
 	if n > 0 {
-		i.layouting()
+		i.layouting(0, 0)
 	}
 	sum += n
 	errs.AddGroup(err)
@@ -275,8 +292,56 @@ func (i *Item) Finish() error {
 	return i.RootC().FinishInContext(i)
 }
 
-func (i *Item) layouting() {
-	if i.anchors.Fill.GetValue() != nil {
+func (i *Item) layouting(autoWidth, autoHeight float64) {
+	var width = i.width.Float64()
+	var height = i.height.Float64()
+	if width == 0 {
+		width = autoWidth
+	}
+	if height == 0 {
+		height = autoHeight
+	}
+	var didHorizintal bool
+	var didPreferredHorizontal bool
+	var didVertical bool
+	var didPreferredVertical bool
+
+	if i.layout != nil {
+		if w, ok := i.layout.GetWidth(); ok {
+			width = w
+		}
+		if h, ok := i.layout.GetHeight(); ok {
+			height = h
+		}
+
+		if i.layout.PositionChanged() {
+			i.layout.AckPositionChange()
+			if x, ok := i.layout.GetX(); ok {
+				i.left.SetAbsolute(x)
+				i.horizontalCenter.SetAbsolute(x + width/2)
+				i.right.SetAbsolute(x + width)
+				didHorizintal = true
+			} else if x, ok := i.layout.GetPreferredX(); ok {
+				i.left.SetAbsolute(x)
+				i.horizontalCenter.SetAbsolute(x + width/2)
+				i.right.SetAbsolute(x + width)
+				didPreferredHorizontal = true
+			}
+			if y, ok := i.layout.GetY(); ok {
+				i.top.SetAbsolute(y)
+				i.verticalCenter.SetAbsolute(y + height/2)
+				i.bottom.SetAbsolute(y + height)
+				didVertical = true
+			} else if y, ok := i.layout.GetPreferredY(); ok {
+				i.top.SetAbsolute(y)
+				i.verticalCenter.SetAbsolute(y + height/2)
+				i.bottom.SetAbsolute(y + height)
+				didPreferredVertical = true
+			}
+		}
+	}
+
+	if !(didHorizintal || didVertical) && i.anchors.Fill.GetValue() != nil {
 		i.left.AssignTo(i.anchors.Fill.Component(), vit.AnchorLeft)
 		i.horizontalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorHorizontalCenter)
 		i.right.AssignTo(i.anchors.Fill.Component(), vit.AnchorRight)
@@ -307,17 +372,17 @@ func (i *Item) layouting() {
 		}
 		return
 	}
-	if i.anchors.CenterIn.GetValue() != nil {
+	if !(didHorizintal || didVertical) && i.anchors.CenterIn.GetValue() != nil {
 		i.left.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.left.SetOffset(float64(-i.width.Float64()) / 2)
+		i.left.SetOffset(-width / 2)
 		i.horizontalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
 		i.right.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.right.SetOffset(float64(i.width.Float64()) / 2)
+		i.right.SetOffset(width / 2)
 		i.top.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.top.SetOffset(float64(-i.height.Float64()) / 2)
+		i.top.SetOffset(-height / 2)
 		i.verticalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
 		i.bottom.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.bottom.SetOffset(float64(i.height.Float64()) / 2)
+		i.bottom.SetOffset(height / 2)
 		i.left.SetOffset(0)
 		if i.anchors.HorizontalCenterOffset.IsSet() {
 			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value.Float64())
@@ -335,92 +400,89 @@ func (i *Item) layouting() {
 		return
 	}
 
-	var didHorizintal bool
-	var didVertical bool
-
-	if i.anchors.Left.IsSet() {
+	if !didHorizintal && i.anchors.Left.IsSet() {
 		left := i.anchors.Left.GetValue().(float64)
 		if i.anchors.LeftMargin.IsSet() {
 			left += i.anchors.LeftMargin.GetValue().(float64)
 		}
 		i.left.SetAbsolute(left)
-		i.horizontalCenter.SetAbsolute(left + float64(i.width.Float64())/2)
+		i.horizontalCenter.SetAbsolute(left + width/2)
 		i.horizontalCenter.SetOffset(0)
-		i.right.SetAbsolute(left + float64(i.width.Float64()))
+		i.right.SetAbsolute(left + width)
 		i.right.SetOffset(0)
 		didHorizintal = true
 	}
 
-	if i.anchors.HorizontalCenter.IsSet() {
+	if !didHorizintal && i.anchors.HorizontalCenter.IsSet() {
 		horizontalCenter := i.anchors.HorizontalCenter.GetValue().(float64)
 		if i.anchors.HorizontalCenterOffset.IsSet() {
 			horizontalCenter += i.anchors.HorizontalCenterOffset.GetValue().(float64)
 		}
-		i.left.SetAbsolute(horizontalCenter - float64(i.width.Float64())/2)
+		i.left.SetAbsolute(horizontalCenter - width/2)
 		i.horizontalCenter.SetAbsolute(horizontalCenter)
-		i.right.SetAbsolute(horizontalCenter + float64(i.width.Float64())/2)
+		i.right.SetAbsolute(horizontalCenter + width/2)
 		didHorizintal = true
 	}
 
-	if i.anchors.Right.IsSet() {
+	if !didHorizintal && i.anchors.Right.IsSet() {
 		right := i.anchors.Right.GetValue().(float64)
 		if i.anchors.RightMargin.IsSet() {
 			right -= i.anchors.RightMargin.GetValue().(float64)
 		}
-		i.left.SetAbsolute(right - float64(i.width.Float64()))
-		i.horizontalCenter.SetAbsolute(right - float64(i.width.Float64())/2)
+		i.left.SetAbsolute(right - width)
+		i.horizontalCenter.SetAbsolute(right - width/2)
 		i.right.SetAbsolute(right)
 		didHorizintal = true
 	}
 
-	if i.anchors.Top.IsSet() {
+	if !didVertical && i.anchors.Top.IsSet() {
 		top := i.anchors.Top.GetValue().(float64)
 		if i.anchors.TopMargin.IsSet() {
 			top += i.anchors.TopMargin.GetValue().(float64)
 		}
 		i.top.SetAbsolute(top)
-		i.verticalCenter.SetAbsolute(top + float64(i.height.Float64())/2)
-		i.bottom.SetAbsolute(top + float64(i.height.Float64()))
+		i.verticalCenter.SetAbsolute(top + height/2)
+		i.bottom.SetAbsolute(top + height)
 		didVertical = true
 	}
 
-	if i.anchors.VerticalCenter.IsSet() {
+	if !didVertical && i.anchors.VerticalCenter.IsSet() {
 		verticalCenter := i.anchors.VerticalCenter.GetValue().(float64)
 		if i.anchors.VerticalCenterOffset.IsSet() {
 			verticalCenter += i.anchors.VerticalCenterOffset.GetValue().(float64)
 		}
-		i.top.SetAbsolute(verticalCenter - float64(i.height.Float64())/2)
+		i.top.SetAbsolute(verticalCenter - height/2)
 		i.verticalCenter.SetAbsolute(verticalCenter)
-		i.bottom.SetAbsolute(verticalCenter + float64(i.height.Float64())/2)
+		i.bottom.SetAbsolute(verticalCenter + height/2)
 		didVertical = true
 	}
 
-	if i.anchors.Bottom.IsSet() {
+	if !didVertical && i.anchors.Bottom.IsSet() {
 		bottom := i.anchors.Bottom.GetValue().(float64)
 		if i.anchors.BottomMargin.IsSet() {
 			bottom -= i.anchors.BottomMargin.GetValue().(float64)
 		}
-		i.top.SetAbsolute(bottom - float64(i.height.Float64()))
-		i.verticalCenter.SetAbsolute(bottom - float64(i.height.Float64())/2)
+		i.top.SetAbsolute(bottom - height)
+		i.verticalCenter.SetAbsolute(bottom - height/2)
 		i.bottom.SetAbsolute(bottom)
 		didVertical = true
 	}
 
-	if !didHorizintal {
+	if !didHorizintal && !didPreferredHorizontal {
 		i.left.AssignTo(i.Parent(), vit.AnchorLeft)
 		i.left.SetOffset(i.x.Float64())
 		i.horizontalCenter.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.horizontalCenter.SetOffset(i.x.Float64() + float64(i.width.Float64())/2)
+		i.horizontalCenter.SetOffset(i.x.Float64() + width/2)
 		i.right.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.right.SetOffset(i.x.Float64() + float64(i.width.Float64()))
+		i.right.SetOffset(i.x.Float64() + width)
 	}
-	if !didVertical {
+	if !didVertical && !didPreferredVertical {
 		i.top.AssignTo(i.Parent(), vit.AnchorTop)
 		i.top.SetOffset(i.y.Float64())
 		i.verticalCenter.AssignTo(i.Parent(), vit.AnchorTop)
-		i.verticalCenter.SetOffset(i.y.Float64() + float64(i.height.Float64())/2)
+		i.verticalCenter.SetOffset(i.y.Float64() + height/2)
 		i.bottom.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.bottom.SetOffset(i.y.Float64() + float64(i.height.Float64()))
+		i.bottom.SetOffset(i.y.Float64() + height)
 	}
 }
 
@@ -460,4 +522,8 @@ func (i *Item) setAllOffsets() {
 func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 	i.DrawChildren(ctx, area)
 	return nil
+}
+
+func (i *Item) ApplyLayout(l *vit.Layout) {
+	i.layout = l
 }
