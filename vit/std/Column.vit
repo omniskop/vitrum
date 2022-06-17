@@ -1,7 +1,5 @@
 
 Item {
-    // #gen-onChildAdded="childAdded"
-
     #gen-optional #gen-onchange="recalculateLayout" property float topPadding: 0
     #gen-optional #gen-onchange="recalculateLayout" property float rightPadding: 0
     #gen-optional #gen-onchange="recalculateLayout" property float bottomPadding: 0

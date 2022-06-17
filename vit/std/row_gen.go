@@ -17,7 +17,7 @@ type Row struct {
 	leftPadding   vit.OptionalValue[*vit.FloatValue]
 	padding       vit.FloatValue
 	spacing       vit.FloatValue
-	childLayouts  layoutList
+	childLayouts  vit.LayoutList
 }
 
 func NewRow(id string, scope vit.ComponentContainer) *Row {
@@ -30,7 +30,7 @@ func NewRow(id string, scope vit.ComponentContainer) *Row {
 		leftPadding:   *vit.NewOptionalValue(vit.NewFloatValue("", nil)),
 		padding:       *vit.NewFloatValue("", nil),
 		spacing:       *vit.NewFloatValue("", nil),
-		childLayouts:  make(layoutList),
+		childLayouts:  make(vit.LayoutList),
 	}
 }
 

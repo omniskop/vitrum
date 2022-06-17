@@ -4,33 +4,6 @@ import (
 	vit "github.com/omniskop/vitrum/vit"
 )
 
-type layoutList map[vit.Component]*vit.Layout
-
-// ShouldEvaluate returns true if one of the contained layouts had it's target size changed.
-// It adds compatibility with other Value types.
-func (l layoutList) ShouldEvaluate() bool {
-	for _, layout := range l {
-		if layout.TargetSizeChanged() {
-			return true
-		}
-	}
-	return false
-}
-
-// Update acknowledges the change of the target size on all contained layouts.
-// It adds compatibility with other Value types.
-func (l layoutList) Update(vit.Component) error {
-	for _, layout := range l {
-		layout.AckTargetSizeChange()
-	}
-	return nil
-}
-
-// GetExpression adds compatibility with other Value types but does not serve a particular purpose here.
-func (l layoutList) GetExpression() *vit.Expression {
-	return vit.NewExpression("", nil)
-}
-
 func (r *Row) getTopPadding() float64 {
 	if r.topPadding.IsSet() {
 		return r.topPadding.ActualValue().Float64()
@@ -64,7 +37,7 @@ func (r *Row) CalculateSize() (float64, float64) {
 	var totalHeight float64
 	for _, child := range r.Children() {
 		width := child.MustProperty("width").GetValue().(float64)
-		height := child.MustProperty("width").GetValue().(float64)
+		height := child.MustProperty("height").GetValue().(float64)
 		if width == 0 || height == 0 {
 			continue
 		}
