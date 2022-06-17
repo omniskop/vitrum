@@ -140,7 +140,6 @@ func (a *AnchorsValue) Property(key string) (interface{}, bool) {
 }
 
 func (a *AnchorsValue) SetProperty(key string, expression string, position *PositionRange) bool {
-	fmt.Printf("[anchors] setting property %q\n", key)
 	switch key {
 	case "alignWhenCentered":
 		a.AlignWhenCentered.ChangeCode(expression, position)
@@ -188,7 +187,6 @@ func (a *AnchorsValue) SetProperty(key string, expression string, position *Posi
 }
 
 func (v *AnchorsValue) UpdateExpressions(context Component) (int, ErrorGroup) {
-	fmt.Println("evaluating anchor expressions")
 	var errs ErrorGroup
 	var sum int
 	if v.AlignWhenCentered.ShouldEvaluate() {
