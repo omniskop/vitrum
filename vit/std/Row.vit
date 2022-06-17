@@ -1,0 +1,14 @@
+
+Item {
+    // #gen-onChildAdded="childAdded"
+
+    #gen-optional #gen-onchange="recalculateLayout" property float topPadding: 0
+    #gen-optional #gen-onchange="recalculateLayout" property float rightPadding: 0
+    #gen-optional #gen-onchange="recalculateLayout" property float bottomPadding: 0
+    #gen-optional #gen-onchange="recalculateLayout" property float leftPadding: 0
+    #gen-onchange="recalculateLayout" property float padding: 0
+    #gen-onchange="recalculateLayout" property float spacing: 0
+
+    #gen-internal #gen-type="layoutList" #gen-initializer="make(layoutList)" #gen-private #gen-onchange="recalculateLayout" property any childLayouts
+    #gen-onchange="childWasAdded" property any children
+}
