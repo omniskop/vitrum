@@ -19,8 +19,8 @@ func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 	return &Rectangle{
 		Item:   *NewItem(id, scope),
 		id:     id,
-		color:  *vit.NewColorValue("Vit.RGB(0, 0, 0)", nil),
-		radius: *vit.NewFloatValue("5", nil),
+		color:  *vit.NewColorValue("", nil),
+		radius: *vit.NewFloatValue("", nil),
 	}
 }
 
