@@ -12,7 +12,7 @@ type RepeaterItem struct {
 	Value     interface{}
 }
 
-func (r *Repeater) evaluateInternals() error {
+func (r *Repeater) evaluateInternals(interface{}) error {
 	if r.delegate.GetValue() == nil {
 		// No delegate available to instantiate
 		// delete existing items

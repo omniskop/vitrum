@@ -110,7 +110,7 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewExpressionError("Repeater", "count", r.id, *r.count.GetExpression(), err))
 		}
-		r.evaluateInternals()
+		r.evaluateInternals(r.count)
 	}
 	if r.delegate.ShouldEvaluate() {
 		sum++
@@ -118,7 +118,7 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewExpressionError("Repeater", "delegate", r.id, *r.delegate.GetExpression(), err))
 		}
-		r.evaluateInternals()
+		r.evaluateInternals(r.delegate)
 	}
 	if r.model.ShouldEvaluate() {
 		sum++
@@ -126,7 +126,7 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewExpressionError("Repeater", "model", r.id, *r.model.GetExpression(), err))
 		}
-		r.evaluateInternals()
+		r.evaluateInternals(r.model)
 	}
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables

@@ -90,6 +90,20 @@ func (p PropertyDefinition) Position() PositionRange {
 	return p.Pos
 }
 
+// HasTag returns true if the property has *one or more* of the given tags set and false otherwise.
+func (p PropertyDefinition) HasTag(tag string, moreTags ...string) bool {
+	// Singular name has been chosen to reflect the most common use case and to hopefully make it clearer that it will return true even if only one tag is set.
+	if _, ok := p.Tags[tag]; ok {
+		return true
+	}
+	for _, tag := range moreTags {
+		if _, ok := p.Tags[tag]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 func slicesEqual[T comparable](a, b []T) bool {
 	if len(a) != len(b) {
 		return false
