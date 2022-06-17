@@ -154,6 +154,21 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 	}
 
+	if r.parent != nil {
+		// This will recursively search the tree upwards but it should stop on the document level. Would that mean the 'Custom' component?
+		for _, child := range r.parent.Children() {
+			if child == r {
+				continue
+			}
+			if child.ID() == key {
+				return child, true
+			}
+			if comp, ok := child.ResolveID(key); ok {
+				return comp, true
+			}
+		}
+	}
+
 	return nil, false
 }
 
@@ -323,3 +338,5 @@ func (r *Root) DrawChildren(ctx DrawingContext, area Rect) error {
 
 	return nil
 }
+
+func (r *Root) ApplyLayout(*Layout) {}
