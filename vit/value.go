@@ -679,6 +679,12 @@ func (v *OptionalValue[T]) GetValue() interface{} {
 	return nil
 }
 
+// ActualValue returns the value that is wrapped by this Optional.
+// If the Optional is not set the nature of the returned value is undefined.
+func (v *OptionalValue[T]) ActualValue() T {
+	return v.Value
+}
+
 func (v *OptionalValue[T]) MakeDirty(stack []*Expression) {
 	v.Value.MakeDirty(stack)
 }

@@ -76,6 +76,7 @@ var keywords = map[string]bool{
 	"static":   true,
 	"enum":     true,
 	"embedded": true,
+	"optional": true,
 }
 
 // a list of known modifiers that can be applied to component attributes
@@ -85,6 +86,7 @@ var knownModifiers = map[string]bool{
 	"readonly": true,
 	"static":   true,
 	"embedded": true,
+	"optional": true,
 }
 
 // A tokenSource is a function that returns tokens
