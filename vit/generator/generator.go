@@ -163,7 +163,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params().
 		Params(jen.String()).
 		Block(
-			jen.Return(jen.Qual("fmt", "Sprintf").Call(jen.Lit(compName+"(%s)"), jen.Id("r").Dot("id"))),
+			jen.Return(jen.Qual("fmt", "Sprintf").Call(jen.Lit(compName+"(%s)"), jen.Id(receiverName).Dot("id"))),
 		).
 		Line()
 
@@ -313,9 +313,9 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 				if handlerName, ok := prop.Tags[onChangeTag]; ok {
 					changeHandler = jen.Id(receiverName).Dot(handlerName).Call(jen.Id(receiverName).Dot(propID))
 				}
-				return jen.If(jen.Id("r").Dot(propID).Dot("ShouldEvaluate").Call()).Block(
+				return jen.If(jen.Id(receiverName).Dot(propID).Dot("ShouldEvaluate").Call()).Block(
 					jen.Id("sum").Op("++"),
-					jen.Id("err").Op(":=").Id("r").Id(".").Id(propID).Dot("Update").Call(jen.Id(receiverName)),
+					jen.Id("err").Op(":=").Id(receiverName).Id(".").Id(propID).Dot("Update").Call(jen.Id(receiverName)),
 					jen.If(jen.Id("err").Op("!=").Nil()).Block(
 						jen.Id("errs").Dot("Add").Call(jen.Qual(vitPackage, "NewExpressionError").Call(
 							jen.Lit(compName),
@@ -330,13 +330,13 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			}))
 			g.Line()
 			g.Comment("this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables")
-			g.Id("n").Op(",").Id("err").Op(":=").Id("r").Dot("UpdatePropertiesInContext").Call(jen.Id(receiverName)) // n, err := receiver.UpdatePropertiesInContext(receiver) // just approximate code, names will vary
-			g.Id("sum").Op("+=").Id("n")                                                                             // sum += n
-			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                         // errs.AddGroup(err)
-			g.Id("n").Op(",").Id("err").Op("=").Id("r").Dot(comp.BaseName).Dot("UpdateExpressions").Call()           // n, err = receiver.BaseComponent.UpdateExpressions()
-			g.Id("sum").Op("+=").Id("n")                                                                             // sum += n
-			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                         // errs.AddGroup(err)
-			g.Return(jen.Id("sum"), jen.Id("errs"))                                                                  // return sum, errs
+			g.Id("n").Op(",").Id("err").Op(":=").Id(receiverName).Dot("UpdatePropertiesInContext").Call(jen.Id(receiverName)) // n, err := receiver.UpdatePropertiesInContext(receiver) // just approximate code, names will vary
+			g.Id("sum").Op("+=").Id("n")                                                                                      // sum += n
+			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                                  // errs.AddGroup(err)
+			g.Id("n").Op(",").Id("err").Op("=").Id(receiverName).Dot(comp.BaseName).Dot("UpdateExpressions").Call()           // n, err = receiver.BaseComponent.UpdateExpressions()
+			g.Id("sum").Op("+=").Id("n")                                                                                      // sum += n
+			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                                  // errs.AddGroup(err)
+			g.Return(jen.Id("sum"), jen.Id("errs"))                                                                           // return sum, errs
 		}).
 		Line()
 
@@ -348,10 +348,10 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params(jen.Bool()).
 		Block(
 			jen.If(jen.List(jen.Id("_"), jen.Id("ok")).Op(":=").Parens(jen.Op("*").Id("target")).Op(".").Parens(jen.Op("*").Id(compName)).Op(";").Id("ok")).Block(
-				jen.Op("*").Id("target").Op("=").Id("r"),
+				jen.Op("*").Id("target").Op("=").Id(receiverName),
 				jen.Return(jen.True()),
 			),
-			jen.Return(jen.Id("r").Dot("Item").Dot("As").Call(jen.Id("target"))),
+			jen.Return(jen.Id(receiverName).Dot("Item").Dot("As").Call(jen.Id("target"))),
 		).
 		Line()
 
