@@ -45,6 +45,9 @@ func (c *Column) CalculateSize() (float64, float64) {
 			totalWidth = width
 		}
 	}
+	if len(c.Children()) > 0 {
+		totalHeight -= c.spacing.Float64()
+	}
 	totalWidth += c.getLeftPadding() + c.getRightPadding()
 	return totalWidth, totalHeight
 }

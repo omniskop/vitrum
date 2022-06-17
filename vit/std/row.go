@@ -47,6 +47,9 @@ func (r *Row) CalculateSize() (float64, float64) {
 			totalHeight = height
 		}
 	}
+	if len(r.Children()) > 0 {
+		totalWidth -= r.spacing.Float64()
+	}
 	totalHeight += r.getTopPadding() + r.getBottomPadding()
 	return totalWidth, totalHeight
 }
