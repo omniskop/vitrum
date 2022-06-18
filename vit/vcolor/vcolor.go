@@ -92,7 +92,7 @@ func ToColorful(in color.Color) (colorful.Color, byte) {
 }
 
 func RGBAToHex(r, g, b, a byte) string {
-	return "#" + hex.EncodeToString([]byte{r, g, b})
+	return "#" + hex.EncodeToString([]byte{r, g, b, a})
 }
 
 func ColorfulToHex(c colorful.Color, a byte) string {

@@ -12,7 +12,7 @@ func (r *Rectangle) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 		Y2: r.bottom.Float64(),
 	}
 
-	ctx.FillColor = r.color.RGBAColor()
+	ctx.SetFillColor(r.color.Color())
 	ctx.DrawPath(0, 0, rect.ToCanvas().ToPath())
 
 	r.Root.DrawChildren(ctx, rect)

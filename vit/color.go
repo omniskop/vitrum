@@ -60,3 +60,7 @@ func (v *ColorValue) RGBAColor() color.RGBA {
 		A: uint8(a >> 8),
 	}
 }
+
+func (v *ColorValue) Color() color.Color {
+	return v.Value
+}
