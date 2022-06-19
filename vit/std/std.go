@@ -31,3 +31,7 @@ func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContaine
 	}
 	return nil, false
 }
+
+func (l StdLib) StaticAttribute(componentName string, attributeName string) (interface{}, bool) {
+	return nil, false
+}

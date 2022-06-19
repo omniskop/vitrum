@@ -378,6 +378,8 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		).
 		Line()
 
+	f.Add(generateStaticAttributeMethod(receiverName, compName, comp))
+
 	return nil
 }
 
@@ -391,6 +393,46 @@ func generateComponentEnums(compName string, comp *vit.ComponentDefinition) jen.
 				g.Id(fmt.Sprintf("%s_%s", typeName, value.name)).Id(typeName).Op("=").Lit(value.value)
 			}
 		}).Line()
+	}
+	return code
+}
+
+func generateStaticAttributeMethod(receiverName, compName string, comp *vit.ComponentDefinition) jen.Code {
+	var didGenerateSomething bool
+
+	// staticAttribute(name string) (interface{}, bool)
+	code := jen.Func().
+		Params(jen.Id(receiverName).Op("*").Id(compName)).
+		Id("staticAttribute").
+		Params(jen.Id("name").String()).
+		Params(jen.Interface(), jen.Bool()).
+		Block(
+			jen.Switch(jen.Id("name")).BlockFunc(func(g *jen.Group) {
+				// list all values of embedded enums
+				for _, enum := range comp.Enumerations {
+					if !enum.Embedded {
+						continue
+					}
+					didGenerateSomething = true
+					for _, value := range orderEnumValues(enum.Values) {
+						g.Case(jen.Lit(value.name)).Block(
+							jen.Return().List(
+								// the type needs to be converted to uint to be usable in an expression
+								jen.Uint().Call(jen.Id(fmt.Sprintf("%s_%s_%s", compName, enum.Name, value.name))),
+								jen.True(),
+							),
+						)
+					}
+				}
+				g.Default().Block(
+					jen.Return().List(jen.Nil(), jen.False()),
+				)
+			}),
+		).
+		Line()
+
+	if !didGenerateSomething {
+		return jen.Null()
 	}
 	return code
 }
