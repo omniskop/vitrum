@@ -23,6 +23,9 @@ type Item struct {
 	verticalCenter   vit.AnchorLineValue
 	bottom           vit.AnchorLineValue
 
+	contentWidth  float64
+	contentHeight float64
+
 	layout *vit.Layout
 }
 
@@ -251,17 +254,17 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 	}
 
 	if i.layout.PositionChanged() {
-		i.layouting(0, 0)
+		i.layouting(i.contentWidth, i.contentHeight)
 		sum++
 	}
 	if i.layout.SizeChanged() {
-		i.layouting(0, 0)
+		i.layouting(i.contentWidth, i.contentHeight)
 		sum++
 	}
 
 	n, err := i.anchors.UpdateExpressions(i)
 	if n > 0 {
-		i.layouting(0, 0)
+		i.layouting(i.contentWidth, i.contentHeight)
 	}
 	sum += n
 	errs.AddGroup(err)
@@ -314,25 +317,35 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 			height = h
 		}
 
+		var updateValues bool
 		if i.layout.PositionChanged() {
 			i.layout.AckPositionChange()
-			if x, ok := i.layout.GetX(); ok {
+			updateValues = true
+		}
+		if x, ok := i.layout.GetX(); ok {
+			if updateValues {
 				i.left.SetAbsolute(x)
 				i.horizontalCenter.SetAbsolute(x + width/2)
 				i.right.SetAbsolute(x + width)
-				didHorizintal = true
-			} else if x, ok := i.layout.GetPreferredX(); ok {
-				i.left.SetAbsolute(x)
-				i.horizontalCenter.SetAbsolute(x + width/2)
-				i.right.SetAbsolute(x + width)
-				didPreferredHorizontal = true
 			}
-			if y, ok := i.layout.GetY(); ok {
+			didHorizintal = true
+		} else if x, ok := i.layout.GetPreferredX(); ok {
+			if updateValues {
+				i.left.SetAbsolute(x)
+				i.horizontalCenter.SetAbsolute(x + width/2)
+				i.right.SetAbsolute(x + width)
+			}
+			didPreferredHorizontal = true
+		}
+		if y, ok := i.layout.GetY(); ok {
+			if updateValues {
 				i.top.SetAbsolute(y)
 				i.verticalCenter.SetAbsolute(y + height/2)
 				i.bottom.SetAbsolute(y + height)
-				didVertical = true
-			} else if y, ok := i.layout.GetPreferredY(); ok {
+			}
+			didVertical = true
+		} else if y, ok := i.layout.GetPreferredY(); ok {
+			if updateValues {
 				i.top.SetAbsolute(y)
 				i.verticalCenter.SetAbsolute(y + height/2)
 				i.bottom.SetAbsolute(y + height)
@@ -407,9 +420,7 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		}
 		i.left.SetAbsolute(left)
 		i.horizontalCenter.SetAbsolute(left + width/2)
-		i.horizontalCenter.SetOffset(0)
 		i.right.SetAbsolute(left + width)
-		i.right.SetOffset(0)
 		didHorizintal = true
 	}
 
@@ -484,6 +495,11 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.bottom.AssignTo(i.Parent(), vit.AnchorLeft)
 		i.bottom.SetOffset(i.y.Float64() + height)
 	}
+
+	bounds := i.Bounds()
+	width = bounds.Width()
+	height = bounds.Height()
+	i.layout.SetTargetSize(&width, &height)
 }
 
 func (i *Item) setAllOffsets() {

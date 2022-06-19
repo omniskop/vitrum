@@ -32,7 +32,7 @@ func (r *Row) getLeftPadding() float64 {
 	return r.padding.Float64()
 }
 
-func (r *Row) CalculateSize() (float64, float64) {
+func (r *Row) ContentSize() (float64, float64) {
 	var totalWidth float64 = r.getLeftPadding() + r.getRightPadding()
 	var totalHeight float64
 	for _, child := range r.Children() {
@@ -70,7 +70,8 @@ func (r *Row) recalculateLayout(interface{}) {
 		r.childLayouts[child].SetPreferredPosition(nil, &yCopy)
 		x += bounds.Width() + r.spacing.Float64()
 	}
-	r.layouting(r.CalculateSize())
+	r.contentWidth, r.contentHeight = r.ContentSize()
+	r.layouting(r.contentWidth, r.contentHeight)
 }
 
 func (r *Row) createNewChildLayout(child vit.Component) *vit.Layout {

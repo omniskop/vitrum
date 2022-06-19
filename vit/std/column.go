@@ -30,7 +30,7 @@ func (c *Column) getLeftPadding() float64 {
 	return c.padding.Float64()
 }
 
-func (c *Column) CalculateSize() (float64, float64) {
+func (c *Column) ContentSize() (float64, float64) {
 	var totalWidth float64
 	var totalHeight float64 = c.getTopPadding() + c.getBottomPadding()
 	for _, child := range c.Children() {
@@ -68,7 +68,8 @@ func (c *Column) recalculateLayout(interface{}) {
 		c.childLayouts[child].SetPreferredPosition(&xCopy, nil)
 		y += bounds.Height() + c.spacing.Float64()
 	}
-	c.layouting(c.CalculateSize())
+	c.contentWidth, c.contentHeight = c.ContentSize()
+	c.layouting(c.contentWidth, c.contentHeight)
 }
 
 func (c *Column) createNewChildLayout(child vit.Component) *vit.Layout {

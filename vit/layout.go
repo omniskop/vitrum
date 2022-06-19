@@ -18,15 +18,37 @@ type Layout struct {
 }
 
 func (l *Layout) SetPosition(x, y *float64) {
-	l.x = x
-	l.y = y
-	l.positionChanged = true
+	if x == nil {
+		l.x = nil
+	} else if l.x == nil || *x != *l.x {
+		var xCopy float64 = *x
+		l.x = &xCopy
+		l.positionChanged = true
+	}
+	if y == nil {
+		l.y = nil
+	} else if l.y == nil || *y != *l.y {
+		var yCopy float64 = *y
+		l.y = &yCopy
+		l.positionChanged = true
+	}
 }
 
 func (l *Layout) SetPreferredPosition(x, y *float64) {
-	l.preferredX = x
-	l.preferredY = y
-	l.positionChanged = true
+	if x == nil {
+		l.preferredX = nil
+	} else if l.preferredX == nil || *x != *l.preferredX {
+		var xCopy float64 = *x
+		l.preferredX = &xCopy
+		l.positionChanged = true
+	}
+	if y == nil {
+		l.preferredY = nil
+	} else if l.preferredY == nil || *y != *l.preferredY {
+		var yCopy float64 = *y
+		l.preferredY = &yCopy
+		l.positionChanged = true
+	}
 }
 
 func (l *Layout) PositionChanged() bool {
@@ -72,9 +94,20 @@ func (l *Layout) SetTargetSize(width, height *float64) {
 	if l == nil {
 		return
 	}
-	l.targetWidth = width
-	l.targetHeight = height
-	l.targetSizeChanged = true
+	if width == nil {
+		l.targetWidth = nil
+	} else if l.targetWidth == nil || *width != *l.targetWidth {
+		var widthCopy float64 = *width
+		l.targetWidth = &widthCopy
+		l.targetSizeChanged = true
+	}
+	if height == nil {
+		l.targetHeight = nil
+	} else if l.targetHeight == nil || *height != *l.targetHeight {
+		var heightCopy float64 = *height
+		l.targetHeight = &heightCopy
+		l.targetSizeChanged = true
+	}
 }
 
 func (l *Layout) TargetSizeChanged() bool {
@@ -103,8 +136,20 @@ func (l *Layout) GetTargetHeight() (float64, bool) {
 }
 
 func (l *Layout) SetSize(width, height *float64) {
-	l.width = width
-	l.height = height
+	if width == nil {
+		l.width = nil
+	} else if l.width == nil || *width != *l.width {
+		var widthCopy float64 = *width
+		l.width = &widthCopy
+		l.sizeChanged = true
+	}
+	if height == nil {
+		l.height = nil
+	} else if l.height == nil || *height != *l.height {
+		var heightCopy float64 = *height
+		l.height = &heightCopy
+		l.sizeChanged = true
+	}
 }
 
 func (l *Layout) SizeChanged() bool {
