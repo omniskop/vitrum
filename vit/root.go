@@ -58,7 +58,7 @@ func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 	case "alias":
 		r.properties[name] = NewAliasValue(propDef.Expression, &propDef.Pos)
 	case "component":
-		r.properties[name] = NewComponentValue(propDef.Components[0], &propDef.Pos)
+		r.properties[name] = NewComponentDefValue(propDef.Components[0], &propDef.Pos)
 	case "var":
 		r.properties[name] = NewAnyValue(propDef.Expression, &propDef.Pos)
 	default:
@@ -154,6 +154,21 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 	}
 
+	if r.parent != nil {
+		// This will recursively search the tree upwards but it should stop on the document level. Would that mean the 'Custom' component?
+		for _, child := range r.parent.Children() {
+			if child == r {
+				continue
+			}
+			if child.ID() == key {
+				return child, true
+			}
+			if comp, ok := child.ResolveID(key); ok {
+				return comp, true
+			}
+		}
+	}
+
 	return nil, false
 }
 
@@ -173,6 +188,19 @@ func (r *Root) AddChild(child Component) {
 	r.children = append(r.children, child)
 }
 
+func (r *Root) AddChildAfter(afterThis, addThis Component) {
+	var dynType Component = afterThis
+
+	for j, child := range r.Children() {
+		if child.As(&dynType) {
+			addThis.SetParent(r)
+			r.AddChildAtButKeepParent(addThis, j+1)
+			return
+		}
+	}
+	r.AddChild(addThis)
+}
+
 func (r *Root) RemoveChild(child Component) {
 	for i, c := range r.children {
 		if c == child {
@@ -189,8 +217,16 @@ func (r *Root) AddChildButKeepParent(child Component) {
 	r.children = append(r.children, child)
 }
 
+func (r *Root) AddChildAtButKeepParent(child Component, index int) {
+	r.children = append(r.children[:index], append([]Component{child}, r.children[index:]...)...)
+}
+
 func (r *Root) SetParent(parent Component) {
 	r.parent = parent
+}
+
+func (r *Root) Parent() Component {
+	return r.parent
 }
 
 func (r *Root) Children() []Component {
@@ -288,4 +324,23 @@ func (r *Root) FinishInContext(context Component) error {
 		}
 	}
 	return nil
+}
+
+func (r *Root) Draw(ctx DrawingContext, area Rect) error {
+	return nil
+}
+
+func (r *Root) DrawChildren(ctx DrawingContext, area Rect) error {
+
+	for _, child := range r.children {
+		child.Draw(ctx, area)
+	}
+
+	return nil
+}
+
+func (r *Root) ApplyLayout(*Layout) {}
+
+func (r *Root) Bounds() Rect {
+	return Rect{}
 }

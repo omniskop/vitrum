@@ -237,7 +237,7 @@ func (l *lexer) Lex() (token, error) {
 				return token{}, LexError{l.pos, fmt.Sprintf("unexpected symbol %q", string(r))}
 			}
 			continue
-		case unicode.IsLetter(r):
+		case unicode.IsLetter(r) || r == '#':
 			return l.scanIdentifier(r)
 		case unicode.IsNumber(r), r == '-', r == '+':
 			l.unreadRune()
@@ -310,7 +310,7 @@ func (l *lexer) readExpressionUntil(stopRunes ...rune) (string, vit.Position, er
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				if openBrackets > 0 {
-					// theoretically we could return an error here, but we will just take the expresssion as is
+					// theoretically we could return an error here, but we will just take the expression as is
 					// return "", pos, LexError{pos, fmt.Sprintf("unexpected end of file, expected '%s'", string(bracketType))}
 					return out.String(), l.previousPosition, nil
 				} else {

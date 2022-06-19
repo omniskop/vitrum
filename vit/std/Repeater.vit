@@ -1,8 +1,8 @@
 
 Item {
-    property int count
-    // property Component delegate
-    property var model
+    #gen-onchange="evaluateInternals" property int count
+    #gen-onchange="evaluateInternals" property component delegate
+    #gen-onchange="evaluateInternals" property var model
 
-    property []component items
+    #gen-type="[]RepeaterItem" #gen-initializer="[]RepeaterItem{}" #gen-private property var items
 }

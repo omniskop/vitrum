@@ -12,6 +12,7 @@ import (
 type Library interface {
 	ComponentNames() []string
 	NewComponent(string, string, vit.ComponentContainer) (vit.Component, bool)
+	StaticAttribute(string, string) (interface{}, bool)
 }
 
 // resolveLibraryImport takes a library identifier and returns the corresponding library or an error if the identifier is unknown.

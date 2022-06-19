@@ -50,3 +50,17 @@ func (v *ColorValue) Update(context Component) error {
 func (v *ColorValue) GetValue() interface{} {
 	return v.Value
 }
+
+func (v *ColorValue) RGBAColor() color.RGBA {
+	r, g, b, a := v.Value.RGBA()
+	return color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(a >> 8),
+	}
+}
+
+func (v *ColorValue) Color() color.Color {
+	return v.Value
+}

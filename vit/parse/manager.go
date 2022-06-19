@@ -154,7 +154,7 @@ func FormatError(err error) string {
 	}
 
 	var eErr vit.ExpressionError
-	if errors.As(err, &eErr) {
+	if errors.As(err, &eErr) && eErr.Position != nil {
 		// same as ParseError
 		return fmt.Sprintf("%v\r\n\r\n%s", err, eErr.Position.Report())
 	}

@@ -68,8 +68,7 @@ func (i *LibraryInstantiator) Instantiate(id string, components vit.ComponentCon
 
 // ResolveVariable tries to find static attributes of the libraries component.
 func (i *LibraryInstantiator) ResolveVariable(name string) (interface{}, bool) {
-	panic("LibraryInstantiator.ResolveVariable() not implemented")
-	return nil, false
+	return i.library.StaticAttribute(i.componentName, name)
 }
 
 func (i *LibraryInstantiator) Name() string {

@@ -10,7 +10,7 @@ type Container struct {
 	Item
 	id string
 
-	content *vit.StaticListValue[*vit.ComponentValue]
+	content *vit.StaticListValue[*vit.ComponentDefValue]
 
 	children []vit.Component
 }
@@ -19,7 +19,7 @@ func NewContainer(id string, scope vit.ComponentContainer) *Container {
 	return &Container{
 		Item:    *NewItem(id, scope),
 		id:      id,
-		content: vit.NewStaticListValue[*vit.ComponentValue](nil, nil),
+		content: vit.NewStaticListValue[*vit.ComponentDefValue](nil, nil),
 	}
 }
 
@@ -48,9 +48,9 @@ func (r *Container) SetProperty(key string, value interface{}, position *vit.Pos
 	switch key {
 	case "content":
 		if prop, ok := value.(vit.PropertyDefinition); ok {
-			values := make([]*vit.ComponentValue, len(prop.Components))
+			values := make([]*vit.ComponentDefValue, len(prop.Components))
 			for i, component := range prop.Components {
-				values[i] = vit.NewComponentValue(component, position)
+				values[i] = vit.NewComponentDefValue(component, position)
 			}
 			r.content.Set(values)
 		} else {
@@ -94,7 +94,7 @@ func (r *Container) UpdateExpressions() (int, vit.ErrorGroup) {
 		}
 		r.children = r.children[:]
 		for _, def := range r.content.Items {
-			comp, err := r.RootC().InstantiateInScope(def.Value)
+			comp, err := r.InstantiateInScope(def.Value)
 			if err != nil {
 				errs.Add(err)
 				continue

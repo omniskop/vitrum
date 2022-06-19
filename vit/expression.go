@@ -15,7 +15,7 @@ type Expression struct {
 	code         string
 	dirty        bool
 	dependencies map[Value]bool
-	dependents   map[*Expression]bool
+	dependents   map[Dependent]bool
 	program      script.Script
 	position     *PositionRange
 	err          error
@@ -32,7 +32,7 @@ func NewExpression(code string, position *PositionRange) *Expression {
 		code:         code,
 		dirty:        true,
 		dependencies: make(map[Value]bool),
-		dependents:   make(map[*Expression]bool),
+		dependents:   make(map[Dependent]bool),
 		program:      prog,
 		position:     position,
 		err:          nil,
@@ -78,8 +78,8 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	// consider removing that part of the code in MakeDirty.
 	// Cases where that change might be necessary could be:
 	//   - if this expression surprisingly directly sets the value of another expression
-	//   - if this expression uses volatile vallues like the current time which would evaluate differently each time without a previous call to MakeDirty.
-	//     Altough that would beg the question of why this expression would've been reevaluated in the first place.
+	//   - if this expression uses volatile values like the current time which would evaluate differently each time without a previous call to MakeDirty.
+	//     Although that would beg the question of why this expression would've been reevaluated in the first place.
 	//     And this sounds like a very special case that would need to be handled specifically anyways.
 	return val, nil
 }
@@ -134,11 +134,11 @@ func (e *Expression) GetExpression() *Expression {
 	return e
 }
 
-func (e *Expression) AddDependent(exp *Expression) {
+func (e *Expression) AddDependent(exp Dependent) {
 	e.dependents[exp] = true
 }
 
-func (e *Expression) RemoveDependent(exp *Expression) {
+func (e *Expression) RemoveDependent(exp Dependent) {
 	delete(e.dependents, exp)
 }
 
@@ -256,6 +256,12 @@ func castFloat(val interface{}) (float64, bool) {
 func castList[ElementType Value](val interface{}) ([]ElementType, bool) {
 	switch list := val.(type) {
 	case []Value:
+		result := make([]ElementType, len(list))
+		for i, v := range list {
+			result[i] = v.(ElementType)
+		}
+		return result, true
+	case []interface{}:
 		result := make([]ElementType, len(list))
 		for i, v := range list {
 			result[i] = v.(ElementType)

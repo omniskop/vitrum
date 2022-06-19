@@ -1,5 +1,5 @@
 
 Item {
-    property color color: Vit.RGB(0, 0, 0)
+    property color color: Vit.rgb(0, 0, 0)
     property float radius: 5
 }

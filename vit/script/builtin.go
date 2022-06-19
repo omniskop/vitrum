@@ -8,6 +8,12 @@ import (
 )
 
 var builtinFunctions = map[string]interface{}{
+	"rgb": func(r, g, b *int) string {
+		if r == nil || g == nil || b == nil {
+			panic(fmt.Errorf("Vit.rgb: too few arguments"))
+		}
+		return vcolor.RGBAToHex(uint8(*r), uint8(*g), uint8(*b), 255)
+	},
 	"rgba": func(r, g, b, a *int) string {
 		if r == nil || g == nil || b == nil {
 			panic(fmt.Errorf("Vit.rgba: too few arguments"))

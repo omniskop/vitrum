@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/omniskop/vitrum/vit"
 )
 
@@ -188,7 +189,7 @@ Item {
         one: 1
     }
 
-	property bool local: true;
+	#test1 #test2="two" readonly property bool local: true;
 
     Label {
         wrapMode: Text.WordWrap
@@ -196,33 +197,6 @@ Item {
     }
 }
 `
-
-var validDocumentold = &VitDocument{
-	Imports: []importStatement{
-		{namespace: []string{"One"}, version: "1.23"},
-		{namespace: []string{"Two", "Three"}, version: "4.56"},
-	},
-	Components: []*vit.ComponentDefinition{
-		{
-			BaseName: "Item",
-			ID:       "rect",
-			Properties: []vit.PropertyDefinition{
-				{Identifier: []string{"anchors", "left"}, Expression: "parent.left + 10"},
-				{Identifier: []string{"affe"}, Components: []*vit.ComponentDefinition{{BaseName: "Item", Properties: []vit.PropertyDefinition{{Identifier: []string{"one"}, Expression: "1"}}}}},
-				{Identifier: []string{"local"}, VitType: "bool", Expression: "true"},
-			},
-			Children: []*vit.ComponentDefinition{
-				{
-					BaseName: "Label",
-					Properties: []vit.PropertyDefinition{
-						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap"},
-						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`},
-					},
-				},
-			},
-		},
-	},
-}
 
 var validDocument = &VitDocument{
 	Imports: []importStatement{
@@ -243,6 +217,7 @@ var validDocument = &VitDocument{
 					ReadOnly:    false,
 					Static:      false,
 					StaticValue: interface{}(nil),
+					Tags:        nil,
 				},
 				{
 					Pos:        vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 16, EndColumn: 5},
@@ -260,6 +235,7 @@ var validDocument = &VitDocument{
 								ReadOnly:    false,
 								Static:      false,
 								StaticValue: interface{}(nil),
+								Tags:        nil,
 							},
 						},
 						Children:     []*vit.ComponentDefinition(nil),
@@ -268,16 +244,18 @@ var validDocument = &VitDocument{
 					ReadOnly:    false,
 					Static:      false,
 					StaticValue: interface{}(nil),
+					Tags:        nil,
 				},
 				{
-					Pos:         vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 26},
+					Pos:         vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 55},
 					Identifier:  []string{"local"},
 					VitType:     "bool",
 					Expression:  "true",
 					Components:  nil,
-					ReadOnly:    false,
+					ReadOnly:    true,
 					Static:      false,
 					StaticValue: interface{}(nil),
+					Tags:        map[string]string{"test1": "", "test2": "two"},
 				},
 			},
 			Children: []*vit.ComponentDefinition{
@@ -301,7 +279,10 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	options := []cmp.Option{cmp.AllowUnexported(VitDocument{}, vit.ComponentDefinition{}, vit.PropertyDefinition{}, importStatement{})}
+	options := []cmp.Option{
+		cmp.AllowUnexported(VitDocument{}, vit.ComponentDefinition{}, vit.PropertyDefinition{}, importStatement{}), // allow comparison of unexported fields in these structs
+		cmpopts.EquateEmpty(), // allow nil to equal a slice or map of length 0
+	}
 	if !cmp.Equal(validDocument, doc, options...) {
 		t.Log("Parsed document deviated from expected result:")
 		t.Log("- expected")

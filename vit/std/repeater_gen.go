@@ -11,18 +11,20 @@ type Repeater struct {
 	Item
 	id string
 
-	count *vit.IntValue
-	model *vit.AnyValue
-	items *vit.ListValue[*vit.ComponentValue]
+	count    vit.IntValue
+	delegate vit.ComponentDefValue
+	model    vit.AnyValue
+	items    []RepeaterItem
 }
 
 func NewRepeater(id string, scope vit.ComponentContainer) *Repeater {
 	return &Repeater{
-		Item:  *NewItem(id, scope),
-		id:    id,
-		count: vit.NewIntValue("", nil),
-		model: vit.NewAnyValue("", nil),
-		items: vit.NewListValue[*vit.ComponentValue]("", nil),
+		Item:     *NewItem(id, scope),
+		id:       id,
+		count:    *vit.NewIntValue("", nil),
+		delegate: *vit.NewComponentDefValue(nil, nil),
+		model:    *vit.NewAnyValue("", nil),
+		items:    []RepeaterItem{},
 	}
 }
 
@@ -33,11 +35,11 @@ func (r *Repeater) String() string {
 func (r *Repeater) Property(key string) (vit.Value, bool) {
 	switch key {
 	case "count":
-		return r.count, true
+		return &r.count, true
+	case "delegate":
+		return &r.delegate, true
 	case "model":
-		return r.model, true
-	case "items":
-		return r.items, true
+		return &r.model, true
 	default:
 		return r.Item.Property(key)
 	}
@@ -55,10 +57,10 @@ func (r *Repeater) SetProperty(key string, value interface{}, position *vit.Posi
 	switch key {
 	case "count":
 		r.count.ChangeCode(value.(string), position)
+	case "delegate":
+		r.delegate.ChangeComponent(value.([]*vit.ComponentDefinition)[0])
 	case "model":
 		r.model.ChangeCode(value.(string), position)
-	case "items":
-		r.items.ChangeCode(value.(string), position)
 	default:
 		return r.Item.SetProperty(key, value, position)
 	}
@@ -70,11 +72,11 @@ func (r *Repeater) ResolveVariable(key string) (interface{}, bool) {
 	case r.id:
 		return r, true
 	case "count":
-		return r.count, true
+		return &r.count, true
+	case "delegate":
+		return &r.delegate, true
 	case "model":
-		return r.model, true
-	case "items":
-		return r.items, true
+		return &r.model, true
 	default:
 		return r.Item.ResolveVariable(key)
 	}
@@ -85,6 +87,19 @@ func (r *Repeater) AddChild(child vit.Component) {
 	r.AddChildButKeepParent(child)
 }
 
+func (r *Repeater) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
+	var targetType vit.Component = afterThis
+
+	for ind, child := range r.Children() {
+		if child.As(&targetType) {
+			addThis.SetParent(r)
+			r.AddChildAtButKeepParent(addThis, ind+1)
+			return
+		}
+	}
+	r.AddChild(addThis)
+}
+
 func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
@@ -93,22 +108,25 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 		sum++
 		err := r.count.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Repeater", "count", r.id, r.count.Expression, err))
+			errs.Add(vit.NewExpressionError("Repeater", "count", r.id, *r.count.GetExpression(), err))
 		}
+		r.evaluateInternals(r.count)
+	}
+	if r.delegate.ShouldEvaluate() {
+		sum++
+		err := r.delegate.Update(r)
+		if err != nil {
+			errs.Add(vit.NewExpressionError("Repeater", "delegate", r.id, *r.delegate.GetExpression(), err))
+		}
+		r.evaluateInternals(r.delegate)
 	}
 	if r.model.ShouldEvaluate() {
 		sum++
 		err := r.model.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Repeater", "model", r.id, r.model.Expression, err))
+			errs.Add(vit.NewExpressionError("Repeater", "model", r.id, *r.model.GetExpression(), err))
 		}
-	}
-	if r.items.ShouldEvaluate() {
-		sum++
-		err := r.items.Update(r)
-		if err != nil {
-			errs.Add(vit.NewExpressionError("Repeater", "items", r.id, r.items.Expression, err))
-		}
+		r.evaluateInternals(r.model)
 	}
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
