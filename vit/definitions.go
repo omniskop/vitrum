@@ -61,6 +61,15 @@ func (d *ComponentDefinition) String() string {
 	return s.String()
 }
 
+func (d *ComponentDefinition) GetEnum(name string) (*Enumeration, bool) {
+	for _, e := range d.Enumerations {
+		if e.Name == name {
+			return &e, true
+		}
+	}
+	return nil, false
+}
+
 // PropertyDefinition contains everything about a defined or declared PropertyDefinition
 type PropertyDefinition struct {
 	Pos        PositionRange          // position of the property declaration

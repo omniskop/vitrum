@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -109,6 +110,8 @@ func getComponentName(fileName string) string {
 func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefinition) error {
 	// TODO: Figure out from which package the base component should be imported from. Currently this is hardcoded to be the std package.
 
+	f.Add(generateComponentEnums(compName, comp))
+
 	properties := []jen.Code{
 		jen.Qual(stdPackage, comp.BaseName),
 		jen.Id("id").String(),
@@ -130,7 +133,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		if isInternalProperty(prop) {
 			continue
 		}
-		propType, propConstructor, err := vitTypeInfo(prop)
+		propType, propConstructor, err := vitTypeInfo(comp, prop)
 		if err != nil {
 			return err
 		}
@@ -378,6 +381,20 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	return nil
 }
 
+func generateComponentEnums(compName string, comp *vit.ComponentDefinition) jen.Code {
+	var code = new(jen.Group)
+	for _, enum := range comp.Enumerations {
+		typeName := fmt.Sprintf("%s_%s", compName, enum.Name)
+		code.Type().Id(typeName).Uint().Line()
+		code.Const().DefsFunc(func(g *jen.Group) {
+			for _, value := range orderEnumValues(enum.Values) {
+				g.Id(fmt.Sprintf("%s_%s", typeName, value.name)).Id(typeName).Op("=").Lit(value.value)
+			}
+		}).Line()
+	}
+	return code
+}
+
 func generateComponentDefinition(comp *vit.ComponentDefinition) *jen.Statement {
 	return nil
 }
@@ -412,11 +429,11 @@ func addMultiple(g *jen.Group, code []jen.Code) {
 }
 
 // vitTypeInfo returns statements that describe the type and constructor for a given property.
-// It might return an error if the property contains incompatible tags.
+// It might return an error if the property contains incompatible tags or the type is unknown.
 // For example for a property of type 'float' the returned code might look like this:
 //     propType:    vit.FloatType
 //     constructor: *vit.NewFloatValue("", nil),
-func vitTypeInfo(prop vit.PropertyDefinition) (propType *jen.Statement, constructor *jen.Statement, err error) {
+func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (propType *jen.Statement, constructor *jen.Statement, err error) {
 	// handles gen-initializer and gen-type
 	if init, ok := prop.Tags[initializerTag]; ok {
 		constructor = jen.Id(init) // a custom initializer is provided
@@ -479,11 +496,13 @@ func vitTypeInfo(prop vit.PropertyDefinition) (propType *jen.Statement, construc
 		propType = jen.Qual(vitPackage, "ComponentDefValue")
 		constructor = jen.Op("*").Qual(vitPackage, "NewComponentDefValue").Call(jen.Nil(), jen.Nil())
 	default:
-		// unknown type, try to guess the code
-		// TODO: should we instead fail here?
-		upperType := firstLetterUpper(prop.VitType)
-		propType = jen.Op("*").Qual(vitPackage, fmt.Sprintf("New%s", upperType))
-		constructor = jen.Qual(vitPackage, fmt.Sprintf("New%sValue", upperType)).Call(jen.Nil(), jen.Nil())
+		if _, ok := comp.GetEnum(prop.VitType); ok {
+			propType = jen.Qual(vitPackage, "IntValue")
+			constructor = jen.Op("*").Qual(vitPackage, "NewIntValue").Call(jen.Lit(""), jen.Nil())
+		} else {
+			err = fmt.Errorf("property %s has unknown type %q", prop.Identifier, prop.VitType)
+			return
+		}
 	}
 
 	// check if this property is explicitly optional
@@ -596,4 +615,32 @@ func getProperty(prop *vit.ComponentDefinition, identifier string) (*vit.Propert
 		}
 	}
 	return nil, false
+}
+
+func orderEnumValues(values map[string]int) []enumValue {
+	var list = make(enumValueList, 0, len(values))
+	for k, v := range values {
+		list = append(list, enumValue{k, v})
+	}
+	sort.Sort(list)
+	return list
+}
+
+type enumValue struct {
+	name  string
+	value int
+}
+
+type enumValueList []enumValue
+
+func (v enumValueList) Len() int {
+	return len(v)
+}
+
+func (v enumValueList) Less(i, j int) bool {
+	return v[i].value < v[j].value
+}
+
+func (v enumValueList) Swap(i, j int) {
+	v[i], v[j] = v[j], v[i]
 }
