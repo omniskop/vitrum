@@ -36,15 +36,14 @@ func (r *Row) CalculateSize() (float64, float64) {
 	var totalWidth float64 = r.getLeftPadding() + r.getRightPadding()
 	var totalHeight float64
 	for _, child := range r.Children() {
-		width := child.MustProperty("width").GetValue().(float64)
-		height := child.MustProperty("height").GetValue().(float64)
-		if width == 0 || height == 0 {
+		bounds := child.Bounds()
+		if bounds.Width() == 0 || bounds.Height() == 0 {
 			continue
 		}
 
-		totalWidth += width + r.spacing.Float64()
-		if height > totalHeight {
-			totalHeight = height
+		totalWidth += bounds.Width() + r.spacing.Float64()
+		if bounds.Height() > totalHeight {
+			totalHeight = bounds.Height()
 		}
 	}
 	if len(r.Children()) > 0 {
@@ -60,9 +59,8 @@ func (r *Row) recalculateLayout(interface{}) {
 	var x float64 = r.left.Float64() + r.getLeftPadding()
 	var y float64 = r.top.Float64() + r.getTopPadding()
 	for _, child := range r.Children() {
-		width := child.MustProperty("width").GetValue().(float64)
-		height := child.MustProperty("height").GetValue().(float64)
-		if width == 0 || height == 0 {
+		bounds := child.Bounds()
+		if bounds.Width() == 0 || bounds.Height() == 0 {
 			continue
 		}
 
@@ -70,7 +68,7 @@ func (r *Row) recalculateLayout(interface{}) {
 		yCopy := y
 		r.childLayouts[child].SetPosition(&xCopy, nil)
 		r.childLayouts[child].SetPreferredPosition(nil, &yCopy)
-		x += width + r.spacing.Float64()
+		x += bounds.Width() + r.spacing.Float64()
 	}
 	r.layouting(r.CalculateSize())
 }

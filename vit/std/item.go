@@ -527,3 +527,12 @@ func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 func (i *Item) ApplyLayout(l *vit.Layout) {
 	i.layout = l
 }
+
+func (i *Item) Bounds() vit.Rect {
+	return vit.Rect{
+		X1: i.left.Float64(),
+		Y1: i.top.Float64(),
+		X2: i.right.Float64(),
+		Y2: i.bottom.Float64(),
+	}
+}

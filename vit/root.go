@@ -340,3 +340,7 @@ func (r *Root) DrawChildren(ctx DrawingContext, area Rect) error {
 }
 
 func (r *Root) ApplyLayout(*Layout) {}
+
+func (r *Root) Bounds() Rect {
+	return Rect{}
+}

@@ -31,13 +31,10 @@ type Component interface {
 	ApplyLayout(*Layout)
 
 	Draw(DrawingContext, Rect) error
+	Bounds() Rect
 
 	RootC() *Root  // returns the root of this component
 	Finish() error // Finishes the component instantiation. Should only be called by components that embed this one.
-}
-
-type DynamicalySizedComponent interface {
-	CalculateSize() (float64, float64)
 }
 
 func FinishComponent(comp Component) error {
