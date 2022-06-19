@@ -9,7 +9,7 @@ import (
 
 type ColorValue struct {
 	Expression
-	Value color.Color
+	value color.Color
 }
 
 func NewColorValue(expression string, position *PositionRange) *ColorValue {
@@ -36,10 +36,10 @@ func (v *ColorValue) Update(context Component) error {
 	case string:
 		c, err := vcolor.String(result)
 		if err != nil {
-			v.Value = color.Black
+			v.value = color.Black
 			return err
 		}
-		v.Value = c
+		v.value = c
 	default:
 		return fmt.Errorf("color expression evaluated to %T, expected string", result)
 	}
@@ -48,11 +48,11 @@ func (v *ColorValue) Update(context Component) error {
 }
 
 func (v *ColorValue) GetValue() interface{} {
-	return v.Value
+	return v.value
 }
 
 func (v *ColorValue) RGBAColor() color.RGBA {
-	r, g, b, a := v.Value.RGBA()
+	r, g, b, a := v.value.RGBA()
 	return color.RGBA{
 		R: uint8(r >> 8),
 		G: uint8(g >> 8),
@@ -62,5 +62,5 @@ func (v *ColorValue) RGBAColor() color.RGBA {
 }
 
 func (v *ColorValue) Color() color.Color {
-	return v.Value
+	return v.value
 }

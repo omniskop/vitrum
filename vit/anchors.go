@@ -200,28 +200,28 @@ func (v *AnchorsValue) UpdateExpressions(context Component) (int, ErrorGroup) {
 		sum++
 		err := v.Baseline.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.baseline", context.ID(), v.Baseline.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.baseline", context.ID(), v.Baseline.ActualValue().Expression, err))
 		}
 	}
 	if v.BaselineOffset.ShouldEvaluate() {
 		sum++
 		err := v.BaselineOffset.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.baselineOffset", context.ID(), v.BaselineOffset.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.baselineOffset", context.ID(), v.BaselineOffset.ActualValue().Expression, err))
 		}
 	}
 	if v.Bottom.ShouldEvaluate() {
 		sum++
 		err := v.Bottom.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.bottom", context.ID(), v.Bottom.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.bottom", context.ID(), v.Bottom.ActualValue().Expression, err))
 		}
 	}
 	if v.BottomMargin.ShouldEvaluate() {
 		sum++
 		err := v.BottomMargin.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.bottomMargin", context.ID(), v.BottomMargin.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.bottomMargin", context.ID(), v.BottomMargin.ActualValue().Expression, err))
 		}
 	}
 	if v.CenterIn.ShouldEvaluate() {
@@ -242,77 +242,77 @@ func (v *AnchorsValue) UpdateExpressions(context Component) (int, ErrorGroup) {
 		sum++
 		err := v.HorizontalCenter.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.horizonzalCenter", context.ID(), v.HorizontalCenter.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.horizonzalCenter", context.ID(), v.HorizontalCenter.ActualValue().Expression, err))
 		}
 	}
 	if v.HorizontalCenterOffset.ShouldEvaluate() {
 		sum++
 		err := v.HorizontalCenterOffset.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.horizonzalCenterOffset", context.ID(), v.HorizontalCenterOffset.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.horizonzalCenterOffset", context.ID(), v.HorizontalCenterOffset.ActualValue().Expression, err))
 		}
 	}
 	if v.Left.ShouldEvaluate() {
 		sum++
 		err := v.Left.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.left", context.ID(), v.Left.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.left", context.ID(), v.Left.ActualValue().Expression, err))
 		}
 	}
 	if v.LeftMargin.ShouldEvaluate() {
 		sum++
 		err := v.LeftMargin.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.leftMargin", context.ID(), v.LeftMargin.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.leftMargin", context.ID(), v.LeftMargin.ActualValue().Expression, err))
 		}
 	}
 	if v.Margins.ShouldEvaluate() {
 		sum++
 		err := v.Margins.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.margins", context.ID(), v.Margins.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.margins", context.ID(), v.Margins.ActualValue().Expression, err))
 		}
 	}
 	if v.Right.ShouldEvaluate() {
 		sum++
 		err := v.Right.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.right", context.ID(), v.Right.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.right", context.ID(), v.Right.ActualValue().Expression, err))
 		}
 	}
 	if v.RightMargin.ShouldEvaluate() {
 		sum++
 		err := v.RightMargin.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.rightMargin", context.ID(), v.RightMargin.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.rightMargin", context.ID(), v.RightMargin.ActualValue().Expression, err))
 		}
 	}
 	if v.Top.ShouldEvaluate() {
 		sum++
 		err := v.Top.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.top", context.ID(), v.Top.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.top", context.ID(), v.Top.ActualValue().Expression, err))
 		}
 	}
 	if v.TopMargin.ShouldEvaluate() {
 		sum++
 		err := v.TopMargin.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.topMargin", context.ID(), v.TopMargin.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.topMargin", context.ID(), v.TopMargin.ActualValue().Expression, err))
 		}
 	}
 	if v.VerticalCenter.ShouldEvaluate() {
 		sum++
 		err := v.VerticalCenter.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.verticalCenter", context.ID(), v.VerticalCenter.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.verticalCenter", context.ID(), v.VerticalCenter.ActualValue().Expression, err))
 		}
 	}
 	if v.VerticalCenterOffset.ShouldEvaluate() {
 		sum++
 		err := v.VerticalCenterOffset.Update(context)
 		if err != nil {
-			errs.Add(NewExpressionError("Item", "anchors.verticalCenterOffset", context.ID(), v.VerticalCenterOffset.Value.Expression, err))
+			errs.Add(NewExpressionError("Item", "anchors.verticalCenterOffset", context.ID(), v.VerticalCenterOffset.ActualValue().Expression, err))
 		}
 	}
 
@@ -379,7 +379,7 @@ func (v *AnchorLineValue) AssignTo(comp Component, lineType AnchorLine) {
 	if v.Source != nil {
 		v.Source.RemoveDependent(v)
 		v.Source = nil
-		v.Changed = true
+		v.changed = true
 	}
 	if comp == nil {
 		return
@@ -392,13 +392,13 @@ func (v *AnchorLineValue) AssignTo(comp Component, lineType AnchorLine) {
 	v.Source = sourceValue.(*AnchorLineValue)
 	v.Source.AddDependent(v)
 	v.offset = 0
-	v.Changed = true
+	v.changed = true
 }
 
 func (v *AnchorLineValue) SetOffset(offset float64) {
 	if v.offset != offset {
 		v.offset = offset
-		v.Changed = true
+		v.changed = true
 	}
 }
 
@@ -406,11 +406,11 @@ func (v *AnchorLineValue) SetAbsolute(value float64) {
 	if v.Source != nil {
 		v.Source.RemoveDependent(v)
 		v.Source = nil
-		v.Changed = true
+		v.changed = true
 	}
 	if v.offset != value {
 		v.offset = value
-		v.Changed = true
+		v.changed = true
 	}
 }
 

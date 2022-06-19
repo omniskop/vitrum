@@ -362,24 +362,24 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.verticalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorVerticalCenter)
 		i.bottom.AssignTo(i.anchors.Fill.Component(), vit.AnchorBottom)
 		if i.anchors.LeftMargin.IsSet() {
-			i.left.SetOffset(i.anchors.LeftMargin.Value.Float64())
+			i.left.SetOffset(i.anchors.LeftMargin.ActualValue().Float64())
 		} else {
 			i.left.SetOffset(0)
 		}
 		i.horizontalCenter.SetOffset(0)
 		if i.anchors.RightMargin.IsSet() {
-			i.right.SetOffset(-i.anchors.RightMargin.Value.Float64())
+			i.right.SetOffset(-i.anchors.RightMargin.ActualValue().Float64())
 		} else {
 			i.right.SetOffset(0)
 		}
 		if i.anchors.TopMargin.IsSet() {
-			i.top.SetOffset(i.anchors.TopMargin.Value.Float64())
+			i.top.SetOffset(i.anchors.TopMargin.ActualValue().Float64())
 		} else {
 			i.top.SetOffset(0)
 		}
 		i.verticalCenter.SetOffset(0)
 		if i.anchors.BottomMargin.IsSet() {
-			i.bottom.SetOffset(-i.anchors.BottomMargin.Value.Float64())
+			i.bottom.SetOffset(-i.anchors.BottomMargin.ActualValue().Float64())
 		} else {
 			i.bottom.SetOffset(0)
 		}
@@ -398,14 +398,14 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.bottom.SetOffset(height / 2)
 		i.left.SetOffset(0)
 		if i.anchors.HorizontalCenterOffset.IsSet() {
-			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value.Float64())
+			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.ActualValue().Float64())
 		} else {
 			i.horizontalCenter.SetOffset(0)
 		}
 		i.right.SetOffset(0)
 		i.top.SetOffset(0)
 		if i.anchors.VerticalCenterOffset.IsSet() {
-			i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value.Float64())
+			i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.ActualValue().Float64())
 		} else {
 			i.verticalCenter.SetOffset(0)
 		}
@@ -504,32 +504,32 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 
 func (i *Item) setAllOffsets() {
 	if i.anchors.LeftMargin.IsSet() {
-		i.left.SetOffset(i.anchors.LeftMargin.Value.Float64())
+		i.left.SetOffset(i.anchors.LeftMargin.ActualValue().Float64())
 	} else {
 		i.left.SetOffset(0)
 	}
 	if i.anchors.HorizontalCenterOffset.IsSet() {
-		i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value.Float64())
+		i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.ActualValue().Float64())
 	} else {
 		i.horizontalCenter.SetOffset(0)
 	}
 	if i.anchors.RightMargin.IsSet() {
-		i.right.SetOffset(i.anchors.RightMargin.Value.Float64())
+		i.right.SetOffset(i.anchors.RightMargin.ActualValue().Float64())
 	} else {
 		i.right.SetOffset(0)
 	}
 	if i.anchors.TopMargin.IsSet() {
-		i.top.SetOffset(i.anchors.TopMargin.Value.Float64())
+		i.top.SetOffset(i.anchors.TopMargin.ActualValue().Float64())
 	} else {
 		i.top.SetOffset(0)
 	}
 	if i.anchors.VerticalCenterOffset.IsSet() {
-		i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value.Float64())
+		i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.ActualValue().Float64())
 	} else {
 		i.verticalCenter.SetOffset(0)
 	}
 	if i.anchors.BottomMargin.IsSet() {
-		i.bottom.SetOffset(i.anchors.BottomMargin.Value.Float64())
+		i.bottom.SetOffset(i.anchors.BottomMargin.ActualValue().Float64())
 	} else {
 		i.bottom.SetOffset(0)
 	}
