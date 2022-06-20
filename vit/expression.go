@@ -48,10 +48,12 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	var dontStoreValue bool
 	for _, variable := range variables {
 		// fmt.Printf("\t%v\n", variable.GetExpression().code)
-		if variable.ShouldEvaluate() {
-			// fmt.Printf("[expression] this expression is dirty, we will not update out value for now\n")
-			dontStoreValue = true
-		}
+
+		// TODO: figure out how to do this after the value refactor
+		// if expr, ok := variable.(ExpressionValue); ok && expr.ShouldEvaluate() {
+		// 	// fmt.Printf("[expression] this expression is dirty, we will not update out value for now\n")
+		// 	dontStoreValue = true
+		// }
 		if _, ok := e.dependencies[variable]; !ok {
 			e.dependencies[variable] = true
 			variable.AddDependent(e)
@@ -61,8 +63,10 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	// fmt.Printf("[expression] expression %q wrote to:\n", e.code)
 	for _, variable := range variables {
 		// fmt.Printf("\t%v\n", variable.GetExpression().code)
-		if _, ok := e.dependents[variable.GetExpression()]; !ok {
-			e.dependents[variable.GetExpression()] = true
+		if dep, ok := variable.(Dependent); ok {
+			if _, ok := e.dependents[dep]; !ok {
+				e.dependents[dep] = true
+			}
 		}
 	}
 	if dontStoreValue {
@@ -86,10 +90,13 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 
 // ShouldEvaluate returns true if this expression should be reevaluated because any dependencies have changed
 func (e *Expression) ShouldEvaluate() bool {
+	if e == nil {
+		return false
+	}
 	return e.dirty
 }
 
-func (e *Expression) MakeDirty(stack []*Expression) {
+func (e *Expression) MakeDirty(stack []Dependent) {
 	for _, exp := range stack {
 		if exp == e {
 			panic("circular dependency detected")
@@ -120,7 +127,7 @@ func (e *Expression) ClearDependencies() {
 }
 
 // NotifyDependents informs all expressions that depend on the result of this expression that they will need to be reevaluated
-func (e *Expression) NotifyDependents(stack []*Expression) {
+func (e *Expression) NotifyDependents(stack []Dependent) {
 	for exp := range e.dependents {
 		exp.MakeDirty(stack)
 	}
@@ -231,28 +238,6 @@ func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
 	}
 }
 
-func castInt(val interface{}) (int, bool) {
-	switch n := val.(type) {
-	case int64:
-		return int(n), true
-	case float64:
-		return int(n), true
-	default:
-		return 0, false
-	}
-}
-
-func castFloat(val interface{}) (float64, bool) {
-	switch n := val.(type) {
-	case int64:
-		return float64(n), true
-	case float64:
-		return float64(n), true
-	default:
-		return 0, false
-	}
-}
-
 func castList[ElementType Value](val interface{}) ([]ElementType, bool) {
 	switch list := val.(type) {
 	case []Value:
@@ -273,36 +258,21 @@ func castList[ElementType Value](val interface{}) ([]ElementType, bool) {
 }
 
 type ExpressionError struct {
-	ComponentName string
-	ComponentID   string
-	PropertyName  string
-	Code          string
-	Position      *PositionRange
-	err           error
+	Code     string
+	Position *PositionRange
+	err      error
 }
 
-func NewExpressionError(componentName string, propertyName string, componentID string, expression Expression, err error) ExpressionError {
+func NewExpressionError(code string, pos *PositionRange, err error) ExpressionError {
 	return ExpressionError{
-		ComponentName: componentName,
-		ComponentID:   componentID,
-		PropertyName:  propertyName,
-		Code:          expression.code,
-		Position:      expression.position,
-		err:           err,
+		Code:     code,
+		Position: pos,
+		err:      err,
 	}
 }
 
 func (e ExpressionError) Error() string {
-	var identifier string
-	if e.ComponentID == "" {
-		identifier = fmt.Sprintf("%s.%s", e.ComponentName, e.PropertyName)
-	} else {
-		identifier = fmt.Sprintf("%s(%s).%s", e.ComponentName, e.ComponentID, e.PropertyName)
-	}
-	if e.Position != nil {
-		return fmt.Sprintf("%v: %s: expression %q: %v", e.Position, identifier, e.Code, e.err)
-	}
-	return fmt.Sprintf("%s: expression %q: %v", identifier, e.Code, e.err)
+	return fmt.Sprintf("expression %q: %v", e.Code, e.err)
 }
 
 func (e ExpressionError) Is(target error) bool {

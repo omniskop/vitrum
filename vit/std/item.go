@@ -33,12 +33,12 @@ func NewItem(id string, scope vit.ComponentContainer) *Item {
 	i := &Item{
 		Root:             vit.NewRoot(id, scope),
 		id:               id,
-		width:            *vit.NewFloatValue("", nil),
-		height:           *vit.NewFloatValue("", nil),
-		anchors:          *vit.NewAnchors("", nil),
-		x:                *vit.NewFloatValue("", nil),
-		y:                *vit.NewFloatValue("", nil),
-		z:                *vit.NewFloatValue("", nil),
+		width:            *vit.NewEmptyFloatValue(),
+		height:           *vit.NewEmptyFloatValue(),
+		anchors:          *vit.NewAnchors(),
+		x:                *vit.NewEmptyFloatValue(),
+		y:                *vit.NewEmptyFloatValue(),
+		z:                *vit.NewEmptyFloatValue(),
 		left:             *vit.NewAnchorLineValue(),
 		horizontalCenter: *vit.NewAnchorLineValue(),
 		right:            *vit.NewAnchorLineValue(),
@@ -93,26 +93,49 @@ func (i *Item) MustProperty(key string) vit.Value {
 	return v
 }
 
-func (i *Item) SetProperty(key string, value interface{}, position *vit.PositionRange) bool {
-	// fmt.Printf("[Item] set %q: %v\n", key, value)
+func (i *Item) SetProperty(key string, value interface{}) error {
+	var err error
 	switch key {
 	case "width":
-		i.width.Expression.ChangeCode(value.(string), position)
+		err = i.width.SetValue(value)
 	case "height":
-		i.height.Expression.ChangeCode(value.(string), position)
+		err = i.height.SetValue(value)
 	case "anchors":
 		panic("not implemented")
 		// i.anchors = value.(vit.ObjectValue)
 	case "x":
-		i.x.Expression.ChangeCode(value.(string), position)
+		err = i.x.SetValue(value)
 	case "y":
-		i.y.Expression.ChangeCode(value.(string), position)
+		err = i.y.SetValue(value)
 	case "z":
-		i.z.Expression.ChangeCode(value.(string), position)
+		err = i.z.SetValue(value)
 	default:
-		return i.Root.SetProperty(key, value, position)
+		return i.Root.SetProperty(key, value)
 	}
-	return true
+	if err != nil {
+		return vit.NewPropertyError("item", key, i.ID(), err)
+	}
+	return nil
+}
+
+func (i *Item) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+	switch key {
+	case "width":
+		i.width.SetExpression(code, pos)
+	case "height":
+		i.height.SetExpression(code, pos)
+	case "anchors":
+		panic("not implemented")
+	case "x":
+		i.x.SetExpression(code, pos)
+	case "y":
+		i.y.SetExpression(code, pos)
+	case "z":
+		i.z.SetExpression(code, pos)
+	default:
+		return i.Root.SetPropertyExpression(key, code, pos)
+	}
+	return nil
 }
 
 func (i *Item) ResolveVariable(key string) (interface{}, bool) {
@@ -169,87 +192,80 @@ func (i *Item) AddChildAfter(afterThis, addThis vit.Component) {
 func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 	var errs vit.ErrorGroup
 	var sum int
-	if i.width.ShouldEvaluate() {
+	if changed, err := i.width.Update(i); changed || err != nil {
 		sum++
-		err := i.width.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "width", i.id, i.width.Expression, err))
-		}
-		w := i.width.Float64()
-		h := i.height.Float64()
-		i.layout.SetTargetSize(&w, &h)
-	}
-	if i.height.ShouldEvaluate() {
-		sum++
-		err := i.height.Update(i)
-		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "height", i.id, i.height.Expression, err))
-		}
-		w := i.width.Float64()
-		h := i.height.Float64()
-		i.layout.SetTargetSize(&w, &h)
-	}
-	if i.x.ShouldEvaluate() {
-		sum++
-		err := i.x.Update(i)
-		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "x", i.id, i.x.Expression, err))
+			errs.Add(vit.NewPropertyError("Item", "width", i.id, err))
+		} else {
+			w := i.width.Float64()
+			h := i.height.Float64()
+			i.layout.SetTargetSize(&w, &h)
+			i.layouting(i.contentWidth, i.contentHeight)
 		}
 	}
-	if i.y.ShouldEvaluate() {
+	if changed, err := i.height.Update(i); changed || err != nil {
 		sum++
-		err := i.y.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "y", i.id, i.y.Expression, err))
+			errs.Add(vit.NewPropertyError("Item", "height", i.id, err))
+		} else {
+			w := i.width.Float64()
+			h := i.height.Float64()
+			i.layout.SetTargetSize(&w, &h)
+			i.layouting(i.contentWidth, i.contentHeight)
 		}
 	}
-	if i.z.ShouldEvaluate() {
+	if changed, err := i.x.Update(i); changed || err != nil {
 		sum++
-		err := i.z.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "z", i.id, i.z.Expression, err))
+			errs.Add(vit.NewPropertyError("Item", "x", i.id, err))
 		}
 	}
-	if i.left.ShouldEvaluate() {
+	if changed, err := i.y.Update(i); changed || err != nil {
 		sum++
-		err := i.left.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "left", i.id, vit.Expression{}, err))
+			errs.Add(vit.NewPropertyError("Item", "y", i.id, err))
 		}
 	}
-	if i.horizontalCenter.ShouldEvaluate() {
+	if changed, err := i.z.Update(i); changed || err != nil {
 		sum++
-		err := i.horizontalCenter.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "horizontalCenter", i.id, vit.Expression{}, err))
+			errs.Add(vit.NewPropertyError("Item", "z", i.id, err))
 		}
 	}
-	if i.right.ShouldEvaluate() {
+	if changed, err := i.left.Update(i); changed || err != nil {
 		sum++
-		err := i.right.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "right", i.id, vit.Expression{}, err))
+			errs.Add(vit.NewPropertyError("Item", "left", i.id, err))
 		}
 	}
-	if i.top.ShouldEvaluate() {
+	if changed, err := i.horizontalCenter.Update(i); changed || err != nil {
 		sum++
-		err := i.top.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "top", i.id, vit.Expression{}, err))
+			errs.Add(vit.NewPropertyError("Item", "horizontalCenter", i.id, err))
 		}
 	}
-	if i.verticalCenter.ShouldEvaluate() {
+	if changed, err := i.right.Update(i); changed || err != nil {
 		sum++
-		err := i.verticalCenter.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "verticalCenter", i.id, vit.Expression{}, err))
+			errs.Add(vit.NewPropertyError("Item", "right", i.id, err))
 		}
 	}
-	if i.bottom.ShouldEvaluate() {
+	if changed, err := i.top.Update(i); changed || err != nil {
 		sum++
-		err := i.bottom.Update(i)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Item", "bottom", i.id, vit.Expression{}, err))
+			errs.Add(vit.NewPropertyError("Item", "top", i.id, err))
+		}
+	}
+	if changed, err := i.verticalCenter.Update(i); changed || err != nil {
+		sum++
+		if err != nil {
+			errs.Add(vit.NewPropertyError("Item", "verticalCenter", i.id, err))
+		}
+	}
+	if changed, err := i.bottom.Update(i); changed || err != nil {
+		sum++
+		if err != nil {
+			errs.Add(vit.NewPropertyError("Item", "bottom", i.id, err))
 		}
 	}
 
@@ -362,24 +378,24 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.verticalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorVerticalCenter)
 		i.bottom.AssignTo(i.anchors.Fill.Component(), vit.AnchorBottom)
 		if i.anchors.LeftMargin.IsSet() {
-			i.left.SetOffset(i.anchors.LeftMargin.ActualValue().Float64())
+			i.left.SetOffset(i.anchors.LeftMargin.Value().Float64())
 		} else {
 			i.left.SetOffset(0)
 		}
 		i.horizontalCenter.SetOffset(0)
 		if i.anchors.RightMargin.IsSet() {
-			i.right.SetOffset(-i.anchors.RightMargin.ActualValue().Float64())
+			i.right.SetOffset(-i.anchors.RightMargin.Value().Float64())
 		} else {
 			i.right.SetOffset(0)
 		}
 		if i.anchors.TopMargin.IsSet() {
-			i.top.SetOffset(i.anchors.TopMargin.ActualValue().Float64())
+			i.top.SetOffset(i.anchors.TopMargin.Value().Float64())
 		} else {
 			i.top.SetOffset(0)
 		}
 		i.verticalCenter.SetOffset(0)
 		if i.anchors.BottomMargin.IsSet() {
-			i.bottom.SetOffset(-i.anchors.BottomMargin.ActualValue().Float64())
+			i.bottom.SetOffset(-i.anchors.BottomMargin.Value().Float64())
 		} else {
 			i.bottom.SetOffset(0)
 		}
@@ -398,14 +414,14 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.bottom.SetOffset(height / 2)
 		i.left.SetOffset(0)
 		if i.anchors.HorizontalCenterOffset.IsSet() {
-			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.ActualValue().Float64())
+			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value().Float64())
 		} else {
 			i.horizontalCenter.SetOffset(0)
 		}
 		i.right.SetOffset(0)
 		i.top.SetOffset(0)
 		if i.anchors.VerticalCenterOffset.IsSet() {
-			i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.ActualValue().Float64())
+			i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value().Float64())
 		} else {
 			i.verticalCenter.SetOffset(0)
 		}
@@ -504,32 +520,32 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 
 func (i *Item) setAllOffsets() {
 	if i.anchors.LeftMargin.IsSet() {
-		i.left.SetOffset(i.anchors.LeftMargin.ActualValue().Float64())
+		i.left.SetOffset(i.anchors.LeftMargin.Value().Float64())
 	} else {
 		i.left.SetOffset(0)
 	}
 	if i.anchors.HorizontalCenterOffset.IsSet() {
-		i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.ActualValue().Float64())
+		i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value().Float64())
 	} else {
 		i.horizontalCenter.SetOffset(0)
 	}
 	if i.anchors.RightMargin.IsSet() {
-		i.right.SetOffset(i.anchors.RightMargin.ActualValue().Float64())
+		i.right.SetOffset(i.anchors.RightMargin.Value().Float64())
 	} else {
 		i.right.SetOffset(0)
 	}
 	if i.anchors.TopMargin.IsSet() {
-		i.top.SetOffset(i.anchors.TopMargin.ActualValue().Float64())
+		i.top.SetOffset(i.anchors.TopMargin.Value().Float64())
 	} else {
 		i.top.SetOffset(0)
 	}
 	if i.anchors.VerticalCenterOffset.IsSet() {
-		i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.ActualValue().Float64())
+		i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value().Float64())
 	} else {
 		i.verticalCenter.SetOffset(0)
 	}
 	if i.anchors.BottomMargin.IsSet() {
-		i.bottom.SetOffset(i.anchors.BottomMargin.ActualValue().Float64())
+		i.bottom.SetOffset(i.anchors.BottomMargin.Value().Float64())
 	} else {
 		i.bottom.SetOffset(0)
 	}
@@ -542,6 +558,7 @@ func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 
 func (i *Item) ApplyLayout(l *vit.Layout) {
 	i.layout = l
+	i.layouting(i.contentWidth, i.contentHeight)
 }
 
 func (i *Item) Bounds() vit.Rect {

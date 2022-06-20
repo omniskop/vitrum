@@ -6,28 +6,28 @@ import (
 
 func (r *Row) getTopPadding() float64 {
 	if r.topPadding.IsSet() {
-		return r.topPadding.ActualValue().Float64()
+		return r.topPadding.Value().Float64()
 	}
 	return r.padding.Float64()
 }
 
 func (r *Row) getRightPadding() float64 {
 	if r.rightPadding.IsSet() {
-		return r.rightPadding.ActualValue().Float64()
+		return r.rightPadding.Value().Float64()
 	}
 	return r.padding.Float64()
 }
 
 func (r *Row) getBottomPadding() float64 {
 	if r.bottomPadding.IsSet() {
-		return r.bottomPadding.ActualValue().Float64()
+		return r.bottomPadding.Value().Float64()
 	}
 	return r.padding.Float64()
 }
 
 func (r *Row) getLeftPadding() float64 {
 	if r.leftPadding.IsSet() {
-		return r.leftPadding.ActualValue().Float64()
+		return r.leftPadding.Value().Float64()
 	}
 	return r.padding.Float64()
 }

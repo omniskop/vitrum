@@ -179,9 +179,9 @@ func (l *Layout) GetHeight() (float64, bool) {
 
 type LayoutList map[Component]*Layout
 
-// ShouldEvaluate returns true if one of the contained layouts had it's target size changed.
+// DidChange returns true if one of the contained layouts had it's target size changed.
 // It adds compatibility with other Value types.
-func (l LayoutList) ShouldEvaluate() bool {
+func (l LayoutList) DidChange() bool {
 	for _, layout := range l {
 		if layout.TargetSizeChanged() {
 			return true
@@ -192,14 +192,13 @@ func (l LayoutList) ShouldEvaluate() bool {
 
 // Update acknowledges the change of the target size on all contained layouts.
 // It adds compatibility with other Value types.
-func (l LayoutList) Update(Component) error {
+func (l LayoutList) Update(Component) (bool, error) {
+	var changed bool
 	for _, layout := range l {
-		layout.AckTargetSizeChange()
+		if layout.TargetSizeChanged() {
+			changed = true
+			layout.AckTargetSizeChange()
+		}
 	}
-	return nil
-}
-
-// GetExpression adds compatibility with other Value types but does not serve a particular purpose here.
-func (l LayoutList) GetExpression() *Expression {
-	return NewExpression("", nil)
+	return changed, nil
 }

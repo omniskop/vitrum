@@ -2,11 +2,13 @@ package std
 
 import vit "github.com/omniskop/vitrum/vit"
 
-//go:generate go run github.com/omniskop/vitrum/vit/generator/gencmd -i Rectangle.vit -o rectangle_gen.go -p github.com/omniskop/vitrum/vit/std
-//go:generate go run github.com/omniskop/vitrum/vit/generator/gencmd -i Repeater.vit -o repeater_gen.go -p github.com/omniskop/vitrum/vit/std
-//go:generate go run github.com/omniskop/vitrum/vit/generator/gencmd -i Row.vit -o row_gen.go -p github.com/omniskop/vitrum/vit/std
-//go:generate go run github.com/omniskop/vitrum/vit/generator/gencmd -i Column.vit -o column_gen.go -p github.com/omniskop/vitrum/vit/std
-//go:generate go run github.com/omniskop/vitrum/vit/generator/gencmd -i Grid.vit -o grid_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate go build -o gencmd github.com/omniskop/vitrum/vit/generator/gencmd
+//go:generate ./gencmd -i Rectangle.vit -o rectangle_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i Repeater.vit -o repeater_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i Row.vit -o row_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i Column.vit -o column_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i Grid.vit -o grid_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate rm ./gencmd
 
 type StdLib struct {
 }

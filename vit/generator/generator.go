@@ -209,12 +209,41 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		).
 		Line()
 
-	// .SetProperty(key string, value interface{}, position *PositionRange) bool
+	// .SetProperty(key string, value interface{}) error
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).
 		Id("SetProperty").
-		Params(jen.Id("key").String(), jen.Id("value").Interface(), jen.Id("position").Op("*").Qual(vitPackage, "PositionRange")).
-		Params(jen.Bool()).
+		Params(jen.Id("key").String(), jen.Id("value").Interface()).
+		Params(jen.Error()).
+		Block(
+			jen.Var().Id("err").Error(),
+			jen.Switch(jen.Id("key")).Block(
+				append(mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
+					if !isWritable(prop) {
+						return nil // don't add unwritable properties
+					}
+					return jen.Case(jen.Lit(propId)).Block(
+						jen.Id("err").Op("=").Id(receiverName).Dot(propId).Op(".").Id("SetValue").Call(jen.Id("value")),
+					)
+				}),
+					jen.Default().Block(
+						jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("SetProperty").Call(jen.Id("key"), jen.Id("value"))),
+					),
+				)...,
+			),
+			jen.If(jen.Id("err").Op("!=").Nil()).Block(
+				jen.Return().Qual(vitPackage, "NewPropertyError").Call(jen.Lit(compName), jen.Id("key"), jen.Id(receiverName).Dot("id"), jen.Id("err")),
+			),
+			jen.Return(jen.Nil()),
+		).
+		Line()
+
+	// .SetPropertyExpression(key string, code string, pos *vit.PositionRange) error
+	f.Func().
+		Params(jen.Id(receiverName).Op("*").Id(compName)).
+		Id("SetPropertyExpression").
+		Params(jen.Id("key").String(), jen.Id("code").String(), jen.Id("pos").Op("*").Qual(vitPackage, "PositionRange")).
+		Params(jen.Error()).
 		Block(
 			jen.Switch(jen.Id("key")).Block(
 				append(mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
@@ -222,15 +251,15 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 						return nil // don't add unwritable properties
 					}
 					return jen.Case(jen.Lit(propId)).Block(
-						jen.Id(receiverName).Dot(propId).Op(".").Add(valueChange(prop.VitType, prop.ListDimensions)),
+						jen.Id(receiverName).Dot(propId).Op(".").Id("SetExpression").Call(jen.Id("code"), jen.Id("pos")),
 					)
 				}),
 					jen.Default().Block(
-						jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("SetProperty").Call(jen.Id("key"), jen.Id("value"), jen.Id("position"))),
+						jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("SetPropertyExpression").Call(jen.Id("key"), jen.Id("code"), jen.Id("pos"))),
 					),
 				)...,
 			),
-			jen.Return(jen.True()),
+			jen.Return().Nil(),
 		).
 		Line()
 
@@ -316,15 +345,13 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 				if handlerName, ok := prop.Tags[onChangeTag]; ok {
 					changeHandler = jen.Id(receiverName).Dot(handlerName).Call(jen.Id(receiverName).Dot(propID))
 				}
-				return jen.If(jen.Id(receiverName).Dot(propID).Dot("ShouldEvaluate").Call()).Block(
+				return jen.If(jen.List(jen.Id("changed"), jen.Id("err")).Op(":=").Id(receiverName).Dot(propID).Dot("Update").Call(jen.Id(receiverName)).Op(";").Id("changed").Op("||").Id("err").Op("!=").Nil()).Block(
 					jen.Id("sum").Op("++"),
-					jen.Id("err").Op(":=").Id(receiverName).Id(".").Id(propID).Dot("Update").Call(jen.Id(receiverName)),
 					jen.If(jen.Id("err").Op("!=").Nil()).Block(
-						jen.Id("errs").Dot("Add").Call(jen.Qual(vitPackage, "NewExpressionError").Call(
+						jen.Id("errs").Dot("Add").Call(jen.Qual(vitPackage, "NewPropertyError").Call(
 							jen.Lit(compName),
 							jen.Lit(propID),
 							jen.Id(receiverName).Dot("id"),
-							jen.Op("*").Id(receiverName).Dot(propID).Dot("GetExpression").Call(),
 							jen.Id("err"),
 						)),
 					),
@@ -518,29 +545,29 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 	switch prop.VitType {
 	case "string":
 		propType = jen.Qual(vitPackage, "StringValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewStringValue").Call(jen.Lit(""), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyStringValue").Call()
 	case "int":
 		propType = jen.Qual(vitPackage, "IntValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewIntValue").Call(jen.Lit(""), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyIntValue").Call()
 	case "float":
 		propType = jen.Qual(vitPackage, "FloatValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewFloatValue").Call(jen.Lit(""), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyFloatValue").Call()
 	case "bool":
 		propType = jen.Qual(vitPackage, "BoolValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewBoolValue").Call(jen.Lit(""), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyBoolValue").Call()
 	case "color":
 		propType = jen.Qual(vitPackage, "ColorValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewColorValue").Call(jen.Lit(""), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyColorValue").Call()
 	case "var":
 		propType = jen.Qual(vitPackage, "AnyValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewAnyValue").Call(jen.Lit(""), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyAnyValue").Call()
 	case "component":
 		propType = jen.Qual(vitPackage, "ComponentDefValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewComponentDefValue").Call(jen.Nil(), jen.Nil())
+		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyComponentDefValue").Call()
 	default:
 		if _, ok := comp.GetEnum(prop.VitType); ok {
 			propType = jen.Qual(vitPackage, "IntValue")
-			constructor = jen.Op("*").Qual(vitPackage, "NewIntValue").Call(jen.Lit(""), jen.Nil())
+			constructor = jen.Op("*").Qual(vitPackage, "NewEmptyIntValue").Call()
 		} else {
 			err = fmt.Errorf("property %s has unknown type %q", prop.Identifier, prop.VitType)
 			return

@@ -26,51 +26,22 @@ func (r *Root) String() string {
 }
 
 // DefineProperty creates a new property on the component.
-// On failure it returns either a RedeclarationError or UnknownTypeError.
 // TODO: currently properties can be redefined. Make a decision on that behaviour and update the documentation accordingly (inclusing the Component interface).
 func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 	name := propDef.Identifier[0]
-	switch propDef.VitType {
-	case "int":
-		if propDef.Expression == "" {
-			r.properties[name] = NewIntValue("", &propDef.Pos)
+	if propDef.VitType == "componentdef" {
+		if propDef.ListDimensions > 0 {
+			r.properties[name] = NewComponentDefListValue(propDef.Components, &propDef.Pos)
 		} else {
-			r.properties[name] = NewIntValue(propDef.Expression, &propDef.Pos)
+			r.properties[name] = NewComponentDefValue(propDef.Components[0])
 		}
-	case "float":
-		if propDef.Expression == "" {
-			r.properties[name] = NewFloatValue("", &propDef.Pos)
-		} else {
-			r.properties[name] = NewFloatValue(propDef.Expression, &propDef.Pos)
+	} else {
+		value, err := newValueForType(propDef.VitType, propDef.Expression, &propDef.Pos)
+		if err != nil {
+			// TODO: add more info?
+			return err
 		}
-	case "string":
-		if propDef.Expression == "" {
-			r.properties[name] = NewStringValue("", &propDef.Pos)
-		} else {
-			r.properties[name] = NewStringValue(propDef.Expression, &propDef.Pos)
-		}
-	case "bool":
-		if propDef.Expression == "" {
-			r.properties[name] = NewBoolValue("", &propDef.Pos)
-		} else {
-			r.properties[name] = NewBoolValue(propDef.Expression, &propDef.Pos)
-		}
-	case "alias":
-		r.properties[name] = NewAliasValue(propDef.Expression, &propDef.Pos)
-	case "component":
-		r.properties[name] = NewComponentDefValue(propDef.Components[0], &propDef.Pos)
-	case "var":
-		r.properties[name] = NewAnyValue(propDef.Expression, &propDef.Pos)
-	default:
-		if _, ok := r.enumerations[propDef.VitType]; ok {
-			if propDef.Expression == "" {
-				r.properties[name] = NewIntValue("", &propDef.Pos)
-			} else {
-				r.properties[name] = NewIntValue(propDef.Expression, &propDef.Pos)
-			}
-			return nil
-		}
-		return UnknownTypeError{TypeName: propDef.VitType}
+		r.properties[name] = value
 	}
 	return nil
 }
@@ -99,18 +70,25 @@ func (r *Root) MustProperty(key string) Value {
 	return v
 }
 
-func (r *Root) SetProperty(key string, newValue interface{}, position *PositionRange) bool {
+func (r *Root) SetProperty(key string, newValue interface{}) error {
 	prop, ok := r.properties[key]
 	if !ok {
-		return false
+		return unknownPropErr("?", key, r.id)
 	}
-	switch actual := newValue.(type) {
-	case string:
-		prop.GetExpression().ChangeCode(actual, position)
-	case PropertyDefinition:
-		prop.SetFromProperty(actual)
+	err := prop.SetValue(newValue)
+	if err != nil {
+		return NewPropertyError("?", key, r.id, err)
 	}
-	return true
+	return nil
+}
+
+func (r *Root) SetPropertyExpression(key string, expression string, position *PositionRange) error {
+	prop, ok := r.properties[key]
+	if !ok {
+		return unknownPropErr("?", key, r.id)
+	}
+	prop.SetExpression(expression, position)
+	return nil
 }
 
 // ResolveVariable; THIS NEEDS TO BE REIMPLEMENTED BY THE EMBEDDING STRUCTS TO RETURN THE CORRECT TYPE IF THE ID OF THIS COMPONENT IS REQUESTED
@@ -250,11 +228,10 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 	var sum int
 	var errs ErrorGroup
 	for name, prop := range r.properties {
-		if prop.ShouldEvaluate() {
+		if changed, err := prop.Update(r); changed || err != nil {
 			sum++
-			err := prop.Update(context)
 			if err != nil {
-				errs.Add(NewExpressionError("Rectangle", name, r.id, *prop.GetExpression(), err))
+				errs.Add(NewPropertyError("?", name, r.id, err))
 			}
 		}
 	}
@@ -288,7 +265,7 @@ func (r *Root) RootC() *Root {
 func (r *Root) Finish() error {
 	for _, props := range r.properties {
 		if alias, ok := props.(*AliasValue); ok {
-			err := alias.Update(r)
+			_, err := alias.Update(r)
 			if err != nil {
 				return fmt.Errorf("alias error: %w", err)
 			}
@@ -310,7 +287,7 @@ func (r *Root) Finish() error {
 func (r *Root) FinishInContext(context Component) error {
 	for _, props := range r.properties {
 		if alias, ok := props.(*AliasValue); ok {
-			err := alias.Update(context)
+			_, err := alias.Update(context)
 			if err != nil {
 				return fmt.Errorf("alias error: %w", err)
 			}

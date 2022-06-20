@@ -4,28 +4,28 @@ import vit "github.com/omniskop/vitrum/vit"
 
 func (c *Column) getTopPadding() float64 {
 	if c.topPadding.IsSet() {
-		return c.topPadding.ActualValue().Float64()
+		return c.topPadding.Value().Float64()
 	}
 	return c.padding.Float64()
 }
 
 func (c *Column) getRightPadding() float64 {
 	if c.rightPadding.IsSet() {
-		return c.rightPadding.ActualValue().Float64()
+		return c.rightPadding.Value().Float64()
 	}
 	return c.padding.Float64()
 }
 
 func (c *Column) getBottomPadding() float64 {
 	if c.bottomPadding.IsSet() {
-		return c.bottomPadding.ActualValue().Float64()
+		return c.bottomPadding.Value().Float64()
 	}
 	return c.padding.Float64()
 }
 
 func (c *Column) getLeftPadding() float64 {
 	if c.leftPadding.IsSet() {
-		return c.leftPadding.ActualValue().Float64()
+		return c.leftPadding.Value().Float64()
 	}
 	return c.padding.Float64()
 }

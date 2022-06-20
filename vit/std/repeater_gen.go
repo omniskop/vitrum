@@ -21,9 +21,9 @@ func NewRepeater(id string, scope vit.ComponentContainer) *Repeater {
 	return &Repeater{
 		Item:     *NewItem(id, scope),
 		id:       id,
-		count:    *vit.NewIntValue("", nil),
-		delegate: *vit.NewComponentDefValue(nil, nil),
-		model:    *vit.NewAnyValue("", nil),
+		count:    *vit.NewEmptyIntValue(),
+		delegate: *vit.NewEmptyComponentDefValue(),
+		model:    *vit.NewEmptyAnyValue(),
 		items:    []RepeaterItem{},
 	}
 }
@@ -53,18 +53,36 @@ func (r *Repeater) MustProperty(key string) vit.Value {
 	return v
 }
 
-func (r *Repeater) SetProperty(key string, value interface{}, position *vit.PositionRange) bool {
+func (r *Repeater) SetProperty(key string, value interface{}) error {
+	var err error
 	switch key {
 	case "count":
-		r.count.ChangeCode(value.(string), position)
+		err = r.count.SetValue(value)
 	case "delegate":
-		r.delegate.ChangeComponent(value.([]*vit.ComponentDefinition)[0])
+		err = r.delegate.SetValue(value)
 	case "model":
-		r.model.ChangeCode(value.(string), position)
+		err = r.model.SetValue(value)
 	default:
-		return r.Item.SetProperty(key, value, position)
+		return r.Item.SetProperty(key, value)
 	}
-	return true
+	if err != nil {
+		return vit.NewPropertyError("Repeater", key, r.id, err)
+	}
+	return nil
+}
+
+func (r *Repeater) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+	switch key {
+	case "count":
+		r.count.SetExpression(code, pos)
+	case "delegate":
+		r.delegate.SetExpression(code, pos)
+	case "model":
+		r.model.SetExpression(code, pos)
+	default:
+		return r.Item.SetPropertyExpression(key, code, pos)
+	}
+	return nil
 }
 
 func (r *Repeater) ResolveVariable(key string) (interface{}, bool) {
@@ -104,27 +122,24 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
-	if r.count.ShouldEvaluate() {
+	if changed, err := r.count.Update(r); changed || err != nil {
 		sum++
-		err := r.count.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Repeater", "count", r.id, *r.count.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Repeater", "count", r.id, err))
 		}
 		r.evaluateInternals(r.count)
 	}
-	if r.delegate.ShouldEvaluate() {
+	if changed, err := r.delegate.Update(r); changed || err != nil {
 		sum++
-		err := r.delegate.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Repeater", "delegate", r.id, *r.delegate.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Repeater", "delegate", r.id, err))
 		}
 		r.evaluateInternals(r.delegate)
 	}
-	if r.model.ShouldEvaluate() {
+	if changed, err := r.model.Update(r); changed || err != nil {
 		sum++
-		err := r.model.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Repeater", "model", r.id, *r.model.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Repeater", "model", r.id, err))
 		}
 		r.evaluateInternals(r.model)
 	}

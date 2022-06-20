@@ -15,12 +15,13 @@ var InstantiateComponent func(*ComponentDefinition, ComponentContainer) (Compone
 type Component interface {
 	DefineProperty(PropertyDefinition) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
-	Property(name string) (Value, bool)                                       // returns the property with the given name, and a boolean indicating whether the property exists
-	MustProperty(name string) Value                                           // same as Property but panics if the property doesn't exist
-	SetProperty(name string, value interface{}, position *PositionRange) bool // sets the property with the given name to the given value and returns a boolean indicating whether the property exists
-	ResolveVariable(name string) (interface{}, bool)                          // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
-	ResolveID(id string) (Component, bool)                                    // Recursively searches the children for a component with the given id. It does not check itself, only it's children!
-	AddChild(Component)                                                       // Adds the given component as a child and also set's their parent to this component
+	Property(name string) (Value, bool)                                            // returns the property with the given name, and a boolean indicating whether the property exists
+	MustProperty(name string) Value                                                // same as Property but panics if the property doesn't exist
+	SetProperty(name string, value interface{}) error                              // sets the property with the given name to the given value
+	SetPropertyExpression(name string, code string, position *PositionRange) error // sets the property with the given name to the given expression
+	ResolveVariable(name string) (interface{}, bool)                               // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
+	ResolveID(id string) (Component, bool)                                         // Recursively searches the children for a component with the given id. It does not check itself, only it's children!
+	AddChild(Component)                                                            // Adds the given component as a child and also set's their parent to this component
 	AddChildAfter(Component, Component)
 	Children() []Component                // Returns all children of this component
 	SetParent(Component)                  // Sets the parent of this component to the given component
@@ -166,5 +167,55 @@ func (e UnknownTypeError) Error() string {
 
 func (e UnknownTypeError) Is(target error) bool {
 	_, ok := target.(UnknownTypeError)
+	return ok
+}
+
+type PropertyError struct {
+	componentName string
+	componentID   string
+	propertyName  string
+	err           error
+}
+
+func NewPropertyError(componentName string, propertyName string, componentID string, err error) PropertyError {
+	return PropertyError{
+		componentName: componentName,
+		componentID:   componentID,
+		propertyName:  propertyName,
+		err:           err,
+	}
+}
+
+func (e PropertyError) Error() string {
+	var identifier string
+	if e.componentID != "" {
+		identifier = fmt.Sprintf("%s(%s).%s", e.componentName, e.componentID, e.propertyName)
+	} else {
+		identifier = fmt.Sprintf("%s.%s", e.componentName, e.propertyName)
+	}
+	return fmt.Sprintf("%s: %s", identifier, e.err.Error())
+}
+
+func (e PropertyError) Is(target error) bool {
+	_, ok := target.(PropertyError)
+	return ok
+}
+
+func (e PropertyError) Unwrap() error {
+	return e.err
+}
+
+type UnknownPropertyError struct{}
+
+func unknownPropErr(componentName, propertyName, componentID string) PropertyError {
+	return NewPropertyError(componentName, propertyName, componentID, UnknownPropertyError{})
+}
+
+func (e UnknownPropertyError) Error() string {
+	return fmt.Sprintf("unknown property")
+}
+
+func (e UnknownPropertyError) Is(target error) bool {
+	_, ok := target.(UnknownPropertyError)
 	return ok
 }

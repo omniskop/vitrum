@@ -8,28 +8,28 @@ import (
 
 func (g *Grid) getTopPadding() float64 {
 	if g.topPadding.IsSet() {
-		return g.topPadding.ActualValue().Float64()
+		return g.topPadding.Value().Float64()
 	}
 	return g.padding.Float64()
 }
 
 func (g *Grid) getRightPadding() float64 {
 	if g.rightPadding.IsSet() {
-		return g.rightPadding.ActualValue().Float64()
+		return g.rightPadding.Value().Float64()
 	}
 	return g.padding.Float64()
 }
 
 func (g *Grid) getBottomPadding() float64 {
 	if g.bottomPadding.IsSet() {
-		return g.bottomPadding.ActualValue().Float64()
+		return g.bottomPadding.Value().Float64()
 	}
 	return g.padding.Float64()
 }
 
 func (g *Grid) getLeftPadding() float64 {
 	if g.leftPadding.IsSet() {
-		return g.leftPadding.ActualValue().Float64()
+		return g.leftPadding.Value().Float64()
 	}
 	return g.padding.Float64()
 }
@@ -55,10 +55,10 @@ func (g *Grid) recalculateLayout(interface{}) {
 	var columnCount uint
 	if g.rows.IsSet() {
 		// the rows are set
-		rowCount = uint(g.rows.ActualValue().Int())
+		rowCount = uint(g.rows.Value().Int())
 		if g.columns.IsSet() {
 			// the columns are set
-			columnCount = uint(g.columns.ActualValue().Int())
+			columnCount = uint(g.columns.Value().Int())
 		} else {
 			// calculate columns based on number of children and rows
 			if rowCount != 0 { // prevent division by zero
@@ -69,7 +69,7 @@ func (g *Grid) recalculateLayout(interface{}) {
 		// we need to calculate rows, after we figured out the columns
 		if g.columns.IsSet() {
 			// the columns are set
-			columnCount = uint(g.columns.ActualValue().Int())
+			columnCount = uint(g.columns.Value().Int())
 
 		} else {
 			// default to 4 columns

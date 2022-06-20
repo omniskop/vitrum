@@ -24,12 +24,12 @@ func NewRow(id string, scope vit.ComponentContainer) *Row {
 	return &Row{
 		Item:          *NewItem(id, scope),
 		id:            id,
-		topPadding:    *vit.NewOptionalValue(vit.NewFloatValue("", nil)),
-		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValue("", nil)),
-		bottomPadding: *vit.NewOptionalValue(vit.NewFloatValue("", nil)),
-		leftPadding:   *vit.NewOptionalValue(vit.NewFloatValue("", nil)),
-		padding:       *vit.NewFloatValue("", nil),
-		spacing:       *vit.NewFloatValue("", nil),
+		topPadding:    *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
+		rightPadding:  *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
+		bottomPadding: *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
+		leftPadding:   *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
+		padding:       *vit.NewEmptyFloatValue(),
+		spacing:       *vit.NewEmptyFloatValue(),
 		childLayouts:  make(vit.LayoutList),
 	}
 }
@@ -65,24 +65,48 @@ func (r *Row) MustProperty(key string) vit.Value {
 	return v
 }
 
-func (r *Row) SetProperty(key string, value interface{}, position *vit.PositionRange) bool {
+func (r *Row) SetProperty(key string, value interface{}) error {
+	var err error
 	switch key {
 	case "topPadding":
-		r.topPadding.ChangeCode(value.(string), position)
+		err = r.topPadding.SetValue(value)
 	case "rightPadding":
-		r.rightPadding.ChangeCode(value.(string), position)
+		err = r.rightPadding.SetValue(value)
 	case "bottomPadding":
-		r.bottomPadding.ChangeCode(value.(string), position)
+		err = r.bottomPadding.SetValue(value)
 	case "leftPadding":
-		r.leftPadding.ChangeCode(value.(string), position)
+		err = r.leftPadding.SetValue(value)
 	case "padding":
-		r.padding.ChangeCode(value.(string), position)
+		err = r.padding.SetValue(value)
 	case "spacing":
-		r.spacing.ChangeCode(value.(string), position)
+		err = r.spacing.SetValue(value)
 	default:
-		return r.Item.SetProperty(key, value, position)
+		return r.Item.SetProperty(key, value)
 	}
-	return true
+	if err != nil {
+		return vit.NewPropertyError("Row", key, r.id, err)
+	}
+	return nil
+}
+
+func (r *Row) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+	switch key {
+	case "topPadding":
+		r.topPadding.SetExpression(code, pos)
+	case "rightPadding":
+		r.rightPadding.SetExpression(code, pos)
+	case "bottomPadding":
+		r.bottomPadding.SetExpression(code, pos)
+	case "leftPadding":
+		r.leftPadding.SetExpression(code, pos)
+	case "padding":
+		r.padding.SetExpression(code, pos)
+	case "spacing":
+		r.spacing.SetExpression(code, pos)
+	default:
+		return r.Item.SetPropertyExpression(key, code, pos)
+	}
+	return nil
 }
 
 func (r *Row) ResolveVariable(key string) (interface{}, bool) {
@@ -130,59 +154,52 @@ func (r *Row) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
-	if r.topPadding.ShouldEvaluate() {
+	if changed, err := r.topPadding.Update(r); changed || err != nil {
 		sum++
-		err := r.topPadding.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "topPadding", r.id, *r.topPadding.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "topPadding", r.id, err))
 		}
 		r.recalculateLayout(r.topPadding)
 	}
-	if r.rightPadding.ShouldEvaluate() {
+	if changed, err := r.rightPadding.Update(r); changed || err != nil {
 		sum++
-		err := r.rightPadding.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "rightPadding", r.id, *r.rightPadding.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "rightPadding", r.id, err))
 		}
 		r.recalculateLayout(r.rightPadding)
 	}
-	if r.bottomPadding.ShouldEvaluate() {
+	if changed, err := r.bottomPadding.Update(r); changed || err != nil {
 		sum++
-		err := r.bottomPadding.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "bottomPadding", r.id, *r.bottomPadding.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "bottomPadding", r.id, err))
 		}
 		r.recalculateLayout(r.bottomPadding)
 	}
-	if r.leftPadding.ShouldEvaluate() {
+	if changed, err := r.leftPadding.Update(r); changed || err != nil {
 		sum++
-		err := r.leftPadding.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "leftPadding", r.id, *r.leftPadding.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "leftPadding", r.id, err))
 		}
 		r.recalculateLayout(r.leftPadding)
 	}
-	if r.padding.ShouldEvaluate() {
+	if changed, err := r.padding.Update(r); changed || err != nil {
 		sum++
-		err := r.padding.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "padding", r.id, *r.padding.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "padding", r.id, err))
 		}
 		r.recalculateLayout(r.padding)
 	}
-	if r.spacing.ShouldEvaluate() {
+	if changed, err := r.spacing.Update(r); changed || err != nil {
 		sum++
-		err := r.spacing.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "spacing", r.id, *r.spacing.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "spacing", r.id, err))
 		}
 		r.recalculateLayout(r.spacing)
 	}
-	if r.childLayouts.ShouldEvaluate() {
+	if changed, err := r.childLayouts.Update(r); changed || err != nil {
 		sum++
-		err := r.childLayouts.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Row", "childLayouts", r.id, *r.childLayouts.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Row", "childLayouts", r.id, err))
 		}
 		r.recalculateLayout(r.childLayouts)
 	}

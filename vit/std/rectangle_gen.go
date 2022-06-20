@@ -19,8 +19,8 @@ func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 	return &Rectangle{
 		Item:   *NewItem(id, scope),
 		id:     id,
-		color:  *vit.NewColorValue("", nil),
-		radius: *vit.NewFloatValue("", nil),
+		color:  *vit.NewEmptyColorValue(),
+		radius: *vit.NewEmptyFloatValue(),
 	}
 }
 
@@ -47,16 +47,32 @@ func (r *Rectangle) MustProperty(key string) vit.Value {
 	return v
 }
 
-func (r *Rectangle) SetProperty(key string, value interface{}, position *vit.PositionRange) bool {
+func (r *Rectangle) SetProperty(key string, value interface{}) error {
+	var err error
 	switch key {
 	case "color":
-		r.color.ChangeCode(value.(string), position)
+		err = r.color.SetValue(value)
 	case "radius":
-		r.radius.ChangeCode(value.(string), position)
+		err = r.radius.SetValue(value)
 	default:
-		return r.Item.SetProperty(key, value, position)
+		return r.Item.SetProperty(key, value)
 	}
-	return true
+	if err != nil {
+		return vit.NewPropertyError("Rectangle", key, r.id, err)
+	}
+	return nil
+}
+
+func (r *Rectangle) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+	switch key {
+	case "color":
+		r.color.SetExpression(code, pos)
+	case "radius":
+		r.radius.SetExpression(code, pos)
+	default:
+		return r.Item.SetPropertyExpression(key, code, pos)
+	}
+	return nil
 }
 
 func (r *Rectangle) ResolveVariable(key string) (interface{}, bool) {
@@ -94,18 +110,16 @@ func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
-	if r.color.ShouldEvaluate() {
+	if changed, err := r.color.Update(r); changed || err != nil {
 		sum++
-		err := r.color.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Rectangle", "color", r.id, *r.color.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Rectangle", "color", r.id, err))
 		}
 	}
-	if r.radius.ShouldEvaluate() {
+	if changed, err := r.radius.Update(r); changed || err != nil {
 		sum++
-		err := r.radius.Update(r)
 		if err != nil {
-			errs.Add(vit.NewExpressionError("Rectangle", "radius", r.id, *r.radius.GetExpression(), err))
+			errs.Add(vit.NewPropertyError("Rectangle", "radius", r.id, err))
 		}
 	}
 

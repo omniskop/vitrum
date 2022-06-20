@@ -54,6 +54,9 @@ func genericErrorf(position vit.PositionRange, format string, args ...interface{
 }
 
 func (e genericError) Error() string {
+	if e.err == nil {
+		return "no error"
+	}
 	return e.err.Error()
 }
 
@@ -170,14 +173,16 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, com
 			// instance.SetProperty(prop.identifier[0], prop.expression)
 		} else if len(prop.Identifier) == 1 {
 			// simple property assignment
-			var value interface{}
+			var err error
 			if len(prop.Components) == 0 {
-				value = prop.Expression
+				err = instance.SetPropertyExpression(prop.Identifier[0], prop.Expression, &prop.Pos)
+			} else if len(prop.Components) == 1 {
+				err = instance.SetProperty(prop.Identifier[0], prop.Components[0])
 			} else {
-				value = prop.Components
+				err = instance.SetProperty(prop.Identifier[0], prop.Components)
 			}
-			if ok := instance.SetProperty(prop.Identifier[0], value, &prop.Pos); !ok {
-				return genericErrorf(prop.Pos, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
+			if err != nil {
+				return genericError{prop.Pos, err}
 			}
 		} else {
 			// assign property with qualifier

@@ -10,7 +10,7 @@ type Container struct {
 	Item
 	id string
 
-	content *vit.StaticListValue[*vit.ComponentDefValue]
+	content vit.ComponentDefListValue
 
 	children []vit.Component
 }
@@ -19,7 +19,7 @@ func NewContainer(id string, scope vit.ComponentContainer) *Container {
 	return &Container{
 		Item:    *NewItem(id, scope),
 		id:      id,
-		content: vit.NewStaticListValue[*vit.ComponentDefValue](nil, nil),
+		content: *vit.NewEmptyComponentDefListValue(),
 	}
 }
 
@@ -30,7 +30,7 @@ func (r *Container) String() string {
 func (r *Container) Property(key string) (vit.Value, bool) {
 	switch key {
 	case "content":
-		return r.content, true
+		return &r.content, true
 	default:
 		return r.Item.Property(key)
 	}
@@ -44,22 +44,27 @@ func (r *Container) MustProperty(key string) vit.Value {
 	return v
 }
 
-func (r *Container) SetProperty(key string, value interface{}, position *vit.PositionRange) bool {
+func (r *Container) SetProperty(key string, value interface{}) error {
 	switch key {
 	case "content":
-		if prop, ok := value.(vit.PropertyDefinition); ok {
-			values := make([]*vit.ComponentDefValue, len(prop.Components))
-			for i, component := range prop.Components {
-				values[i] = vit.NewComponentDefValue(component, position)
-			}
-			r.content.Set(values)
-		} else {
-			r.content.Set(nil)
+		err := r.content.SetValue(value.([]vit.ComponentDefinition))
+		if err != nil {
+			return vit.NewPropertyError("container", key, r.id, err)
 		}
 	default:
-		return r.Item.SetProperty(key, value, position)
+		return r.Item.SetProperty(key, value)
 	}
-	return true
+	return nil
+}
+
+func (r *Container) SetPropertyExpression(key string, code string, position *vit.PositionRange) error {
+	switch key {
+	case "content":
+		r.content.SetComponentDefinitions(nil)
+	default:
+		return r.Item.SetPropertyExpression(key, code, position)
+	}
+	return nil
 }
 
 func (r *Container) ResolveVariable(key string) (interface{}, bool) {
@@ -86,15 +91,14 @@ func (r *Container) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
-	if r.content.ShouldEvaluate() {
+	if changed, _ := r.content.Update(r); changed {
 		sum++
-		r.content.Update(nil)
 		for _, child := range r.children {
 			r.RootC().RemoveChild(child)
 		}
 		r.children = r.children[:]
-		for _, def := range r.content.Items {
-			comp, err := r.InstantiateInScope(def.ComponentDefinition())
+		for _, def := range r.content.ComponentDefinitions() {
+			comp, err := r.RootC().InstantiateInScope(def)
 			if err != nil {
 				errs.Add(err)
 				continue
