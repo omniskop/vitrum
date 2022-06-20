@@ -60,7 +60,7 @@ func (m *ChangeMonitor[T]) triggerChange(v T) {
 
 type ListValue[ElementType Value] struct {
 	Expression
-	Value []ElementType
+	value []ElementType
 }
 
 func NewListValue[ElementType Value](expression string, position *PositionRange) *ListValue[ElementType] {
@@ -73,8 +73,8 @@ func NewListValue[ElementType Value](expression string, position *PositionRange)
 	return v
 }
 
-func (c *ListValue[ElementType]) SetFromProperty(prop PropertyDefinition) {
-	c.Expression.ChangeCode(prop.Expression, &prop.Pos)
+func (v *ListValue[ElementType]) SetFromProperty(prop PropertyDefinition) {
+	v.Expression.ChangeCode(prop.Expression, &prop.Pos)
 }
 
 func (v *ListValue[ElementType]) Update(context Component) error {
@@ -89,13 +89,13 @@ func (v *ListValue[ElementType]) Update(context Component) error {
 	if !ok {
 		return fmt.Errorf("did not evaluate to expected type list but %T instead", val)
 	}
-	v.Value = castVal
+	v.value = castVal
 	return nil
 }
 
 func (v *ListValue[ElementType]) GetValue() interface{} {
-	var out []interface{}
-	for _, element := range v.Value {
+	var out = make([]interface{}, 0, len(v.value))
+	for _, element := range v.value {
 		out = append(out, element.GetValue())
 	}
 	return out
@@ -105,7 +105,7 @@ func (v *ListValue[ElementType]) GetValue() interface{} {
 
 type IntValue struct {
 	Expression
-	Value int
+	value int
 }
 
 func NewIntValue(expression string, position *PositionRange) *IntValue {
@@ -134,16 +134,16 @@ func (v *IntValue) Update(context Component) error {
 	if !ok {
 		return fmt.Errorf("did not evaluate to expected type int but %T instead", val)
 	}
-	v.Value = int(castVal)
+	v.value = int(castVal)
 	return nil
 }
 
 func (v *IntValue) GetValue() interface{} {
-	return v.Value
+	return v.value
 }
 
 func (v *IntValue) Int() int {
-	return v.Value
+	return v.value
 }
 
 // ========================================= Float Value ===========================================
@@ -151,7 +151,7 @@ func (v *IntValue) Int() int {
 type FloatValue struct {
 	Expression
 	ChangeMonitor[*FloatValue]
-	Value float64
+	value float64
 }
 
 func NewFloatValue(expression string, position *PositionRange) *FloatValue {
@@ -180,23 +180,23 @@ func (v *FloatValue) Update(context Component) error {
 	if !ok {
 		return fmt.Errorf("did not evaluate to expected type int but %T instead", val)
 	}
-	v.Value = float64(castVal)
+	v.value = float64(castVal)
 	return nil
 }
 
-func (c *FloatValue) GetValue() interface{} {
-	return c.Value
+func (v *FloatValue) GetValue() interface{} {
+	return v.value
 }
 
-func (c *FloatValue) Float64() float64 {
-	return c.Value
+func (v *FloatValue) Float64() float64 {
+	return v.value
 }
 
 // ======================================== String Value ===========================================
 
 type StringValue struct {
 	Expression
-	Value string
+	value string
 }
 
 func NewStringValue(expression string, position *PositionRange) *StringValue {
@@ -222,15 +222,19 @@ func (v *StringValue) Update(context Component) error {
 		return err
 	}
 	var ok bool
-	v.Value, ok = convertJSValueToString(val)
+	v.value, ok = convertJSValueToString(val)
 	if !ok {
 		return fmt.Errorf("did not evaluate to expected type string but %T instead", val)
 	}
 	return nil
 }
 
-func (c *StringValue) GetValue() interface{} {
-	return c.Value
+func (v *StringValue) GetValue() interface{} {
+	return v.value
+}
+
+func (v *StringValue) String() string {
+	return v.value
 }
 
 func convertJSValueToString(value interface{}) (string, bool) {
@@ -249,7 +253,7 @@ func convertJSValueToString(value interface{}) (string, bool) {
 
 type BoolValue struct {
 	Expression
-	Value bool
+	value bool
 }
 
 func NewBoolValue(expression string, position *PositionRange) *BoolValue {
@@ -275,15 +279,19 @@ func (v *BoolValue) Update(context Component) error {
 		return err
 	}
 	var ok bool
-	v.Value, ok = convertJSValueToBool(val)
+	v.value, ok = convertJSValueToBool(val)
 	if !ok {
 		return fmt.Errorf("did not evaluate to expected type string but %T instead", val)
 	}
 	return nil
 }
 
-func (c *BoolValue) GetValue() interface{} {
-	return c.Value
+func (v *BoolValue) GetValue() interface{} {
+	return v.value
+}
+
+func (v *BoolValue) Bool() bool {
+	return v.value
 }
 
 func convertJSValueToBool(value interface{}) (bool, bool) {
@@ -443,7 +451,7 @@ func (v *AliasValue) Err() error {
 
 type AnyValue struct {
 	Expression
-	Value interface{}
+	value interface{}
 }
 
 func NewAnyValue(expression string, position *PositionRange) *AnyValue {
@@ -468,44 +476,44 @@ func (v *AnyValue) Update(context Component) error {
 		}
 		return err
 	}
-	v.Value = val
+	v.value = val
 	return nil
 }
 
-func (c *AnyValue) GetValue() interface{} {
-	return c.Value
+func (v *AnyValue) GetValue() interface{} {
+	return v.value
 }
 
 // ================================= Component Definition Value ====================================
 
 type ComponentDefValue struct {
-	Value   *ComponentDefinition
+	value   *ComponentDefinition
 	Changed bool
 	err     error
 }
 
 func NewComponentDefValue(component *ComponentDefinition, position *PositionRange) *ComponentDefValue {
 	return &ComponentDefValue{
-		Value:   component,
+		value:   component,
 		Changed: true,
 	}
 }
 
 func (v *ComponentDefValue) ChangeComponent(component *ComponentDefinition) {
-	v.Value = component
+	v.value = component
 	v.Changed = true
 	v.err = nil
 }
 
 func (v *ComponentDefValue) SetFromProperty(prop PropertyDefinition) {
 	if len(prop.Components) == 0 {
-		v.Value = nil
+		v.value = nil
 		v.err = nil
 	} else if len(prop.Components) == 1 {
-		v.Value = prop.Components[0]
+		v.value = prop.Components[0]
 		v.err = nil
 	} else {
-		v.Value = prop.Components[0]
+		v.value = prop.Components[0]
 		v.err = fmt.Errorf("cannot assign multiple components to a single component value at %s", prop.Pos.String())
 	}
 	v.Changed = true
@@ -517,11 +525,11 @@ func (v *ComponentDefValue) Update(context Component) error {
 }
 
 func (v *ComponentDefValue) GetValue() interface{} {
-	return v.Value
+	return v.value
 }
 
 func (v *ComponentDefValue) ComponentDefinition() *ComponentDefinition {
-	return v.Value
+	return v.value
 }
 
 func (v *ComponentDefValue) MakeDirty(stack []*Expression) {
@@ -568,36 +576,36 @@ func (v *ComponentDefListValue) GetValue() interface{} {
 
 func (v *ComponentDefListValue) ChangeComponents(components []*ComponentDefinition) {
 	v.components = components
-	v.Changed = true
+	v.changed = true
 }
 
 // ====================================== Static Base Value ========================================
 
 type StaticBaseValue struct {
-	Changed      bool
+	changed      bool
 	dependencies map[Value]bool
 	dependents   map[Dependent]bool
 }
 
 func NewStaticBaseValue() *StaticBaseValue {
 	return &StaticBaseValue{
-		Changed:      true,
+		changed:      true,
 		dependencies: make(map[Value]bool),
 		dependents:   make(map[Dependent]bool),
 	}
 }
 
 func (v *StaticBaseValue) SetFromProperty(prop PropertyDefinition) {
-	v.Changed = true
+	v.changed = true
 }
 
 func (v *StaticBaseValue) Update(context Component) error {
-	v.Changed = false
+	v.changed = false
 	return nil
 }
 
 func (v *StaticBaseValue) MakeDirty(stack []*Expression) {
-	v.Changed = true
+	v.changed = true
 	// TODO: check the stack for circular dependencies
 	for exp := range v.dependents {
 		exp.MakeDirty(stack)
@@ -617,7 +625,7 @@ func (v *StaticBaseValue) RemoveDependent(exp Dependent) {
 }
 
 func (v *StaticBaseValue) ShouldEvaluate() bool {
-	return v.Changed
+	return v.changed
 }
 
 func (v *StaticBaseValue) Err() error {
@@ -642,20 +650,20 @@ func (v *StaticListValue[ElementType]) GetValue() interface{} {
 
 func (v *StaticListValue[ElementType]) Set(value []ElementType) {
 	v.Items = value
-	v.Changed = true
+	v.changed = true
 }
 
 // ======================================= Optional Value ==========================================
 
 type OptionalValue[T Value] struct {
 	ChangeMonitor[T]
-	Value T
+	value T
 	isSet bool
 }
 
 func NewOptionalValue[T Value](v T) *OptionalValue[T] {
 	return &OptionalValue[T]{
-		Value: v,
+		value: v,
 	}
 }
 
@@ -664,17 +672,17 @@ func (v *OptionalValue[T]) IsSet() bool {
 }
 
 func (v *OptionalValue[T]) SetFromProperty(prop PropertyDefinition) {
-	v.Value.SetFromProperty(prop)
+	v.value.SetFromProperty(prop)
 	v.isSet = true
 }
 
 func (v *OptionalValue[T]) Update(context Component) error {
-	return v.Value.Update(context)
+	return v.value.Update(context)
 }
 
 func (v *OptionalValue[T]) GetValue() interface{} {
 	if v.isSet {
-		return v.Value.GetValue()
+		return v.value.GetValue()
 	}
 	return nil
 }
@@ -682,44 +690,44 @@ func (v *OptionalValue[T]) GetValue() interface{} {
 // ActualValue returns the value that is wrapped by this Optional.
 // If the Optional is not set the nature of the returned value is undefined.
 func (v *OptionalValue[T]) ActualValue() T {
-	return v.Value
+	return v.value
 }
 
 func (v *OptionalValue[T]) MakeDirty(stack []*Expression) {
-	v.Value.MakeDirty(stack)
+	v.value.MakeDirty(stack)
 }
 
 func (v *OptionalValue[T]) GetExpression() *Expression {
 	// TODO: this won't change isSet
-	return v.Value.GetExpression()
+	return v.value.GetExpression()
 }
 
 func (v *OptionalValue[T]) ChangeCode(code string, position *PositionRange) {
-	v.Value.GetExpression().ChangeCode(code, position)
+	v.value.GetExpression().ChangeCode(code, position)
 	v.isSet = true
 }
 
 func (v *OptionalValue[T]) AddDependent(exp Dependent) {
-	v.Value.AddDependent(exp)
+	v.value.AddDependent(exp)
 }
 
 func (v *OptionalValue[T]) RemoveDependent(exp Dependent) {
-	v.Value.RemoveDependent(exp)
+	v.value.RemoveDependent(exp)
 }
 
 func (v *OptionalValue[T]) ShouldEvaluate() bool {
-	return v.Value.ShouldEvaluate()
+	return v.value.ShouldEvaluate()
 }
 
 func (v *OptionalValue[T]) Err() error {
-	return v.Value.Err()
+	return v.value.Err()
 }
 
 // ================================== Component Reference Value ====================================
 
 type ComponentRefValue struct {
 	Expression
-	Value Component
+	value Component
 }
 
 func NewComponentRefValue(expression string, position *PositionRange) *IntValue {
@@ -745,16 +753,16 @@ func (v *ComponentRefValue) Update(context Component) error {
 		return err
 	}
 	// TODO: maybe check if casts are valid?
-	v.Value = val.(*script.VariableBridge).Source.(*AccessCollector).context
+	v.value = val.(*script.VariableBridge).Source.(*AccessCollector).context
 	return nil
 }
 
 func (v *ComponentRefValue) GetValue() interface{} {
-	return v.Value
+	return v.value
 }
 
 func (v *ComponentRefValue) Component() Component {
-	return v.Value
+	return v.value
 }
 
 // ===================================== Static Float Value ========================================

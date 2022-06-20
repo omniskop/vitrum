@@ -89,7 +89,7 @@ type repeaterModel struct {
 
 func (r *Repeater) interpretModel() ([]repeaterModel, error) {
 	var out []repeaterModel
-	switch value := r.model.Value.(type) {
+	switch value := r.model.GetValue().(type) {
 	case int64:
 		for i := int64(0); i < value; i++ {
 			out = append(out, repeaterModel{i, i})

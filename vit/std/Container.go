@@ -94,7 +94,7 @@ func (r *Container) UpdateExpressions() (int, vit.ErrorGroup) {
 		}
 		r.children = r.children[:]
 		for _, def := range r.content.Items {
-			comp, err := r.InstantiateInScope(def.Value)
+			comp, err := r.InstantiateInScope(def.ComponentDefinition())
 			if err != nil {
 				errs.Add(err)
 				continue

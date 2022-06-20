@@ -39,10 +39,6 @@ func (g *Grid) getLeftPadding() float64 {
 func (g *Grid) recalculateLayout(interface{}) {
 	// First of this could probably be done more efficiently but it works for now.
 	// We are trying to place each child in the grid according to the flow and alignment.
-	// To achieve this we have three main loops:
-	//   - First we create a list of all children that are actually visible, all others will be ignored.
-	//     We use this to
-	//   - Then we
 
 	// First we will create a list of all children that are actually visible. All others will be ignored.
 	var children = make([]vit.Component, 0, len(g.Children()))
@@ -125,7 +121,12 @@ func (g *Grid) recalculateLayout(interface{}) {
 			if !ok {
 				continue // in LeftToRight flow we could break here but in TopToBottom that would be wrong
 			}
-			g.childLayouts[child].SetPosition(&x, &y)
+
+			offsetX, offsetY := g.calculateOffsetInCell(columnSizes[column], rowSizes[row], child)
+			offsetX += x
+			offsetY += y
+
+			g.childLayouts[child].SetPosition(&offsetX, &offsetY)
 			x += columnSizes[column] + g.spacing.Float64() // advance the coordinates in the x axis
 		}
 		x = g.left.Float64() + g.getLeftPadding() // reset x to the left
@@ -167,6 +168,31 @@ func (g *Grid) getChildInGrid(children []vit.Component, row, column, rowCount, c
 		return nil, false
 	}
 	return children[index], true
+}
+
+func (g *Grid) calculateOffsetInCell(cellWidth, cellHeight float64, comp vit.Component) (float64, float64) {
+	bounds := comp.Bounds()
+	var offsetX, offsetY float64
+
+	// horizontal alignment
+	switch Grid_HorizontalItemAlignment(g.horizontalItemAlignment.Int()) {
+	case Grid_HorizontalItemAlignment_AlignLeft:
+	case Grid_HorizontalItemAlignment_AlignHCenter:
+		offsetX = (cellWidth - bounds.Width()) / 2
+	case Grid_HorizontalItemAlignment_AlignRight:
+		offsetX = cellWidth - bounds.Width()
+	}
+
+	// vertical alignment
+	switch Grid_VerticalItemAlignment(g.verticalItemAlignment.Int()) {
+	case Grid_VerticalItemAlignment_AlignTop:
+	case Grid_VerticalItemAlignment_AlignVCenter:
+		offsetY = (cellHeight - bounds.Height()) / 2
+	case Grid_VerticalItemAlignment_AlignBottom:
+		offsetY = cellHeight - bounds.Height()
+	}
+
+	return offsetX, offsetY
 }
 
 func (g *Grid) createNewChildLayout(child vit.Component) *vit.Layout {
