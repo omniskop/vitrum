@@ -25,9 +25,6 @@ func NewExpression(code string, position *PositionRange) *Expression {
 	// The parenthesis around the code are needed to make sure we get the correct value from all expressions.
 	// For example objects (e.g. {one: 1}) would return the number '1' instead of a map.
 	prog, err := script.NewScript("expression", fmt.Sprintf("(%s)", code))
-	if err != nil {
-		panic(err)
-	}
 	return &Expression{
 		code:         code,
 		dirty:        true,
@@ -35,11 +32,15 @@ func NewExpression(code string, position *PositionRange) *Expression {
 		dependents:   make(map[Dependent]bool),
 		program:      prog,
 		position:     position,
-		err:          nil,
+		err:          err,
 	}
 }
 
 func (e *Expression) Evaluate(context Component) (interface{}, error) {
+	if e.err != nil {
+		return nil, e.err
+	}
+
 	// fmt.Printf("[expression] evaluating %q from %v\n", e.code, e.position)
 	collector := NewAccessCollector(context)
 	val, err := e.program.Run(collector)

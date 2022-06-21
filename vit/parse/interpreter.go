@@ -194,12 +194,26 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, com
 				}
 				anchors, ok := v.(*vit.AnchorsValue)
 				if !ok {
-					return genericErrorf(prop.Pos, "cannot assign to non object-property %q of component %q", prop.Identifier[0], def.BaseName)
+					return genericErrorf(prop.Pos, "cannot assign to non group-property %q of component %q", prop.Identifier[0], def.BaseName)
 				}
 
 				ok = anchors.SetProperty(prop.Identifier[1], prop.Expression, &prop.Pos)
 				if !ok {
 					return genericErrorf(prop.Pos, "unknown property %q of component %q", strings.Join(prop.Identifier, "."), def.BaseName)
+				}
+			} else {
+				v, ok := instance.Property(prop.Identifier[0])
+				if !ok {
+					return genericErrorf(prop.Pos, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
+				}
+				group, ok := v.(*vit.GroupValue)
+				if !ok {
+					return genericErrorf(prop.Pos, "cannot assign to non group-property %q of component %q", prop.Identifier[0], def.BaseName)
+				}
+
+				err := group.SetExpressionOf(prop.Identifier[1], prop.Expression, &prop.Pos)
+				if err != nil {
+					return genericErrorf(prop.Pos, "group-property %q of component %q: %w", prop.Identifier[0], def.BaseName, err)
 				}
 			}
 		}

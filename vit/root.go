@@ -73,11 +73,11 @@ func (r *Root) MustProperty(key string) Value {
 func (r *Root) SetProperty(key string, newValue interface{}) error {
 	prop, ok := r.properties[key]
 	if !ok {
-		return unknownPropErr("?", key, r.id)
+		return unknownPropErr("", key, r.id)
 	}
 	err := prop.SetValue(newValue)
 	if err != nil {
-		return NewPropertyError("?", key, r.id, err)
+		return NewPropertyError("", key, r.id, err)
 	}
 	return nil
 }
@@ -85,7 +85,7 @@ func (r *Root) SetProperty(key string, newValue interface{}) error {
 func (r *Root) SetPropertyExpression(key string, expression string, position *PositionRange) error {
 	prop, ok := r.properties[key]
 	if !ok {
-		return unknownPropErr("?", key, r.id)
+		return unknownPropErr("", key, r.id)
 	}
 	prop.SetExpression(expression, position)
 	return nil
@@ -231,7 +231,7 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 		if changed, err := prop.Update(r); changed || err != nil {
 			sum++
 			if err != nil {
-				errs.Add(NewPropertyError("?", name, r.id, err))
+				errs.Add(NewPropertyError("", name, r.id, err))
 			}
 		}
 	}

@@ -52,13 +52,24 @@ func (v *ColorValue) SetFromProperty(prop PropertyDefinition) {
 }
 
 func (v *ColorValue) SetValue(newValue interface{}) error {
-	if colVal, ok := newValue.(color.Color); ok {
-		v.value = colVal
+	switch actualValue := newValue.(type) {
+	case color.Color:
+		v.value = actualValue
 		v.expression = nil
 		v.notifyDependents(nil)
 		return nil
+	case string:
+		c, err := vcolor.String(actualValue)
+		if err != nil {
+			v.value = color.Black
+			return err
+		}
+		v.value = c
+		v.notifyDependents(nil)
+		return nil
+	default:
+		return newTypeError("color", newValue)
 	}
-	return newTypeError("color", newValue)
 }
 
 func (v *ColorValue) SetColor(newValue color.Color) {

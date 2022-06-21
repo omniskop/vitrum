@@ -188,10 +188,18 @@ func NewPropertyError(componentName string, propertyName string, componentID str
 
 func (e PropertyError) Error() string {
 	var identifier string
-	if e.componentID != "" {
-		identifier = fmt.Sprintf("%s(%s).%s", e.componentName, e.componentID, e.propertyName)
+	if e.componentID == "" {
+		if e.componentName == "" {
+			identifier = e.propertyName
+		} else {
+			identifier = fmt.Sprintf("%s.%s", e.componentName, e.propertyName)
+		}
 	} else {
-		identifier = fmt.Sprintf("%s.%s", e.componentName, e.propertyName)
+		if e.componentName == "" {
+			identifier = fmt.Sprintf("(%s).%s", e.componentID, e.propertyName)
+		} else {
+			identifier = fmt.Sprintf("%s(%s).%s", e.componentID, e.componentName, e.propertyName)
+		}
 	}
 	return fmt.Sprintf("%s: %s", identifier, e.err.Error())
 }
@@ -218,4 +226,12 @@ func (e UnknownPropertyError) Error() string {
 func (e UnknownPropertyError) Is(target error) bool {
 	_, ok := target.(UnknownPropertyError)
 	return ok
+}
+
+func copyMap[K comparable, V any](original map[K]V) map[K]V {
+	var output = make(map[K]V)
+	for k, v := range original {
+		output[k] = v
+	}
+	return output
 }

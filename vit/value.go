@@ -1134,3 +1134,177 @@ func (v *ComponentRefValue) Update(context Component) (bool, error) {
 	v.value = collector.context
 	return true, nil
 }
+
+// ========================================= Group Value ===========================================
+
+type groupEntry struct {
+	value       Value
+	overwritten bool
+}
+
+type GroupValue struct {
+	baseValue
+	values     map[string]*groupEntry
+	expression *Expression
+}
+
+// TODO: make parser smarter
+// Currently the expression for a group will just be parsed in javascript but it would be much better to analyse the code ourselves.
+// It would be faster und allow for much more control. (It would also make the code more consistent)
+// But in order to do that we would need to access the parser.
+// If that will ever change in the future I don't think we would need the work around with the groupEntry anymore.
+
+func NewGroupValueFromExpression(schema map[string]Value, expression string, position *PositionRange) *GroupValue {
+	return &GroupValue{
+		baseValue:  newBaseValue(),
+		values:     createGroupEntries(schema),
+		expression: NewExpression(expression, position),
+	}
+}
+
+func NewEmptyGroupValue(schema map[string]Value) *GroupValue {
+	return &GroupValue{
+		baseValue:  newBaseValue(),
+		values:     createGroupEntries(schema),
+		expression: nil,
+	}
+}
+
+func createGroupEntries(schema map[string]Value) map[string]*groupEntry {
+	entries := make(map[string]*groupEntry)
+	for k, v := range schema {
+		entries[k] = &groupEntry{value: v}
+	}
+	return entries
+}
+
+func (v *GroupValue) GetValue() interface{} {
+	return v.values
+}
+
+func (v *GroupValue) Get(key string) (Value, bool) {
+	value, ok := v.values[key]
+	return value.value, ok
+}
+
+func (v *GroupValue) MustGet(key string) Value {
+	value, ok := v.values[key]
+	if !ok {
+		panic(fmt.Sprintf("tried to read unknown key %q from group value", key))
+	}
+	return value.value
+}
+
+func (v *GroupValue) SetFromProperty(prop PropertyDefinition) {
+	v.expression = NewExpression(prop.Expression, &prop.Pos)
+	v.notifyDependents([]Dependent{v.expression})
+}
+
+func (v *GroupValue) SetValue(newValue interface{}) error {
+	var gErr ErrorGroup
+	if valueMap, ok := newValue.(map[string]interface{}); ok {
+		for key, value := range valueMap {
+			if val, ok := v.values[key]; ok {
+				err := val.value.SetValue(value)
+				if err != nil {
+					gErr.Add(err)
+				}
+			} else {
+				gErr.Add(fmt.Errorf("unknown group key %q", key))
+			}
+		}
+	}
+	v.notifyDependents(nil)
+	if gErr.Failed() {
+		return gErr
+	}
+	return nil
+}
+
+func (v *GroupValue) SetExpression(code string, pos *PositionRange) {
+	v.expression = NewExpression(code, pos)
+	for _, value := range v.values {
+		// disable overwrites
+		// TODO: this disables all overwrites, even for properties that will not be set in this expression
+		value.overwritten = false
+	}
+	v.notifyDependents([]Dependent{v.expression})
+}
+
+func (v *GroupValue) Update(context Component) (bool, error) {
+	changed, errs := v.updateIndividualValues(context)
+
+	if v.expression == nil {
+		if errs.Failed() {
+			return false, errs
+		}
+		return changed, nil
+	}
+	if !v.expression.ShouldEvaluate() {
+		if errs.Failed() {
+			return false, errs
+		}
+		return changed, nil
+	}
+	val, err := v.expression.Evaluate(context)
+	if err != nil {
+		if err == unsettledDependenciesError {
+			return changed, errs
+		}
+		errs.Add(err)
+		return changed, errs
+	}
+	dataMap := val.(map[string]interface{})
+	for key, jsValue := range dataMap {
+		if entry, ok := v.values[key]; ok {
+			if entry.overwritten {
+				continue // don't overwrite values that were set specifically
+			}
+			err := entry.value.SetValue(jsValue)
+			if err != nil {
+				errs.Add(err)
+			}
+		} else {
+			errs.Add(fmt.Errorf("unknown group key %q", key))
+		}
+	}
+
+	if errs.Failed() {
+		return true, errs
+	}
+	return true, nil
+}
+
+// updateIndividualValues updates all values. Even if they are not overwritten specifically.
+// It returns true if at least one value was changed. It always returns an error group wether something went wrong or not.
+func (v *GroupValue) updateIndividualValues(context Component) (bool, ErrorGroup) {
+	var somethingChanged bool
+	var errs ErrorGroup
+	for _, value := range v.values {
+		changed, err := value.value.Update(context)
+		if err != nil {
+			errs.Add(err)
+		}
+		if changed {
+			somethingChanged = true
+		}
+	}
+	return somethingChanged, errs
+}
+
+func (v *GroupValue) SetValueOf(name string, newValue interface{}) error {
+	if value, ok := v.values[name]; ok {
+		value.overwritten = true
+		return value.value.SetValue(newValue)
+	}
+	return fmt.Errorf("unknown group key %q", name)
+}
+
+func (v *GroupValue) SetExpressionOf(key string, code string, position *PositionRange) error {
+	if value, ok := v.values[key]; ok {
+		value.overwritten = true
+		value.value.SetExpression(code, position)
+		return nil
+	}
+	return fmt.Errorf("unknown group key %q", key)
+}

@@ -218,18 +218,24 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "x", i.id, err))
+		} else {
+			i.layouting(i.contentWidth, i.contentHeight)
 		}
 	}
 	if changed, err := i.y.Update(i); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "y", i.id, err))
+		} else {
+			i.layouting(i.contentWidth, i.contentHeight)
 		}
 	}
 	if changed, err := i.z.Update(i); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "z", i.id, err))
+		} else {
+			i.layouting(i.contentWidth, i.contentHeight)
 		}
 	}
 	if changed, err := i.left.Update(i); changed || err != nil {
