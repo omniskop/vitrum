@@ -156,9 +156,13 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Id(fmt.Sprintf("New%s", compName)).
 		Params(jen.Id("id").String(), jen.Id("scope").Qual(vitPackage, "ComponentContainer")).
 		Params(jen.Op("*").Id(compName)).
-		Block(
-			jen.Return(jen.Op("&").Id(compName).Values(propertyInstantiations...)),
-		)
+		BlockFunc(func(g *jen.Group) {
+			g.Id(receiverName).Op(":=").Op("&").Id(compName).Values(propertyInstantiations...)
+			for _, enum := range comp.Enumerations {
+				g.Id(receiverName).Dot("DefineEnum").Call(generateEnumeration(enum))
+			}
+			g.Return(jen.Id(receiverName))
+		})
 
 	f.Line()
 
@@ -413,6 +417,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	return nil
 }
 
+// generateComponentEnums generates a new type and constants for the given enum
 func generateComponentEnums(compName string, comp *vit.ComponentDefinition) jen.Code {
 	var code = new(jen.Group)
 	for _, enum := range comp.Enumerations {
@@ -754,6 +759,27 @@ func generatePositionRange(pos vit.PositionRange) *jen.Statement {
 		jen.Id("StartColumn"): jen.Lit(pos.StartColumn),
 		jen.Id("EndLine"):     jen.Lit(pos.EndLine),
 		jen.Id("EndColumn"):   jen.Lit(pos.EndColumn),
+	})
+}
+
+func generateEnumeration(enum vit.Enumeration) *jen.Statement {
+	return jen.Qual(vitPackage, "Enumeration").Values(jen.Dict{
+		jen.Id("Name"):     jen.Lit(enum.Name),
+		jen.Id("Embedded"): jen.Lit(enum.Embedded),
+		jen.Id("Values"):   generateMap(enum.Values),
+		jen.Id("Position"): generatePositionRange(*enum.Position),
+	})
+}
+
+type validMapTypes interface {
+	string | int | int64
+}
+
+func generateMap[keyType, valueType validMapTypes](m map[keyType]valueType) *jen.Statement {
+	return jen.Map(jen.Id(fmt.Sprintf("%T", *new(keyType)))).Id(fmt.Sprintf("%T", *new(valueType))).ValuesFunc(func(g *jen.Group) {
+		for k, v := range m {
+			g.Lit(k).Op(":").Lit(v)
+		}
 	})
 }
 

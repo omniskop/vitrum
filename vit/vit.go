@@ -46,7 +46,7 @@ type Enumeration struct {
 	Name     string
 	Embedded bool
 	Values   map[string]int
-	Position PositionRange
+	Position *PositionRange
 }
 
 func (e Enumeration) ResolveVariable(name string) (interface{}, bool) {

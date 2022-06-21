@@ -17,7 +17,7 @@ type Rectangle struct {
 }
 
 func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
-	return &Rectangle{
+	r := &Rectangle{
 		Item:   *NewItem(id, scope),
 		id:     id,
 		color:  *vit.NewColorValueFromExpression("Vit.rgb(0, 0, 0)", nil),
@@ -27,6 +27,7 @@ func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 			"width": vit.NewIntValueFromExpression("0", nil),
 		}),
 	}
+	return r
 }
 
 func (r *Rectangle) String() string {

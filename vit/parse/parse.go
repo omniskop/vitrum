@@ -371,7 +371,7 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 			if err != nil {
 				return nilUnit(), err
 			}
-			return enumUnit(en.Position, en), nil
+			return enumUnit(*en.Position, en), nil
 		default:
 			// a modifier
 			modifierName := t.literal
@@ -523,7 +523,8 @@ lineLoop:
 		// read enum key or closing brace
 		keyToken := tokens.next()
 		if keyToken.tokenType == tokenRightBrace {
-			enum.Position = vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
+			pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
+			enum.Position = &pos
 			break lineLoop // enum ended
 		} else if keyToken.tokenType != tokenIdentifier {
 			return enum, unexpectedToken(keyToken, tokenIdentifier, tokenRightBrace)
@@ -562,7 +563,8 @@ lineLoop:
 				return enum, unexpectedToken(t, tokenRightBrace)
 			}
 			enum.Values[t.literal] = nextValue
-			enum.Position = vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
+			pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
+			enum.Position = &pos
 			break lineLoop
 		default:
 			return enum, unexpectedToken(t, tokenAssignment, tokenComma, tokenNewline)
@@ -593,7 +595,7 @@ func ParseGroupDefinition(code string, position vit.Position) ([]vit.PropertyDef
 		return nil, parseErrorf(comp.Children[0].Pos, "unexpected component definition inside of group")
 	}
 	if len(comp.Enumerations) > 0 {
-		return nil, parseErrorf(comp.Enumerations[0].Position, "unexpected enumeration inside of group")
+		return nil, parseErrorf(*comp.Enumerations[0].Position, "unexpected enumeration inside of group")
 	}
 	return comp.Properties, nil
 }

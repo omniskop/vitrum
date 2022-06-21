@@ -18,7 +18,7 @@ type Repeater struct {
 }
 
 func NewRepeater(id string, scope vit.ComponentContainer) *Repeater {
-	return &Repeater{
+	r := &Repeater{
 		Item:     *NewItem(id, scope),
 		id:       id,
 		count:    *vit.NewEmptyIntValue(),
@@ -26,6 +26,7 @@ func NewRepeater(id string, scope vit.ComponentContainer) *Repeater {
 		model:    *vit.NewEmptyAnyValue(),
 		items:    []RepeaterItem{},
 	}
+	return r
 }
 
 func (r *Repeater) String() string {

@@ -27,8 +27,8 @@ Item {
     #gen-onchange="recalculateLayout" #gen-optional property float rowSpacing: 0
     #gen-onchange="recalculateLayout" #gen-optional property int columns
     #gen-onchange="recalculateLayout" #gen-optional property int rows
-    #gen-onchange="recalculateLayout" property HorizontalItemAlignment horizontalItemAlignment: HorizontalItemAlignment.Left
-    #gen-onchange="recalculateLayout" property VerticalItemAlignment verticalItemAlignment: VerticalItemAlignment.Top
+    #gen-onchange="recalculateLayout" property HorizontalItemAlignment horizontalItemAlignment: HorizontalItemAlignment.AlignLeft
+    #gen-onchange="recalculateLayout" property VerticalItemAlignment verticalItemAlignment: VerticalItemAlignment.AlignTop
     #gen-onchange="recalculateLayout" property Flow flow: Flow.LeftToRight
 
     #gen-internal #gen-type="vit.LayoutList" #gen-initializer="make(vit.LayoutList)" #gen-private #gen-onchange="recalculateLayout" property any childLayouts

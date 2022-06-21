@@ -21,7 +21,7 @@ type Row struct {
 }
 
 func NewRow(id string, scope vit.ComponentContainer) *Row {
-	return &Row{
+	r := &Row{
 		Item:          *NewItem(id, scope),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
@@ -32,6 +32,7 @@ func NewRow(id string, scope vit.ComponentContainer) *Row {
 		spacing:       *vit.NewFloatValueFromExpression("0", nil),
 		childLayouts:  make(vit.LayoutList),
 	}
+	return r
 }
 
 func (r *Row) String() string {

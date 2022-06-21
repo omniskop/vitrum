@@ -21,7 +21,7 @@ type Column struct {
 }
 
 func NewColumn(id string, scope vit.ComponentContainer) *Column {
-	return &Column{
+	c := &Column{
 		Item:          *NewItem(id, scope),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
@@ -32,6 +32,7 @@ func NewColumn(id string, scope vit.ComponentContainer) *Column {
 		spacing:       *vit.NewFloatValueFromExpression("0", nil),
 		childLayouts:  make(vit.LayoutList),
 	}
+	return c
 }
 
 func (c *Column) String() string {

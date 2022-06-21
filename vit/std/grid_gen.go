@@ -51,7 +51,7 @@ type Grid struct {
 }
 
 func NewGrid(id string, scope vit.ComponentContainer) *Grid {
-	return &Grid{
+	g := &Grid{
 		Item:                    *NewItem(id, scope),
 		id:                      id,
 		topPadding:              *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
@@ -64,11 +64,30 @@ func NewGrid(id string, scope vit.ComponentContainer) *Grid {
 		rowSpacing:              *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
 		columns:                 *vit.NewOptionalValue(vit.NewEmptyIntValue()),
 		rows:                    *vit.NewOptionalValue(vit.NewEmptyIntValue()),
-		horizontalItemAlignment: *vit.NewIntValueFromExpression("HorizontalItemAlignment.Left", nil),
-		verticalItemAlignment:   *vit.NewIntValueFromExpression("VerticalItemAlignment.Top", nil),
+		horizontalItemAlignment: *vit.NewIntValueFromExpression("HorizontalItemAlignment.AlignLeft", nil),
+		verticalItemAlignment:   *vit.NewIntValueFromExpression("VerticalItemAlignment.AlignTop", nil),
 		flow:                    *vit.NewIntValueFromExpression("Flow.LeftToRight", nil),
 		childLayouts:            make(vit.LayoutList),
 	}
+	g.DefineEnum(vit.Enumeration{
+		Embedded: true,
+		Name:     "HorizontalItemAlignment",
+		Position: nil,
+		Values:   map[string]int{"AlignRight": 2, "AlignLeft": 0, "AlignHCenter": 1},
+	})
+	g.DefineEnum(vit.Enumeration{
+		Embedded: true,
+		Name:     "VerticalItemAlignment",
+		Position: nil,
+		Values:   map[string]int{"AlignVCenter": 1, "AlignBottom": 2, "AlignTop": 0},
+	})
+	g.DefineEnum(vit.Enumeration{
+		Embedded: true,
+		Name:     "Flow",
+		Position: nil,
+		Values:   map[string]int{"TopToBottom": 1, "LeftToRight": 0},
+	})
+	return g
 }
 
 func (g *Grid) String() string {

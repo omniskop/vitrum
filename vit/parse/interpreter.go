@@ -160,7 +160,7 @@ func instantiateComponent(def *vit.ComponentDefinition, components vit.Component
 func populateComponent(instance vit.Component, def *vit.ComponentDefinition, components vit.ComponentContainer) error {
 	for _, enum := range def.Enumerations {
 		if !instance.DefineEnum(enum) {
-			return genericErrorf(enum.Position, "enum %q already defined", enum.Name)
+			return genericErrorf(*enum.Position, "enum %q already defined", enum.Name)
 		}
 	}
 
