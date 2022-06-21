@@ -564,6 +564,11 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 	case "component":
 		propType = jen.Qual(vitPackage, "ComponentDefValue")
 		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyComponentDefValue").Call()
+	case "group":
+		propType, constructor, err = typeInfoForGroup(comp, prop)
+		if err != nil {
+			return
+		}
 	default:
 		if _, ok := comp.GetEnum(prop.VitType); ok {
 			propType = jen.Qual(vitPackage, "IntValue")
@@ -596,6 +601,37 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 		return
 	}
 
+	return
+}
+
+func typeInfoForGroup(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (propType *jen.Statement, constructor *jen.Statement, err error) {
+	subProps, err := parse.ParseGroupDefinition(prop.Expression, prop.Pos.Start())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var constructors = make([]struct {
+		name        string
+		constructor *jen.Statement
+	}, len(subProps))
+
+	for i, subProp := range subProps {
+		_, subConstructor, err := vitTypeInfo(comp, subProp)
+		if err != nil {
+			return nil, nil, err
+		}
+		constructors[i].name = subProp.Identifier[0]
+		constructors[i].constructor = unpointer(subConstructor)
+	}
+
+	propType = jen.Qual(vitPackage, "GroupValue")
+	constructor = jen.Op("*").Qual(vitPackage, "NewEmptyGroupValue").Call(
+		jen.Map(jen.String()).Qual(vitPackage, "Value").BlockFunc(func(g *jen.Group) {
+			for _, subConstructor := range constructors {
+				g.Lit(subConstructor.name).Op(":").Add(subConstructor.constructor).Op(",")
+			}
+		}),
+	)
 	return
 }
 

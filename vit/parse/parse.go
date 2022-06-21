@@ -3,6 +3,7 @@ package parse
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/omniskop/vitrum/vit"
 )
@@ -570,6 +571,31 @@ lineLoop:
 	}
 
 	return enum, nil
+}
+
+// ParseGroupDefinition can be used externally to parse a group definition.
+func ParseGroupDefinition(code string, position vit.Position) ([]vit.PropertyDefinition, error) {
+	r := strings.NewReader(code)
+	l := NewLexerAtPosition(r, position)
+	tbuf := NewTokenBuffer(l.Lex)
+	// read opening brace
+	_, err := expectToken(tbuf.next, tokenLeftBrace)
+	if err != nil {
+		return nil, err
+	}
+	// parse the content
+	comp, err := parseComponent("", tbuf)
+	if err != nil {
+		return nil, err
+	}
+	// make sure there are not children or enumerations in there
+	if len(comp.Children) > 0 {
+		return nil, parseErrorf(comp.Children[0].Pos, "unexpected component definition inside of group")
+	}
+	if len(comp.Enumerations) > 0 {
+		return nil, parseErrorf(comp.Enumerations[0].Position, "unexpected enumeration inside of group")
+	}
+	return comp.Properties, nil
 }
 
 // ignoreTokens consumes all tokens of the given types.
