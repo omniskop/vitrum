@@ -24,12 +24,12 @@ func NewColumn(id string, scope vit.ComponentContainer) *Column {
 	return &Column{
 		Item:          *NewItem(id, scope),
 		id:            id,
-		topPadding:    *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
-		rightPadding:  *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
-		bottomPadding: *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
-		leftPadding:   *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
-		padding:       *vit.NewEmptyFloatValue(),
-		spacing:       *vit.NewEmptyFloatValue(),
+		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
+		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
+		bottomPadding: *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
+		leftPadding:   *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
+		padding:       *vit.NewFloatValueFromExpression("0", nil),
+		spacing:       *vit.NewFloatValueFromExpression("0", nil),
 		childLayouts:  make(vit.LayoutList),
 	}
 }

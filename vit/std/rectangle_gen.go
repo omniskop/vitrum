@@ -20,11 +20,11 @@ func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 	return &Rectangle{
 		Item:   *NewItem(id, scope),
 		id:     id,
-		color:  *vit.NewEmptyColorValue(),
-		radius: *vit.NewEmptyFloatValue(),
+		color:  *vit.NewColorValueFromExpression("Vit.rgb(0, 0, 0)", nil),
+		radius: *vit.NewFloatValueFromExpression("0", nil),
 		border: *vit.NewEmptyGroupValue(map[string]vit.Value{
-			"color": vit.NewEmptyColorValue(),
-			"width": vit.NewEmptyIntValue(),
+			"color": vit.NewColorValueFromExpression("\"transparent\"", nil),
+			"width": vit.NewIntValueFromExpression("0", nil),
 		}),
 	}
 }

@@ -12,11 +12,19 @@ type ColorValue struct {
 	expression *Expression
 }
 
-func NewColorValue(expression string, position *PositionRange) *ColorValue {
+func NewColorValueFromExpression(expression string, position *PositionRange) *ColorValue {
 	return &ColorValue{
 		baseValue:  newBaseValue(),
 		value:      color.Black,
 		expression: NewExpression(expression, position),
+	}
+}
+
+func NewColor(c color.Color, position *PositionRange) *ColorValue {
+	return &ColorValue{
+		baseValue:  newBaseValue(),
+		value:      c,
+		expression: nil,
 	}
 }
 

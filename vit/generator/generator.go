@@ -16,6 +16,9 @@ import (
 const vitPackage = "github.com/omniskop/vitrum/vit"
 const stdPackage = "github.com/omniskop/vitrum/vit/std"
 
+// Indicates that file locations in the source file should not be brought into the generated code
+const hideSourceFiles = true
+
 // All generator specific tags
 const (
 	onChangeTag    = "gen-onchange"
@@ -501,7 +504,7 @@ func addMultiple(g *jen.Group, code []jen.Code) {
 // It might return an error if the property contains incompatible tags or the type is unknown.
 // For example for a property of type 'float' the returned code might look like this:
 //     propType:    vit.FloatType
-//     constructor: *vit.NewFloatValue("", nil),
+//     constructor: *vit.NewFloatValueFromExpression("0", nil),
 func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (propType *jen.Statement, constructor *jen.Statement, err error) {
 	// handles gen-initializer and gen-type
 	if init, ok := prop.Tags[initializerTag]; ok {
@@ -545,22 +548,22 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 	switch prop.VitType {
 	case "string":
 		propType = jen.Qual(vitPackage, "StringValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyStringValue").Call()
+		constructor = standardConstructor(prop, "String")
 	case "int":
 		propType = jen.Qual(vitPackage, "IntValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyIntValue").Call()
+		constructor = standardConstructor(prop, "Int")
 	case "float":
 		propType = jen.Qual(vitPackage, "FloatValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyFloatValue").Call()
+		constructor = standardConstructor(prop, "Float")
 	case "bool":
 		propType = jen.Qual(vitPackage, "BoolValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyBoolValue").Call()
+		constructor = standardConstructor(prop, "Bool")
 	case "color":
 		propType = jen.Qual(vitPackage, "ColorValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyColorValue").Call()
+		constructor = standardConstructor(prop, "Color")
 	case "var":
 		propType = jen.Qual(vitPackage, "AnyValue")
-		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyAnyValue").Call()
+		constructor = standardConstructor(prop, "Any")
 	case "component":
 		propType = jen.Qual(vitPackage, "ComponentDefValue")
 		constructor = jen.Op("*").Qual(vitPackage, "NewEmptyComponentDefValue").Call()
@@ -572,7 +575,7 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 	default:
 		if _, ok := comp.GetEnum(prop.VitType); ok {
 			propType = jen.Qual(vitPackage, "IntValue")
-			constructor = jen.Op("*").Qual(vitPackage, "NewEmptyIntValue").Call()
+			constructor = standardConstructor(prop, "Int")
 		} else {
 			err = fmt.Errorf("property %s has unknown type %q", prop.Identifier, prop.VitType)
 			return
@@ -602,6 +605,14 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 	}
 
 	return
+}
+
+func standardConstructor(prop vit.PropertyDefinition, typeName string) *jen.Statement {
+	if prop.Expression == "" {
+		return jen.Op("*").Qual(vitPackage, fmt.Sprintf("NewEmpty%sValue", typeName)).Call()
+	} else {
+		return jen.Op("*").Qual(vitPackage, fmt.Sprintf("New%sValueFromExpression", typeName)).Call(jen.Lit(prop.Expression), generatePositionRange(prop.Pos))
+	}
 }
 
 func typeInfoForGroup(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (propType *jen.Statement, constructor *jen.Statement, err error) {
@@ -729,6 +740,21 @@ func orderEnumValues(values map[string]int) []enumValue {
 	}
 	sort.Sort(list)
 	return list
+}
+
+// generatePositionRange returns code that recreates the given PositionRange.
+// If hideSourceFiles is true, it will just return nil.
+func generatePositionRange(pos vit.PositionRange) *jen.Statement {
+	if hideSourceFiles {
+		return jen.Nil()
+	}
+	return jen.Op("&").Qual(vitPackage, "PositionRange").Values(jen.Dict{
+		jen.Id("FilePath"):    jen.Lit(pos.FilePath),
+		jen.Id("StartLine"):   jen.Lit(pos.StartLine),
+		jen.Id("StartColumn"): jen.Lit(pos.StartColumn),
+		jen.Id("EndLine"):     jen.Lit(pos.EndLine),
+		jen.Id("EndColumn"):   jen.Lit(pos.EndColumn),
+	})
 }
 
 type enumValue struct {
