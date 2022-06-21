@@ -2,4 +2,8 @@
 Item {
     property color color: Vit.rgb(0, 0, 0)
     property float radius: 5
+    property group border: {
+        property color color: "transparent"
+        property int width: 0
+    }
 }
