@@ -3,7 +3,10 @@ package vit
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 
+	"github.com/dop251/goja"
 	"github.com/omniskop/vitrum/vit/script"
 )
 
@@ -25,6 +28,9 @@ func NewExpression(code string, position *PositionRange) *Expression {
 	// The parenthesis around the code are needed to make sure we get the correct value from all expressions.
 	// For example objects (e.g. {one: 1}) would return the number '1' instead of a map.
 	prog, err := script.NewScript("expression", fmt.Sprintf("(%s)", code))
+	if err != nil {
+		err = NewExpressionError(code, position, err)
+	}
 	return &Expression{
 		code:         code,
 		dirty:        true,
@@ -111,6 +117,7 @@ func (e *Expression) ChangeCode(code string, position *PositionRange) {
 	e.program, e.err = script.NewScript("expression", fmt.Sprintf("(%s)", code))
 	if e.err != nil {
 		fmt.Printf("[expression] code error %q: %v\r\n", code, e.err)
+		e.err = NewExpressionError(code, position, e.err)
 		return
 	}
 	e.position = position
@@ -264,11 +271,30 @@ type ExpressionError struct {
 	err      error
 }
 
-func NewExpressionError(code string, pos *PositionRange, err error) ExpressionError {
+var compilerErrorRegex = regexp.MustCompile(`Line (\d+):(\d+) (.*)`)
+
+func NewExpressionError(code string, pos *PositionRange, wrappedErr error) ExpressionError {
+	// check if we can get some more information from the error
+	var cErr *goja.CompilerSyntaxError
+	if errors.As(wrappedErr, &cErr) {
+		// "expression: Line 3:13 Unexpected identifier (and 5 more errors)"
+		matches := compilerErrorRegex.FindStringSubmatch(cErr.CompilerError.Message)
+		if len(matches) > 0 {
+			line, err := strconv.Atoi(matches[1])
+			column, err2 := strconv.Atoi(matches[2])
+			if err == nil && err2 == nil {
+				pos.StartLine += line - 1
+				pos.StartColumn = column
+				pos.SetEnd(pos.Start())
+				wrappedErr = errors.New(matches[3])
+			}
+		}
+	}
+
 	return ExpressionError{
 		Code:     code,
 		Position: pos,
-		err:      err,
+		err:      wrappedErr,
 	}
 }
 
