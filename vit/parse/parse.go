@@ -557,12 +557,11 @@ lineLoop:
 		case tokenComma:
 			ignoreTokens(tokens, tokenNewline)
 		case tokenNewline:
-			// a newline without a semicolon is only allowed at the end of the block, thus we expect a closing brace here
+			// a newline without a comma is only allowed at the end of the block, thus we expect a closing brace here
 			t = tokens.next()
 			if t.tokenType != tokenRightBrace {
 				return enum, unexpectedToken(t, tokenRightBrace)
 			}
-			enum.Values[t.literal] = nextValue
 			pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
 			enum.Position = &pos
 			break lineLoop
