@@ -73,19 +73,19 @@ func NewGrid(id string, scope vit.ComponentContainer) *Grid {
 		Embedded: true,
 		Name:     "HorizontalItemAlignment",
 		Position: nil,
-		Values:   map[string]int{"AlignRight": 2, "AlignLeft": 0, "AlignHCenter": 1},
+		Values:   map[string]int{"AlignLeft": 0, "AlignHCenter": 1, "AlignRight": 2},
 	})
 	g.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "VerticalItemAlignment",
 		Position: nil,
-		Values:   map[string]int{"AlignVCenter": 1, "AlignBottom": 2, "AlignTop": 0},
+		Values:   map[string]int{"AlignTop": 0, "AlignVCenter": 1, "AlignBottom": 2},
 	})
 	g.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "Flow",
 		Position: nil,
-		Values:   map[string]int{"TopToBottom": 1, "LeftToRight": 0},
+		Values:   map[string]int{"LeftToRight": 0, "TopToBottom": 1},
 	})
 	return g
 }

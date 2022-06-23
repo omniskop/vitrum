@@ -31,6 +31,30 @@ func (r Rect) Height() float64 {
 	return r.Y2 - r.Y1
 }
 
+func (r Rect) CenterX() float64 {
+	return (r.X1 + r.X2) / 2
+}
+
+func (r Rect) CenterY() float64 {
+	return (r.Y1 + r.Y2) / 2
+}
+
+func (r Rect) Top() float64 {
+	return r.Y1
+}
+
+func (r Rect) Right() float64 {
+	return r.X2
+}
+
+func (r Rect) Bottom() float64 {
+	return r.Y2
+}
+
+func (r Rect) Left() float64 {
+	return r.X1
+}
+
 type DrawingContext struct {
 	*canvas.Context
 }

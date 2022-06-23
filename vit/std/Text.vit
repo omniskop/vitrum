@@ -1,0 +1,57 @@
+
+Item {
+    embedded enum HorizontalAlignment {
+        AlignLeft,
+        AlignHCenter,
+        AlignRight,
+    }
+
+    embedded enum VerticalAlignment {
+        AlignTop,
+        AlignVCenter,
+        AlignBottom,
+    }
+
+    embedded enum FontWeight {
+        Thin = 100,
+        ExtraLight = 200,
+        UltraLight = 200,
+        Light = 300,
+        Normal = 400,
+        Regular = 400,
+        Medium = 500,
+        DemiBold = 600,
+        SemiBold = 600,
+        Bold = 700,
+        ExtraBold = 800,
+        UltraBold = 800,
+        Black = 900,
+        Heavy = 900
+    }
+
+    embedded enum Elide {
+        ElideNone,
+        ElideLeft,
+        ElideMiddle,
+        ElideRight
+    }
+
+    property string text
+    property color color: "black"
+    property HorizontalAlignment horizontalAlignment: HorizontalAlignment.AlignLeft
+    property VerticalAlignment verticalAlignment: VerticalAlignment.AlignTop
+    #gen-onchange="updateFont" property group font: {
+        property bool bold: false
+        property bool italic: false
+        property bool strikeout: false
+        property bool underline: false
+        property int pixelSize: 12
+        property float pointSize: 12
+        property string family: "Arial"
+        property FontWeight weight: FontWeight.Normal
+    }
+    property Elide elide: Elide.ElideNone
+
+    #gen-type="*github.com/tdewolff/canvas.FontFamily" #gen-initializer="nil" #gen-private property var fontData
+    #gen-type="*github.com/tdewolff/canvas.FontFace"   #gen-initializer="nil" #gen-private property var fontFaceData
+}

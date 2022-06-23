@@ -27,7 +27,5 @@ func (r *Rectangle) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 		ctx.DrawPath(rect.X1, rect.Y1, canvas.RoundedRectangle(rect.Width(), rect.Height(), r.radius.Float64()))
 	}
 
-	r.Root.DrawChildren(ctx, rect)
-
-	return nil
+	return r.Root.DrawChildren(ctx, rect)
 }

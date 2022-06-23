@@ -304,7 +304,7 @@ func (r *Root) FinishInContext(context Component) error {
 }
 
 func (r *Root) Draw(ctx DrawingContext, area Rect) error {
-	return nil
+	return r.DrawChildren(ctx, area)
 }
 
 func (r *Root) DrawChildren(ctx DrawingContext, area Rect) error {
