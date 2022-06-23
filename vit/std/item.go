@@ -383,28 +383,12 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.top.AssignTo(i.anchors.Fill.Component(), vit.AnchorTop)
 		i.verticalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorVerticalCenter)
 		i.bottom.AssignTo(i.anchors.Fill.Component(), vit.AnchorBottom)
-		if i.anchors.LeftMargin.IsSet() {
-			i.left.SetOffset(i.anchors.LeftMargin.Value().Float64())
-		} else {
-			i.left.SetOffset(0)
-		}
+		i.left.SetOffset(i.anchors.CalcLeftMargin())
 		i.horizontalCenter.SetOffset(0)
-		if i.anchors.RightMargin.IsSet() {
-			i.right.SetOffset(-i.anchors.RightMargin.Value().Float64())
-		} else {
-			i.right.SetOffset(0)
-		}
-		if i.anchors.TopMargin.IsSet() {
-			i.top.SetOffset(i.anchors.TopMargin.Value().Float64())
-		} else {
-			i.top.SetOffset(0)
-		}
+		i.right.SetOffset(-i.anchors.CalcRightMargin())
+		i.top.SetOffset(i.anchors.CalcTopMargin())
 		i.verticalCenter.SetOffset(0)
-		if i.anchors.BottomMargin.IsSet() {
-			i.bottom.SetOffset(-i.anchors.BottomMargin.Value().Float64())
-		} else {
-			i.bottom.SetOffset(0)
-		}
+		i.bottom.SetOffset(-i.anchors.CalcBottomMargin())
 		return
 	}
 	if !(didHorizintal || didVertical) && i.anchors.CenterIn.GetValue() != nil {
@@ -437,9 +421,7 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 
 	if !didHorizintal && i.anchors.Left.IsSet() {
 		left := i.anchors.Left.GetValue().(float64)
-		if i.anchors.LeftMargin.IsSet() {
-			left += i.anchors.LeftMargin.GetValue().(float64)
-		}
+		left += i.anchors.CalcLeftMargin()
 		i.left.SetAbsolute(left)
 		i.horizontalCenter.SetAbsolute(left + width/2)
 		i.right.SetAbsolute(left + width)
@@ -459,9 +441,7 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 
 	if !didHorizintal && i.anchors.Right.IsSet() {
 		right := i.anchors.Right.GetValue().(float64)
-		if i.anchors.RightMargin.IsSet() {
-			right -= i.anchors.RightMargin.GetValue().(float64)
-		}
+		right -= i.anchors.CalcRightMargin()
 		i.left.SetAbsolute(right - width)
 		i.horizontalCenter.SetAbsolute(right - width/2)
 		i.right.SetAbsolute(right)
@@ -470,9 +450,7 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 
 	if !didVertical && i.anchors.Top.IsSet() {
 		top := i.anchors.Top.GetValue().(float64)
-		if i.anchors.TopMargin.IsSet() {
-			top += i.anchors.TopMargin.GetValue().(float64)
-		}
+		top += i.anchors.CalcTopMargin()
 		i.top.SetAbsolute(top)
 		i.verticalCenter.SetAbsolute(top + height/2)
 		i.bottom.SetAbsolute(top + height)
@@ -492,9 +470,7 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 
 	if !didVertical && i.anchors.Bottom.IsSet() {
 		bottom := i.anchors.Bottom.GetValue().(float64)
-		if i.anchors.BottomMargin.IsSet() {
-			bottom -= i.anchors.BottomMargin.GetValue().(float64)
-		}
+		bottom -= i.anchors.CalcBottomMargin()
 		i.top.SetAbsolute(bottom - height)
 		i.verticalCenter.SetAbsolute(bottom - height/2)
 		i.bottom.SetAbsolute(bottom)
@@ -525,36 +501,20 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 }
 
 func (i *Item) setAllOffsets() {
-	if i.anchors.LeftMargin.IsSet() {
-		i.left.SetOffset(i.anchors.LeftMargin.Value().Float64())
-	} else {
-		i.left.SetOffset(0)
-	}
+	i.left.SetOffset(i.anchors.CalcLeftMargin())
 	if i.anchors.HorizontalCenterOffset.IsSet() {
 		i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value().Float64())
 	} else {
 		i.horizontalCenter.SetOffset(0)
 	}
-	if i.anchors.RightMargin.IsSet() {
-		i.right.SetOffset(i.anchors.RightMargin.Value().Float64())
-	} else {
-		i.right.SetOffset(0)
-	}
-	if i.anchors.TopMargin.IsSet() {
-		i.top.SetOffset(i.anchors.TopMargin.Value().Float64())
-	} else {
-		i.top.SetOffset(0)
-	}
+	i.right.SetOffset(i.anchors.CalcRightMargin())
+	i.top.SetOffset(i.anchors.CalcTopMargin())
 	if i.anchors.VerticalCenterOffset.IsSet() {
 		i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value().Float64())
 	} else {
 		i.verticalCenter.SetOffset(0)
 	}
-	if i.anchors.BottomMargin.IsSet() {
-		i.bottom.SetOffset(i.anchors.BottomMargin.Value().Float64())
-	} else {
-		i.bottom.SetOffset(0)
-	}
+	i.bottom.SetOffset(-i.anchors.CalcBottomMargin())
 }
 
 func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {

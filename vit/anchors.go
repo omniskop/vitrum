@@ -302,6 +302,46 @@ func (v *AnchorsValue) UpdateExpressions(context Component) (int, ErrorGroup) {
 	return sum, errs
 }
 
+func (v *AnchorsValue) CalcTopMargin() float64 {
+	if v.TopMargin.IsSet() {
+		return v.TopMargin.Value().GetValue().(float64)
+	}
+	if v.Margins.IsSet() {
+		return v.Margins.Value().GetValue().(float64)
+	}
+	return 0
+}
+
+func (v *AnchorsValue) CalcRightMargin() float64 {
+	if v.RightMargin.IsSet() {
+		return v.RightMargin.Value().GetValue().(float64)
+	}
+	if v.Margins.IsSet() {
+		return v.Margins.Value().GetValue().(float64)
+	}
+	return 0
+}
+
+func (v *AnchorsValue) CalcBottomMargin() float64 {
+	if v.BottomMargin.IsSet() {
+		return v.BottomMargin.Value().GetValue().(float64)
+	}
+	if v.Margins.IsSet() {
+		return v.Margins.Value().GetValue().(float64)
+	}
+	return 0
+}
+
+func (v *AnchorsValue) CalcLeftMargin() float64 {
+	if v.LeftMargin.IsSet() {
+		return v.LeftMargin.Value().GetValue().(float64)
+	}
+	if v.Margins.IsSet() {
+		return v.Margins.Value().GetValue().(float64)
+	}
+	return 0
+}
+
 func (v *AnchorsValue) SetFromProperty(def PropertyDefinition) {
 	panic("not implemented")
 }
