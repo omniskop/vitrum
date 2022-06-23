@@ -30,12 +30,14 @@ func main() {
 		err := generator.GenerateFromFile(inputPath, packageName, os.Stdout)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 			return
 		}
 	} else {
 		err := generator.GenerateFromFileAndSave(inputPath, packageName, outputPath)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 			return
 		}
 	}

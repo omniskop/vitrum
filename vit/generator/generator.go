@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -35,20 +36,24 @@ func GenerateFromFileAndSave(srcPath string, packageName string, dstPath string)
 		return fmt.Errorf("unable to parse: %v", err)
 	}
 
+	// We first store the generated output in a buffer and then write it into the file afterwards
+	// to make sure that we don't overwrite an existing file if the generation failed.
+	var output bytes.Buffer
+
+	err = GenerateFromDocument(doc, packageName, &output)
+	if err != nil {
+		return err
+	}
+
 	dstFile, err := os.Create(dstPath)
 	if err != nil {
 		return fmt.Errorf("unable to create destination file: %w", err)
 	}
-
-	err = GenerateFromDocument(doc, packageName, dstFile)
-	dstFile.Close()
+	_, err = dstFile.Write(output.Bytes())
 	if err != nil {
-		err2 := os.Remove(dstPath)
-		if err2 != nil {
-			fmt.Fprintln(os.Stderr, "unable to remove output file again:", err2)
-		}
-		return err
+		return fmt.Errorf("unable to write to destination file: %w", err)
 	}
+
 	return nil
 }
 
@@ -526,7 +531,7 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 					propType = jen.Qual(packagePath, typeName)
 				}
 			} else {
-			propType = jen.Id(typeString) // a custom type is provided
+				propType = jen.Id(typeString) // a custom type is provided
 			}
 
 			if prop.HasTag(optionalTag) {
