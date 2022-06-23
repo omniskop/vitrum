@@ -516,7 +516,18 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 		constructor = jen.Id(init) // a custom initializer is provided
 		// this also requires a custom initializer
 		if typeString, ok := prop.Tags[typeTag]; ok {
+			// check if the type contains a period, which indicates that it refers to a type in another package
+			if strings.Contains(typeString, ".") {
+				// split the type apart and get the package path and the actual type name
+				packagePath, typeName, isPointer := splitCustomType(typeString)
+				if isPointer {
+					propType = jen.Op("*").Qual(packagePath, typeName)
+				} else {
+					propType = jen.Qual(packagePath, typeName)
+				}
+			} else {
 			propType = jen.Id(typeString) // a custom type is provided
+			}
 
 			if prop.HasTag(optionalTag) {
 				// a custom type can't be optional at the same time
@@ -527,6 +538,7 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 		} else {
 			// only a custom type but no initializer was provided
 			err = fmt.Errorf("property %s has %q tag but no %q tag", prop.Identifier, initializerTag, typeTag)
+			return
 		}
 	}
 
@@ -703,6 +715,27 @@ func stringSliceContains(s []string, v string) bool {
 		}
 	}
 	return false
+}
+
+// splitCustomType takes a custom type string and splits it into the package path and the actual type name.
+// The "vit" package can be used directly as a shortcut instead of providing the full path.
+// If the type is a pointer it will remove the star from the beginning and the 'isPointer' boolean will be true.
+func splitCustomType(str string) (packagePath string, typeName string, isPointer bool) {
+	lastPeriod := strings.LastIndex(str, ".")
+	if lastPeriod == -1 {
+		return "", str, false
+	}
+	packagePath = str[:lastPeriod]
+	typeName = str[lastPeriod+1:]
+	if len(packagePath) > 0 && packagePath[0] == '*' {
+		isPointer = true
+		packagePath = packagePath[1:]
+	}
+	if packagePath == "vit" {
+		// shortcut
+		packagePath = vitPackage
+	}
+	return
 }
 
 // unpointer removes the first '*' from statements.
