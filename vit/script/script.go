@@ -12,6 +12,10 @@ import (
 var runtime *goja.Runtime
 var runtimeMux sync.Mutex
 
+func init() {
+	Setup()
+}
+
 func Setup() {
 	runtime = goja.New()
 	runtime.SetParserOptions(parser.WithDisableSourceMaps)
