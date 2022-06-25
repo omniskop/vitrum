@@ -801,10 +801,16 @@ func generatePositionRange(pos vit.PositionRange) *jen.Statement {
 }
 
 func generateEnumeration(enum vit.Enumeration) *jen.Statement {
+	values := orderEnumValues(enum.Values)
+	valueMap := jen.Map(jen.String()).Int().ValuesFunc(func(g *jen.Group) {
+		for _, v := range values {
+			g.Lit(v.name).Op(":").Lit(v.value)
+		}
+	})
 	return jen.Qual(vitPackage, "Enumeration").Values(jen.Dict{
 		jen.Id("Name"):     jen.Lit(enum.Name),
 		jen.Id("Embedded"): jen.Lit(enum.Embedded),
-		jen.Id("Values"):   generateMap(enum.Values),
+		jen.Id("Values"):   valueMap,
 		jen.Id("Position"): generatePositionRange(*enum.Position),
 	})
 }
@@ -833,6 +839,10 @@ func (v enumValueList) Len() int {
 }
 
 func (v enumValueList) Less(i, j int) bool {
+	if v[i].value == v[j].value {
+		// if values are equal use name as fallback
+		return v[i].name < v[j].name
+	}
 	return v[i].value < v[j].value
 }
 

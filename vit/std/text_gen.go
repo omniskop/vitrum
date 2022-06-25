@@ -31,16 +31,16 @@ const (
 	Text_FontWeight_ExtraLight Text_FontWeight = 200
 	Text_FontWeight_UltraLight Text_FontWeight = 200
 	Text_FontWeight_Light      Text_FontWeight = 300
-	Text_FontWeight_Regular    Text_FontWeight = 400
 	Text_FontWeight_Normal     Text_FontWeight = 400
+	Text_FontWeight_Regular    Text_FontWeight = 400
 	Text_FontWeight_Medium     Text_FontWeight = 500
 	Text_FontWeight_DemiBold   Text_FontWeight = 600
 	Text_FontWeight_SemiBold   Text_FontWeight = 600
 	Text_FontWeight_Bold       Text_FontWeight = 700
-	Text_FontWeight_UltraBold  Text_FontWeight = 800
 	Text_FontWeight_ExtraBold  Text_FontWeight = 800
-	Text_FontWeight_Heavy      Text_FontWeight = 900
+	Text_FontWeight_UltraBold  Text_FontWeight = 800
 	Text_FontWeight_Black      Text_FontWeight = 900
+	Text_FontWeight_Heavy      Text_FontWeight = 900
 )
 
 type Text_Elide uint
@@ -92,7 +92,7 @@ func NewText(id string, scope vit.ComponentContainer) *Text {
 		Embedded: true,
 		Name:     "HorizontalAlignment",
 		Position: nil,
-		Values:   map[string]int{"AlignHCenter": 1, "AlignRight": 2, "AlignLeft": 0},
+		Values:   map[string]int{"AlignLeft": 0, "AlignHCenter": 1, "AlignRight": 2},
 	})
 	t.DefineEnum(vit.Enumeration{
 		Embedded: true,
@@ -104,13 +104,13 @@ func NewText(id string, scope vit.ComponentContainer) *Text {
 		Embedded: true,
 		Name:     "FontWeight",
 		Position: nil,
-		Values:   map[string]int{"Normal": 400, "Bold": 700, "UltraBold": 800, "ExtraLight": 200, "DemiBold": 600, "Heavy": 900, "Thin": 100, "UltraLight": 200, "Light": 300, "Black": 900, "Regular": 400, "Medium": 500, "SemiBold": 600, "ExtraBold": 800},
+		Values:   map[string]int{"Thin": 100, "ExtraLight": 200, "UltraLight": 200, "Light": 300, "Normal": 400, "Regular": 400, "Medium": 500, "DemiBold": 600, "SemiBold": 600, "Bold": 700, "ExtraBold": 800, "UltraBold": 800, "Black": 900, "Heavy": 900},
 	})
 	t.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "Elide",
 		Position: nil,
-		Values:   map[string]int{"ElideLeft": 1, "ElideMiddle": 2, "ElideRight": 3, "ElideNone": 0},
+		Values:   map[string]int{"ElideNone": 0, "ElideLeft": 1, "ElideMiddle": 2, "ElideRight": 3},
 	})
 	return t
 }
@@ -319,10 +319,10 @@ func (t *Text) staticAttribute(name string) (interface{}, bool) {
 		return uint(Text_FontWeight_UltraLight), true
 	case "Light":
 		return uint(Text_FontWeight_Light), true
-	case "Regular":
-		return uint(Text_FontWeight_Regular), true
 	case "Normal":
 		return uint(Text_FontWeight_Normal), true
+	case "Regular":
+		return uint(Text_FontWeight_Regular), true
 	case "Medium":
 		return uint(Text_FontWeight_Medium), true
 	case "DemiBold":
