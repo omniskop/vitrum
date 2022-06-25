@@ -46,7 +46,13 @@ func NewItem(id string, scope vit.ComponentContainer) *Item {
 		verticalCenter:   *vit.NewAnchorLineValue(),
 		bottom:           *vit.NewAnchorLineValue(),
 	}
-	i.anchors.OnChange = func() { i.layouting(0, 0) }
+	i.x.AddDependent(vit.FuncDep(i.layouting))
+	i.y.AddDependent(vit.FuncDep(i.layouting))
+	i.z.AddDependent(vit.FuncDep(i.layouting))
+	i.width.AddDependent(vit.FuncDep(i.layouting))
+	i.width.AddDependent(vit.FuncDep(i.updateLayoutSize))
+	i.height.AddDependent(vit.FuncDep(i.layouting))
+	i.height.AddDependent(vit.FuncDep(i.updateLayoutSize))
 	return i
 }
 
@@ -196,46 +202,30 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "width", i.id, err))
-		} else {
-			w := i.width.Float64()
-			h := i.height.Float64()
-			i.layout.SetTargetSize(&w, &h)
-			i.layouting()
 		}
 	}
 	if changed, err := i.height.Update(i); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "height", i.id, err))
-		} else {
-			w := i.width.Float64()
-			h := i.height.Float64()
-			i.layout.SetTargetSize(&w, &h)
-			i.layouting()
 		}
 	}
 	if changed, err := i.x.Update(i); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "x", i.id, err))
-		} else {
-			i.layouting()
 		}
 	}
 	if changed, err := i.y.Update(i); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "y", i.id, err))
-		} else {
-			i.layouting()
 		}
 	}
 	if changed, err := i.z.Update(i); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "z", i.id, err))
-		} else {
-			i.layouting()
 		}
 	}
 	if changed, err := i.left.Update(i); changed || err != nil {
@@ -376,20 +366,20 @@ func (i *Item) layouting() {
 
 		// check anchors.fill
 		if i.anchors.Fill.GetValue() != nil {
-		i.left.AssignTo(i.anchors.Fill.Component(), vit.AnchorLeft)
-		i.horizontalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorHorizontalCenter)
-		i.right.AssignTo(i.anchors.Fill.Component(), vit.AnchorRight)
-		i.top.AssignTo(i.anchors.Fill.Component(), vit.AnchorTop)
-		i.verticalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorVerticalCenter)
-		i.bottom.AssignTo(i.anchors.Fill.Component(), vit.AnchorBottom)
-		i.left.SetOffset(i.anchors.CalcLeftMargin())
-		i.horizontalCenter.SetOffset(0)
-		i.right.SetOffset(-i.anchors.CalcRightMargin())
-		i.top.SetOffset(i.anchors.CalcTopMargin())
-		i.verticalCenter.SetOffset(0)
-		i.bottom.SetOffset(-i.anchors.CalcBottomMargin())
+			i.left.AssignTo(i.anchors.Fill.Component(), vit.AnchorLeft)
+			i.horizontalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorHorizontalCenter)
+			i.right.AssignTo(i.anchors.Fill.Component(), vit.AnchorRight)
+			i.top.AssignTo(i.anchors.Fill.Component(), vit.AnchorTop)
+			i.verticalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorVerticalCenter)
+			i.bottom.AssignTo(i.anchors.Fill.Component(), vit.AnchorBottom)
+			i.left.SetOffset(i.anchors.CalcLeftMargin())
+			i.horizontalCenter.SetOffset(0)
+			i.right.SetOffset(-i.anchors.CalcRightMargin())
+			i.top.SetOffset(i.anchors.CalcTopMargin())
+			i.verticalCenter.SetOffset(0)
+			i.bottom.SetOffset(-i.anchors.CalcBottomMargin())
 			return // all is set, nothing can be overwritten anymore, so we can stop here
-	}
+		}
 
 		// check anchors.centerIn
 		if i.anchors.CenterIn.GetValue() != nil {
@@ -401,17 +391,17 @@ func (i *Item) layouting() {
 			if i.anchors.VerticalCenterOffset.IsSet() {
 				vOffset = i.anchors.VerticalCenterOffset.Value().Float64()
 			}
-		i.left.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
+			i.left.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
 			i.left.SetOffset(-width/2 + hOffset)
-		i.horizontalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
+			i.horizontalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
 			i.horizontalCenter.SetOffset(hOffset)
-		i.right.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
+			i.right.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
 			i.right.SetOffset(width/2 + hOffset)
-		i.top.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
+			i.top.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
 			i.top.SetOffset(-height/2 + vOffset)
-		i.verticalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
+			i.verticalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
 			i.verticalCenter.SetOffset(vOffset)
-		i.bottom.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
+			i.bottom.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
 			i.bottom.SetOffset(height/2 + vOffset)
 			return // all is set, nothing can be overwritten anymore, so we can stop here
 		}
@@ -531,21 +521,10 @@ func (i *Item) layouting() {
 	i.layout.SetTargetSize(&width, &height)
 }
 
-func (i *Item) setAllOffsets() {
-	i.left.SetOffset(i.anchors.CalcLeftMargin())
-	if i.anchors.HorizontalCenterOffset.IsSet() {
-		i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value().Float64())
-	} else {
-		i.horizontalCenter.SetOffset(0)
-	}
-	i.right.SetOffset(i.anchors.CalcRightMargin())
-	i.top.SetOffset(i.anchors.CalcTopMargin())
-	if i.anchors.VerticalCenterOffset.IsSet() {
-		i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value().Float64())
-	} else {
-		i.verticalCenter.SetOffset(0)
-	}
-	i.bottom.SetOffset(-i.anchors.CalcBottomMargin())
+func (i *Item) updateLayoutSize() {
+	w := i.width.Float64()
+	h := i.height.Float64()
+	i.layout.SetTargetSize(&w, &h)
 }
 
 func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {

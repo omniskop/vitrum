@@ -22,6 +22,22 @@ type Dependent interface {
 	MakeDirty([]Dependent)
 }
 
+// FunctionDependency is an adapter that implements the Dependent interface
+// and simply calls the callback function when the dependency changes.
+type FunctionDependency struct {
+	Callback *func()
+}
+
+func FuncDep(cb func()) FunctionDependency {
+	return FunctionDependency{
+		Callback: &cb,
+	}
+}
+
+func (d FunctionDependency) MakeDirty([]Dependent) {
+	(*d.Callback)()
+}
+
 type baseValue struct {
 	dependents map[Dependent]bool
 }
