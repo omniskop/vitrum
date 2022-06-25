@@ -9,6 +9,10 @@ type Rect struct {
 	X1, Y1, X2, Y2 float64
 }
 
+func NewRect(x, y, w, h float64) Rect {
+	return Rect{x, y, x + w, y + h}
+}
+
 func (r Rect) ToCanvas() canvas.Rect {
 	return canvas.Rect{r.X1, r.Y1, r.X2 - r.X1, r.Y2 - r.Y1}
 }

@@ -6,6 +6,7 @@ import (
 
 /*
 	Layout hierarchy: (from most important to least)
+	- forced layout
 	- Fill through 'fill'
 	- Centering through 'centerIn'
 	- Positioning through 'left', 'right', 'top', 'bottom', 'horizontalCenter', 'verticalCenter'
@@ -53,7 +54,6 @@ func (l AnchorLine) PropertyName() string {
 
 type AnchorsValue struct {
 	Expression
-	OnChange               func()
 	AlignWhenCentered      BoolValue
 	BaselineOffset         OptionalValue[*FloatValue]
 	Baseline               OptionalValue[*FloatValue]
@@ -113,9 +113,9 @@ func (a *AnchorsValue) Property(key string) (interface{}, bool) {
 		return a.CenterIn, true
 	case "fill":
 		return a.Fill, true
-	case "horizonzalCenter":
+	case "horizontalCenter":
 		return a.HorizontalCenter, true
-	case "horizonzalCenterOffset":
+	case "horizontalCenterOffset":
 		return a.HorizontalCenterOffset, true
 	case "left":
 		return a.Left, true
@@ -139,7 +139,53 @@ func (a *AnchorsValue) Property(key string) (interface{}, bool) {
 	return nil, false
 }
 
-func (a *AnchorsValue) SetProperty(key string, expression string, position *PositionRange) bool {
+func (a *AnchorsValue) SetProperty(key string, value interface{}) error {
+	var err error
+	switch key {
+	case "alignWhenCentered":
+		err = a.AlignWhenCentered.SetValue(value)
+	case "baseline":
+		err = a.Baseline.SetValue(value)
+	case "baselineOffset":
+		err = a.BaselineOffset.SetValue(value)
+	case "bottom":
+		err = a.Bottom.SetValue(value)
+	case "bottomMargin":
+		err = a.BottomMargin.SetValue(value)
+	case "centerIn":
+		err = a.CenterIn.SetValue(value)
+	case "fill":
+		err = a.Fill.SetValue(value)
+	case "horizontalCenter":
+		err = a.HorizontalCenter.SetValue(value)
+	case "horizontalCenterOffset":
+		err = a.HorizontalCenterOffset.SetValue(value)
+	case "left":
+		err = a.Left.SetValue(value)
+	case "leftMargin":
+		err = a.LeftMargin.SetValue(value)
+	case "margins":
+		err = a.Margins.SetValue(value)
+	case "right":
+		err = a.Right.SetValue(value)
+	case "rightMargin":
+		err = a.RightMargin.SetValue(value)
+	case "top":
+		err = a.Top.SetValue(value)
+	case "topMargin":
+		err = a.TopMargin.SetValue(value)
+	case "verticalCenter":
+		err = a.VerticalCenter.SetValue(value)
+	case "verticalCenterOffset":
+		err = a.VerticalCenterOffset.SetValue(value)
+	}
+	if err != nil {
+		return NewPropertyError("anchors", key, "", err)
+	}
+	return nil
+}
+
+func (a *AnchorsValue) SetPropertyExpression(key string, expression string, position *PositionRange) bool {
 	fmt.Printf("[anchors] setting property %q\n", key)
 	switch key {
 	case "alignWhenCentered":
@@ -156,9 +202,9 @@ func (a *AnchorsValue) SetProperty(key string, expression string, position *Posi
 		a.CenterIn.SetExpression(expression, position)
 	case "fill":
 		a.Fill.SetExpression(expression, position)
-	case "horizonzalCenter":
+	case "horizontalCenter":
 		a.HorizontalCenter.SetExpression(expression, position)
-	case "horizonzalCenterOffset":
+	case "horizontalCenterOffset":
 		a.HorizontalCenterOffset.SetExpression(expression, position)
 	case "left":
 		a.Left.SetExpression(expression, position)
@@ -181,9 +227,6 @@ func (a *AnchorsValue) SetProperty(key string, expression string, position *Posi
 	default:
 		return false
 	}
-	// if a.OnChange != nil {
-	// 	a.OnChange()
-	// }
 	return true
 }
 
@@ -235,13 +278,13 @@ func (v *AnchorsValue) UpdateExpressions(context Component) (int, ErrorGroup) {
 	if changed, err := v.HorizontalCenter.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(NewPropertyError("Item", "anchors.horizonzalCenter", context.ID(), err))
+			errs.Add(NewPropertyError("Item", "anchors.horizontalCenter", context.ID(), err))
 		}
 	}
 	if changed, err := v.HorizontalCenterOffset.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(NewPropertyError("Item", "anchors.horizonzalCenterOffset", context.ID(), err))
+			errs.Add(NewPropertyError("Item", "anchors.horizontalCenterOffset", context.ID(), err))
 		}
 	}
 	if changed, err := v.Left.Update(context); changed || err != nil {
@@ -342,33 +385,31 @@ func (v *AnchorsValue) CalcLeftMargin() float64 {
 	return 0
 }
 
-func (v *AnchorsValue) SetFromProperty(def PropertyDefinition) {
+func (a *AnchorsValue) GetValue() interface{} {
+	return a
+}
+
+func (a *AnchorsValue) SetFromProperty(PropertyDefinition) {
 	panic("not implemented")
 }
 
-func (v *AnchorsValue) Update(context Component) (bool, error) {
+func (a *AnchorsValue) AddDependent(Dependent) {
 	panic("not implemented")
 }
 
-func (v *AnchorsValue) SetValue(value interface{}) error {
-	panic("not implemented")
-	return nil
-}
-
-func (v *AnchorsValue) GetValue() interface{} {
-	panic("not implemented")
-	return nil
-}
-
-func (v *AnchorsValue) AddDependent(dep Dependent) {
+func (a *AnchorsValue) RemoveDependent(Dependent) {
 	panic("not implemented")
 }
 
-func (v *AnchorsValue) RemoveDependent(dep Dependent) {
+func (a *AnchorsValue) SetValue(interface{}) error {
 	panic("not implemented")
 }
 
-func (v *AnchorsValue) SetExpression(code string, position *PositionRange) {
+func (a *AnchorsValue) SetExpression(string, *PositionRange) {
+	panic("not implemented")
+}
+
+func (a *AnchorsValue) Update(Component) (bool, error) {
 	panic("not implemented")
 }
 

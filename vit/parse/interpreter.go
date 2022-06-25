@@ -197,7 +197,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, com
 					return genericErrorf(prop.Pos, "cannot assign to non group-property %q of component %q", prop.Identifier[0], def.BaseName)
 				}
 
-				ok = anchors.SetProperty(prop.Identifier[1], prop.Expression, &prop.Pos)
+				ok = anchors.SetPropertyExpression(prop.Identifier[1], prop.Expression, &prop.Pos)
 				if !ok {
 					return genericErrorf(prop.Pos, "unknown property %q of component %q", strings.Join(prop.Identifier, "."), def.BaseName)
 				}

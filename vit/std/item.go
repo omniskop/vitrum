@@ -200,7 +200,7 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 			w := i.width.Float64()
 			h := i.height.Float64()
 			i.layout.SetTargetSize(&w, &h)
-			i.layouting(i.contentWidth, i.contentHeight)
+			i.layouting()
 		}
 	}
 	if changed, err := i.height.Update(i); changed || err != nil {
@@ -211,7 +211,7 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 			w := i.width.Float64()
 			h := i.height.Float64()
 			i.layout.SetTargetSize(&w, &h)
-			i.layouting(i.contentWidth, i.contentHeight)
+			i.layouting()
 		}
 	}
 	if changed, err := i.x.Update(i); changed || err != nil {
@@ -219,7 +219,7 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "x", i.id, err))
 		} else {
-			i.layouting(i.contentWidth, i.contentHeight)
+			i.layouting()
 		}
 	}
 	if changed, err := i.y.Update(i); changed || err != nil {
@@ -227,7 +227,7 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "y", i.id, err))
 		} else {
-			i.layouting(i.contentWidth, i.contentHeight)
+			i.layouting()
 		}
 	}
 	if changed, err := i.z.Update(i); changed || err != nil {
@@ -235,7 +235,7 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "z", i.id, err))
 		} else {
-			i.layouting(i.contentWidth, i.contentHeight)
+			i.layouting()
 		}
 	}
 	if changed, err := i.left.Update(i); changed || err != nil {
@@ -276,17 +276,17 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 	}
 
 	if i.layout.PositionChanged() {
-		i.layouting(i.contentWidth, i.contentHeight)
+		i.layouting()
 		sum++
 	}
 	if i.layout.SizeChanged() {
-		i.layouting(i.contentWidth, i.contentHeight)
+		i.layouting()
 		sum++
 	}
 
 	n, err := i.anchors.UpdateExpressions(i)
 	if n > 0 {
-		i.layouting(i.contentWidth, i.contentHeight)
+		i.layouting()
 	}
 	sum += n
 	errs.AddGroup(err)
@@ -317,21 +317,26 @@ func (i *Item) Finish() error {
 	return i.RootC().FinishInContext(i)
 }
 
-func (i *Item) layouting(autoWidth, autoHeight float64) {
+func (i *Item) layouting() {
 	var width = i.width.Float64()
 	var height = i.height.Float64()
 	if width == 0 {
-		width = autoWidth
+		width = i.contentWidth
 	}
 	if height == 0 {
-		height = autoHeight
+		height = i.contentHeight
 	}
-	var didHorizintal bool
-	var didPreferredHorizontal bool
-	var didVertical bool
-	var didPreferredVertical bool
+	var didSetPreferredLeft bool
+	var didSetPreferredTop bool
 
+	var didSetTop bool
+	var didSetRight bool
+	var didSetBottom bool
+	var didSetLeft bool
+
+	// check if the component has a forced layout
 	if i.layout != nil {
+		// set width and height if it's set through the layout
 		if w, ok := i.layout.GetWidth(); ok {
 			width = w
 		}
@@ -347,36 +352,30 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		if x, ok := i.layout.GetX(); ok {
 			if updateValues {
 				i.left.SetAbsolute(x)
-				i.horizontalCenter.SetAbsolute(x + width/2)
-				i.right.SetAbsolute(x + width)
 			}
-			didHorizintal = true
+			didSetLeft = true
 		} else if x, ok := i.layout.GetPreferredX(); ok {
 			if updateValues {
 				i.left.SetAbsolute(x)
-				i.horizontalCenter.SetAbsolute(x + width/2)
-				i.right.SetAbsolute(x + width)
 			}
-			didPreferredHorizontal = true
+			didSetPreferredLeft = true
 		}
 		if y, ok := i.layout.GetY(); ok {
 			if updateValues {
 				i.top.SetAbsolute(y)
-				i.verticalCenter.SetAbsolute(y + height/2)
-				i.bottom.SetAbsolute(y + height)
 			}
-			didVertical = true
+			didSetTop = true
 		} else if y, ok := i.layout.GetPreferredY(); ok {
 			if updateValues {
 				i.top.SetAbsolute(y)
-				i.verticalCenter.SetAbsolute(y + height/2)
-				i.bottom.SetAbsolute(y + height)
-				didPreferredVertical = true
 			}
+			didSetPreferredTop = true
 		}
-	}
+	} else {
+		// we only consider fill and centerIn if no layout is set
 
-	if !(didHorizintal || didVertical) && i.anchors.Fill.GetValue() != nil {
+		// check anchors.fill
+		if i.anchors.Fill.GetValue() != nil {
 		i.left.AssignTo(i.anchors.Fill.Component(), vit.AnchorLeft)
 		i.horizontalCenter.AssignTo(i.anchors.Fill.Component(), vit.AnchorHorizontalCenter)
 		i.right.AssignTo(i.anchors.Fill.Component(), vit.AnchorRight)
@@ -389,46 +388,45 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.top.SetOffset(i.anchors.CalcTopMargin())
 		i.verticalCenter.SetOffset(0)
 		i.bottom.SetOffset(-i.anchors.CalcBottomMargin())
-		return
-	}
-	if !(didHorizintal || didVertical) && i.anchors.CenterIn.GetValue() != nil {
-		i.left.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.left.SetOffset(-width / 2)
-		i.horizontalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.right.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
-		i.right.SetOffset(width / 2)
-		i.top.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.top.SetOffset(-height / 2)
-		i.verticalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.bottom.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
-		i.bottom.SetOffset(height / 2)
-		i.left.SetOffset(0)
-		if i.anchors.HorizontalCenterOffset.IsSet() {
-			i.horizontalCenter.SetOffset(i.anchors.HorizontalCenterOffset.Value().Float64())
-		} else {
-			i.horizontalCenter.SetOffset(0)
-		}
-		i.right.SetOffset(0)
-		i.top.SetOffset(0)
-		if i.anchors.VerticalCenterOffset.IsSet() {
-			i.verticalCenter.SetOffset(i.anchors.VerticalCenterOffset.Value().Float64())
-		} else {
-			i.verticalCenter.SetOffset(0)
-		}
-		i.bottom.SetOffset(0)
-		return
+			return // all is set, nothing can be overwritten anymore, so we can stop here
 	}
 
-	if !didHorizintal && i.anchors.Left.IsSet() {
+		// check anchors.centerIn
+		if i.anchors.CenterIn.GetValue() != nil {
+			var hOffset float64
+			var vOffset float64
+			if i.anchors.HorizontalCenterOffset.IsSet() {
+				hOffset = i.anchors.HorizontalCenterOffset.Value().Float64()
+			}
+			if i.anchors.VerticalCenterOffset.IsSet() {
+				vOffset = i.anchors.VerticalCenterOffset.Value().Float64()
+			}
+		i.left.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
+			i.left.SetOffset(-width/2 + hOffset)
+		i.horizontalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
+			i.horizontalCenter.SetOffset(hOffset)
+		i.right.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorHorizontalCenter)
+			i.right.SetOffset(width/2 + hOffset)
+		i.top.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
+			i.top.SetOffset(-height/2 + vOffset)
+		i.verticalCenter.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
+			i.verticalCenter.SetOffset(vOffset)
+		i.bottom.AssignTo(i.anchors.CenterIn.Component(), vit.AnchorVerticalCenter)
+			i.bottom.SetOffset(height/2 + vOffset)
+			return // all is set, nothing can be overwritten anymore, so we can stop here
+		}
+	}
+
+	// apply anchors.left
+	if !didSetLeft && i.anchors.Left.IsSet() {
 		left := i.anchors.Left.GetValue().(float64)
 		left += i.anchors.CalcLeftMargin()
 		i.left.SetAbsolute(left)
-		i.horizontalCenter.SetAbsolute(left + width/2)
-		i.right.SetAbsolute(left + width)
-		didHorizintal = true
+		didSetLeft = true
 	}
 
-	if !didHorizintal && i.anchors.HorizontalCenter.IsSet() {
+	// apply anchors.horizontalCenter
+	if !didSetLeft && !didSetRight && i.anchors.HorizontalCenter.IsSet() {
 		horizontalCenter := i.anchors.HorizontalCenter.GetValue().(float64)
 		if i.anchors.HorizontalCenterOffset.IsSet() {
 			horizontalCenter += i.anchors.HorizontalCenterOffset.GetValue().(float64)
@@ -436,28 +434,28 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.left.SetAbsolute(horizontalCenter - width/2)
 		i.horizontalCenter.SetAbsolute(horizontalCenter)
 		i.right.SetAbsolute(horizontalCenter + width/2)
-		didHorizintal = true
+		didSetLeft = true
+		didSetRight = true
 	}
 
-	if !didHorizintal && i.anchors.Right.IsSet() {
+	// apply anchors.right
+	if !didSetRight && i.anchors.Right.IsSet() {
 		right := i.anchors.Right.GetValue().(float64)
 		right -= i.anchors.CalcRightMargin()
-		i.left.SetAbsolute(right - width)
-		i.horizontalCenter.SetAbsolute(right - width/2)
 		i.right.SetAbsolute(right)
-		didHorizintal = true
+		didSetRight = true
 	}
 
-	if !didVertical && i.anchors.Top.IsSet() {
+	// apply anchors.top
+	if !didSetTop && i.anchors.Top.IsSet() {
 		top := i.anchors.Top.GetValue().(float64)
 		top += i.anchors.CalcTopMargin()
 		i.top.SetAbsolute(top)
-		i.verticalCenter.SetAbsolute(top + height/2)
-		i.bottom.SetAbsolute(top + height)
-		didVertical = true
+		didSetTop = true
 	}
 
-	if !didVertical && i.anchors.VerticalCenter.IsSet() {
+	// apply anchors.verticalCenter
+	if !didSetTop && !didSetBottom && i.anchors.VerticalCenter.IsSet() {
 		verticalCenter := i.anchors.VerticalCenter.GetValue().(float64)
 		if i.anchors.VerticalCenterOffset.IsSet() {
 			verticalCenter += i.anchors.VerticalCenterOffset.GetValue().(float64)
@@ -465,38 +463,71 @@ func (i *Item) layouting(autoWidth, autoHeight float64) {
 		i.top.SetAbsolute(verticalCenter - height/2)
 		i.verticalCenter.SetAbsolute(verticalCenter)
 		i.bottom.SetAbsolute(verticalCenter + height/2)
-		didVertical = true
+		didSetTop = true
+		didSetBottom = true
 	}
 
-	if !didVertical && i.anchors.Bottom.IsSet() {
+	// apply anchors.bottom
+	if !didSetBottom && i.anchors.Bottom.IsSet() {
 		bottom := i.anchors.Bottom.GetValue().(float64)
 		bottom -= i.anchors.CalcBottomMargin()
-		i.top.SetAbsolute(bottom - height)
-		i.verticalCenter.SetAbsolute(bottom - height/2)
 		i.bottom.SetAbsolute(bottom)
-		didVertical = true
+		didSetBottom = true
 	}
 
-	if !didHorizintal && !didPreferredHorizontal {
-		i.left.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.left.SetOffset(i.x.Float64())
-		i.horizontalCenter.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.horizontalCenter.SetOffset(i.x.Float64() + width/2)
-		i.right.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.right.SetOffset(i.x.Float64() + width)
+	// set left implicitly based on right
+	if !didSetLeft && !didSetPreferredLeft && didSetRight {
+		// if preferred left is set, we won't set left implicitly
+		i.left.SetAbsolute(i.right.Float64() - width)
+		didSetLeft = true
 	}
-	if !didVertical && !didPreferredVertical {
-		i.top.AssignTo(i.Parent(), vit.AnchorTop)
-		i.top.SetOffset(i.y.Float64())
-		i.verticalCenter.AssignTo(i.Parent(), vit.AnchorTop)
-		i.verticalCenter.SetOffset(i.y.Float64() + height/2)
-		i.bottom.AssignTo(i.Parent(), vit.AnchorLeft)
-		i.bottom.SetOffset(i.y.Float64() + height)
+	// set right implicitly based on left
+	if !didSetRight && didSetLeft {
+		i.right.SetAbsolute(i.left.Float64() + width)
+		didSetRight = true
+	}
+	// set top implicitly based on bottom
+	if !didSetTop && !didSetPreferredTop && didSetBottom {
+		i.top.SetAbsolute(i.bottom.Float64() - height)
+		didSetTop = true
+	}
+	// set bottom implicitly based on top
+	if !didSetBottom && didSetTop {
+		i.bottom.SetAbsolute(i.top.Float64() + height)
+		didSetBottom = true
+	}
+
+	// set left implicitly based on position
+	if !didSetLeft {
+		i.left.SetAbsolute(i.x.Float64())
+		didSetLeft = true
+	}
+	// set right implicitly based on position
+	if !didSetRight {
+		i.right.SetAbsolute(i.x.Float64() + width)
+		didSetRight = true
+	}
+	// set top implicitly based on position
+	if !didSetTop {
+		i.top.SetAbsolute(i.y.Float64())
+		didSetTop = true
+	}
+	// set bottom implicitly based on position
+	if !didSetBottom {
+		i.bottom.SetAbsolute(i.y.Float64() + height)
+		didSetBottom = true
 	}
 
 	bounds := i.Bounds()
 	width = bounds.Width()
 	height = bounds.Height()
+
+	// calculate horizontal and vertical center
+	// this might overwrite an existing value but it should be the same anyway
+	i.verticalCenter.SetAbsolute(bounds.X1 + height/2)
+	i.horizontalCenter.SetAbsolute(bounds.Y1 + width/2)
+
+	// update potential layout
 	i.layout.SetTargetSize(&width, &height)
 }
 
@@ -524,7 +555,7 @@ func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 
 func (i *Item) ApplyLayout(l *vit.Layout) {
 	i.layout = l
-	i.layouting(i.contentWidth, i.contentHeight)
+	i.layouting()
 }
 
 func (i *Item) Bounds() vit.Rect {

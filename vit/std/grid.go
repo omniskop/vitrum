@@ -152,7 +152,7 @@ func (g *Grid) recalculateLayout(interface{}) {
 	// as we now know how large the grid is we use that for our own layout
 	g.contentWidth = width
 	g.contentHeight = height
-	g.layouting(width, height)
+	g.layouting()
 }
 
 // getChildInGrid is a helper method that returns the child that should be visible at a specific row and column.

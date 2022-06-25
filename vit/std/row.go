@@ -71,7 +71,7 @@ func (r *Row) recalculateLayout(interface{}) {
 		x += bounds.Width() + r.spacing.Float64()
 	}
 	r.contentWidth, r.contentHeight = r.ContentSize()
-	r.layouting(r.contentWidth, r.contentHeight)
+	r.layouting()
 }
 
 func (r *Row) createNewChildLayout(child vit.Component) *vit.Layout {
