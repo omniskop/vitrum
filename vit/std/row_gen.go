@@ -8,7 +8,7 @@ import (
 )
 
 type Row struct {
-	Item
+	*Item
 	id string
 
 	topPadding    vit.OptionalValue[*vit.FloatValue]
@@ -22,7 +22,7 @@ type Row struct {
 
 func NewRow(id string, scope vit.ComponentContainer) *Row {
 	r := &Row{
-		Item:          *NewItem(id, scope),
+		Item:          NewItem(id, scope),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
 		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
@@ -32,6 +32,12 @@ func NewRow(id string, scope vit.ComponentContainer) *Row {
 		spacing:       *vit.NewFloatValueFromExpression("0", nil),
 		childLayouts:  make(vit.LayoutList),
 	}
+	r.topPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
+	r.rightPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
+	r.bottomPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
+	r.leftPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
+	r.padding.AddDependent(vit.FuncDep(r.recalculateLayout))
+	r.spacing.AddDependent(vit.FuncDep(r.recalculateLayout))
 	return r
 }
 
@@ -160,49 +166,36 @@ func (r *Row) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Row", "topPadding", r.id, err))
 		}
-		r.recalculateLayout(r.topPadding)
 	}
 	if changed, err := r.rightPadding.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Row", "rightPadding", r.id, err))
 		}
-		r.recalculateLayout(r.rightPadding)
 	}
 	if changed, err := r.bottomPadding.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Row", "bottomPadding", r.id, err))
 		}
-		r.recalculateLayout(r.bottomPadding)
 	}
 	if changed, err := r.leftPadding.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Row", "leftPadding", r.id, err))
 		}
-		r.recalculateLayout(r.leftPadding)
 	}
 	if changed, err := r.padding.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Row", "padding", r.id, err))
 		}
-		r.recalculateLayout(r.padding)
 	}
 	if changed, err := r.spacing.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Row", "spacing", r.id, err))
 		}
-		r.recalculateLayout(r.spacing)
-	}
-	if changed, err := r.childLayouts.Update(r); changed || err != nil {
-		sum++
-		if err != nil {
-			errs.Add(vit.NewPropertyError("Row", "childLayouts", r.id, err))
-		}
-		r.recalculateLayout(r.childLayouts)
 	}
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables

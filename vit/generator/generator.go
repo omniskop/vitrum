@@ -121,7 +121,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	f.Add(generateComponentEnums(compName, comp))
 
 	properties := []jen.Code{
-		jen.Qual(stdPackage, comp.BaseName),
+		jen.Op("*").Qual(stdPackage, comp.BaseName),
 		jen.Id("id").String(),
 		jen.Line(),
 	}
@@ -129,7 +129,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	// All property instantiations
 	// we could use jen.Dict here but I wan't to preserve the property order
 	propertyInstantiations := []jen.Code{
-		jen.Line().Id(comp.BaseName).Op(":").Op("*").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("scope").Op(")"),
+		jen.Line().Id(comp.BaseName).Op(":").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("scope").Op(")"),
 		jen.Line().Id("id").Op(":").Id("id"),
 	}
 
@@ -163,6 +163,12 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params(jen.Op("*").Id(compName)).
 		BlockFunc(func(g *jen.Group) {
 			g.Id(receiverName).Op(":=").Op("&").Id(compName).Values(propertyInstantiations...)
+			addMultiple(g, mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
+				if tag, ok := prop.Tags[onChangeTag]; ok {
+					return jen.Id(receiverName).Dot(propId).Dot("AddDependent").Call(jen.Id("vit").Dot("FuncDep").Call(jen.Id(receiverName).Dot(tag)))
+				}
+				return nil
+			}))
 			for _, enum := range comp.Enumerations {
 				g.Id(receiverName).Dot("DefineEnum").Call(generateEnumeration(enum))
 			}
@@ -348,14 +354,9 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			g.Line()
 			// now handle changes for all necessary properties
 			addMultiple(g, mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propID string) jen.Code {
-				if prop.HasTag(typeTag) && !prop.HasTag(onChangeTag) {
+				if prop.HasTag(typeTag) {
 					// We will not handle changes for properties with custom types.
-					// Except for ones that also have the 'onchange' tag set. In this case the custom type must implement the 'ShouldEvaluate', 'Update' and 'GetExpression' methods from the Value interface.
 					return nil
-				}
-				var changeHandler jen.Code
-				if handlerName, ok := prop.Tags[onChangeTag]; ok {
-					changeHandler = jen.Id(receiverName).Dot(handlerName).Call(jen.Id(receiverName).Dot(propID))
 				}
 				return jen.If(jen.List(jen.Id("changed"), jen.Id("err")).Op(":=").Id(receiverName).Dot(propID).Dot("Update").Call(jen.Id(receiverName)).Op(";").Id("changed").Op("||").Id("err").Op("!=").Nil()).Block(
 					jen.Id("sum").Op("++"),
@@ -367,7 +368,6 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 							jen.Id("err"),
 						)),
 					),
-					changeHandler,
 				)
 			}))
 			g.Line()

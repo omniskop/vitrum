@@ -31,7 +31,7 @@ const (
 )
 
 type Grid struct {
-	Item
+	*Item
 	id string
 
 	topPadding              vit.OptionalValue[*vit.FloatValue]
@@ -52,7 +52,7 @@ type Grid struct {
 
 func NewGrid(id string, scope vit.ComponentContainer) *Grid {
 	g := &Grid{
-		Item:                    *NewItem(id, scope),
+		Item:                    NewItem(id, scope),
 		id:                      id,
 		topPadding:              *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
 		rightPadding:            *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
@@ -69,6 +69,19 @@ func NewGrid(id string, scope vit.ComponentContainer) *Grid {
 		flow:                    *vit.NewIntValueFromExpression("Flow.LeftToRight", nil),
 		childLayouts:            make(vit.LayoutList),
 	}
+	g.topPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.rightPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.bottomPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.leftPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.padding.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.spacing.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.columnSpacing.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.rowSpacing.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.columns.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.rows.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.horizontalItemAlignment.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.verticalItemAlignment.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.flow.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "HorizontalItemAlignment",
@@ -271,98 +284,78 @@ func (g *Grid) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "topPadding", g.id, err))
 		}
-		g.recalculateLayout(g.topPadding)
 	}
 	if changed, err := g.rightPadding.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "rightPadding", g.id, err))
 		}
-		g.recalculateLayout(g.rightPadding)
 	}
 	if changed, err := g.bottomPadding.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "bottomPadding", g.id, err))
 		}
-		g.recalculateLayout(g.bottomPadding)
 	}
 	if changed, err := g.leftPadding.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "leftPadding", g.id, err))
 		}
-		g.recalculateLayout(g.leftPadding)
 	}
 	if changed, err := g.padding.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "padding", g.id, err))
 		}
-		g.recalculateLayout(g.padding)
 	}
 	if changed, err := g.spacing.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "spacing", g.id, err))
 		}
-		g.recalculateLayout(g.spacing)
 	}
 	if changed, err := g.columnSpacing.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "columnSpacing", g.id, err))
 		}
-		g.recalculateLayout(g.columnSpacing)
 	}
 	if changed, err := g.rowSpacing.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "rowSpacing", g.id, err))
 		}
-		g.recalculateLayout(g.rowSpacing)
 	}
 	if changed, err := g.columns.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "columns", g.id, err))
 		}
-		g.recalculateLayout(g.columns)
 	}
 	if changed, err := g.rows.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "rows", g.id, err))
 		}
-		g.recalculateLayout(g.rows)
 	}
 	if changed, err := g.horizontalItemAlignment.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "horizontalItemAlignment", g.id, err))
 		}
-		g.recalculateLayout(g.horizontalItemAlignment)
 	}
 	if changed, err := g.verticalItemAlignment.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "verticalItemAlignment", g.id, err))
 		}
-		g.recalculateLayout(g.verticalItemAlignment)
 	}
 	if changed, err := g.flow.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "flow", g.id, err))
 		}
-		g.recalculateLayout(g.flow)
-	}
-	if changed, err := g.childLayouts.Update(g); changed || err != nil {
-		sum++
-		if err != nil {
-			errs.Add(vit.NewPropertyError("Grid", "childLayouts", g.id, err))
-		}
-		g.recalculateLayout(g.childLayouts)
 	}
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables

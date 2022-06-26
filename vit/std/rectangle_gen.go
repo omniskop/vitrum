@@ -8,7 +8,7 @@ import (
 )
 
 type Rectangle struct {
-	Item
+	*Item
 	id string
 
 	color  vit.ColorValue
@@ -18,7 +18,7 @@ type Rectangle struct {
 
 func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
 	r := &Rectangle{
-		Item:   *NewItem(id, scope),
+		Item:   NewItem(id, scope),
 		id:     id,
 		color:  *vit.NewColorValueFromExpression("Vit.rgb(0, 0, 0)", nil),
 		radius: *vit.NewFloatValueFromExpression("0", nil),

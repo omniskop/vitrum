@@ -35,8 +35,7 @@ func (g *Grid) getLeftPadding() float64 {
 }
 
 // Recalculate Layout of all child components.
-// The first parameter will usually be the property that resulted in the update but it is not used and should not be relied upon.
-func (g *Grid) recalculateLayout(interface{}) {
+func (g *Grid) recalculateLayout() {
 	// First of this could probably be done more efficiently but it works for now.
 	// We are trying to place each child in the grid according to the flow and alignment.
 
@@ -196,13 +195,14 @@ func (g *Grid) calculateOffsetInCell(cellWidth, cellHeight float64, comp vit.Com
 }
 
 func (g *Grid) createNewChildLayout(child vit.Component) *vit.Layout {
-	l := &vit.Layout{}
+	l := vit.NewLayout()
 	g.childLayouts[child] = l
 	l.SetTargetSize(nil, nil)
+	l.AddDependent(vit.FuncDep(g.recalculateLayout))
 	return l
 }
 
 func (g *Grid) childWasAdded(child vit.Component) {
 	child.ApplyLayout(g.createNewChildLayout(child))
-	g.recalculateLayout(nil)
+	g.recalculateLayout()
 }

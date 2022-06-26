@@ -195,6 +195,7 @@ func (v *ListValue[ElementType]) Update(context Component) (bool, error) {
 		return false, newTypeError(fmt.Sprintf("list of type %T", *new(ElementType)), val)
 	}
 	v.value = castVal
+	v.notifyDependents(nil)
 	return true, nil
 }
 
@@ -281,6 +282,7 @@ func (v *IntValue) Update(context Component) (bool, error) {
 		return false, newTypeError("number", val)
 	}
 	v.value = int(castVal)
+	v.notifyDependents(nil)
 	return true, nil
 }
 
@@ -398,6 +400,7 @@ func (v *FloatValue) Update(context Component) (bool, error) {
 		return false, newTypeError("number", val)
 	}
 	v.value = float64(castVal)
+	v.notifyDependents(nil)
 	return true, nil
 }
 
@@ -643,11 +646,6 @@ type AliasValue struct {
 }
 
 func NewAliasValue(expression string, position *PositionRange) *AliasValue {
-	v := new(AliasValue)
-	v.position = position
-	v.expression = expression
-	return v
-
 	return &AliasValue{
 		baseValue:  newBaseValue(),
 		expression: expression,
@@ -840,6 +838,7 @@ func (v *AnyValue) Update(context Component) (bool, error) {
 		return false, err
 	}
 	v.value = val
+	v.notifyDependents(nil)
 	return true, nil
 }
 
@@ -854,15 +853,17 @@ type ComponentDefValue struct {
 
 func NewComponentDefValue(component *ComponentDefinition) *ComponentDefValue {
 	return &ComponentDefValue{
-		value:   component,
-		changed: true,
+		baseValue: newBaseValue(),
+		value:     component,
+		changed:   true,
 	}
 }
 
 func NewEmptyComponentDefValue() *ComponentDefValue {
 	return &ComponentDefValue{
-		value:   nil,
-		changed: false,
+		baseValue: newBaseValue(),
+		value:     nil,
+		changed:   false,
 	}
 }
 
@@ -982,6 +983,7 @@ func (v *ComponentDefListValue) SetExpression(code string, pos *PositionRange) {
 func (v *ComponentDefListValue) Update(context Component) (bool, error) {
 	changed := v.changed
 	v.changed = false
+	v.notifyDependents(nil)
 	return changed, v.err
 }
 
@@ -1051,6 +1053,7 @@ func (v *OptionalValue[T]) Update(context Component) (bool, error) {
 	// we keep track if the value was changed ourself because we wouldn't know otherwise if the value was unset
 	changed := v.changed
 	v.changed = false
+	v.notifyDependents(nil)
 	return changed, nil
 }
 
@@ -1148,6 +1151,7 @@ func (v *ComponentRefValue) Update(context Component) (bool, error) {
 	}
 
 	v.value = collector.context
+	v.notifyDependents(nil)
 	return true, nil
 }
 
@@ -1249,6 +1253,11 @@ func (v *GroupValue) SetExpression(code string, pos *PositionRange) {
 
 func (v *GroupValue) Update(context Component) (bool, error) {
 	changed, errs := v.updateIndividualValues(context)
+	defer func() {
+		if changed {
+			v.notifyDependents(nil)
+		}
+	}()
 
 	if v.expression == nil {
 		if errs.Failed() {

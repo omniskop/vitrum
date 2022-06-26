@@ -8,7 +8,7 @@ import (
 )
 
 type Repeater struct {
-	Item
+	*Item
 	id string
 
 	count    vit.IntValue
@@ -19,13 +19,16 @@ type Repeater struct {
 
 func NewRepeater(id string, scope vit.ComponentContainer) *Repeater {
 	r := &Repeater{
-		Item:     *NewItem(id, scope),
+		Item:     NewItem(id, scope),
 		id:       id,
 		count:    *vit.NewEmptyIntValue(),
 		delegate: *vit.NewEmptyComponentDefValue(),
 		model:    *vit.NewEmptyAnyValue(),
 		items:    []RepeaterItem{},
 	}
+	r.count.AddDependent(vit.FuncDep(r.evaluateInternals))
+	r.delegate.AddDependent(vit.FuncDep(r.evaluateInternals))
+	r.model.AddDependent(vit.FuncDep(r.evaluateInternals))
 	return r
 }
 
@@ -128,21 +131,18 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Repeater", "count", r.id, err))
 		}
-		r.evaluateInternals(r.count)
 	}
 	if changed, err := r.delegate.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Repeater", "delegate", r.id, err))
 		}
-		r.evaluateInternals(r.delegate)
 	}
 	if changed, err := r.model.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Repeater", "model", r.id, err))
 		}
-		r.evaluateInternals(r.model)
 	}
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables

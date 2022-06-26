@@ -1,6 +1,7 @@
 package vit
 
 type Layout struct {
+	baseValue
 	// set by the parent
 	x               *float64
 	y               *float64
@@ -15,6 +16,12 @@ type Layout struct {
 	width       *float64
 	height      *float64
 	sizeChanged bool
+}
+
+func NewLayout() *Layout {
+	return &Layout{
+		baseValue: newBaseValue(),
+	}
 }
 
 func (l *Layout) SetPosition(x, y *float64) {
@@ -108,6 +115,7 @@ func (l *Layout) SetTargetSize(width, height *float64) {
 		l.targetHeight = &heightCopy
 		l.targetSizeChanged = true
 	}
+	l.notifyDependents(nil)
 }
 
 func (l *Layout) TargetSizeChanged() bool {
@@ -201,4 +209,8 @@ func (l LayoutList) Update(Component) (bool, error) {
 		}
 	}
 	return changed, nil
+}
+
+func (l LayoutList) AddDependent(c Component, layout *Layout) {
+	l[c] = layout
 }

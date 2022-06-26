@@ -53,7 +53,7 @@ const (
 )
 
 type Text struct {
-	Item
+	*Item
 	id string
 
 	text                vit.StringValue
@@ -68,7 +68,7 @@ type Text struct {
 
 func NewText(id string, scope vit.ComponentContainer) *Text {
 	t := &Text{
-		Item:                *NewItem(id, scope),
+		Item:                NewItem(id, scope),
 		id:                  id,
 		text:                *vit.NewEmptyStringValue(),
 		color:               *vit.NewColorValueFromExpression("\"black\"", nil),
@@ -88,6 +88,7 @@ func NewText(id string, scope vit.ComponentContainer) *Text {
 		fontData:     nil,
 		fontFaceData: nil,
 	}
+	t.font.AddDependent(vit.FuncDep(t.updateFont))
 	t.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "HorizontalAlignment",
@@ -262,7 +263,6 @@ func (t *Text) UpdateExpressions() (int, vit.ErrorGroup) {
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "font", t.id, err))
 		}
-		t.updateFont(t.font)
 	}
 	if changed, err := t.elide.Update(t); changed || err != nil {
 		sum++

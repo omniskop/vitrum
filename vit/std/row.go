@@ -54,8 +54,7 @@ func (r *Row) ContentSize() (float64, float64) {
 }
 
 // Recalculate Layout of all child components.
-// The first parameter will usually be the property that resulted in the update but it is not used and should not be relied upon.
-func (r *Row) recalculateLayout(interface{}) {
+func (r *Row) recalculateLayout() {
 	var x float64 = r.left.Float64() + r.getLeftPadding()
 	var y float64 = r.top.Float64() + r.getTopPadding()
 	for _, child := range r.Children() {
@@ -75,13 +74,14 @@ func (r *Row) recalculateLayout(interface{}) {
 }
 
 func (r *Row) createNewChildLayout(child vit.Component) *vit.Layout {
-	l := &vit.Layout{}
+	l := vit.NewLayout()
 	r.childLayouts[child] = l
 	l.SetTargetSize(nil, nil)
+	l.AddDependent(vit.FuncDep(r.recalculateLayout))
 	return l
 }
 
 func (r *Row) childWasAdded(child vit.Component) {
 	child.ApplyLayout(r.createNewChildLayout(child))
-	r.recalculateLayout(nil)
+	r.recalculateLayout()
 }

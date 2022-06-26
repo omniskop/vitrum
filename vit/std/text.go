@@ -9,8 +9,13 @@ import (
 	"github.com/tdewolff/canvas"
 )
 
-func (t *Text) updateFont(interface{}) {
+func (t *Text) updateFont() {
 	familyName := t.font.MustGet("family").GetValue().(string)
+	if familyName == "" {
+		t.fontData = nil
+		t.fontFaceData = nil
+		return
+	}
 	if t.fontData != nil && t.fontData.Name() != familyName {
 		t.fontData = canvas.NewFontFamily(familyName)
 	}

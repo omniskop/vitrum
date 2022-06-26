@@ -17,8 +17,7 @@ var unsettledDependenciesError = errors.New("unsettled dependencies")
 type Expression struct {
 	code         string
 	dirty        bool
-	dependencies map[Value]bool
-	dependents   map[Dependent]bool
+	dependencies map[Value]bool // values that are required by this expression
 	program      script.Script
 	position     *PositionRange
 	err          error
@@ -35,7 +34,6 @@ func NewExpression(code string, position *PositionRange) *Expression {
 		code:         code,
 		dirty:        true,
 		dependencies: make(map[Value]bool),
-		dependents:   make(map[Dependent]bool),
 		program:      prog,
 		position:     position,
 		err:          err,
@@ -68,14 +66,9 @@ func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	}
 	variables = collector.GetWrittenValues()
 	// fmt.Printf("[expression] expression %q wrote to:\n", e.code)
-	for _, variable := range variables {
-		// fmt.Printf("\t%v\n", variable.GetExpression().code)
-		if dep, ok := variable.(Dependent); ok {
-			if _, ok := e.dependents[dep]; !ok {
-				e.dependents[dep] = true
-			}
-		}
-	}
+	// TODO: do something with these?
+	_ = variables
+
 	if dontStoreValue {
 		return nil, unsettledDependenciesError
 	}
@@ -110,7 +103,6 @@ func (e *Expression) MakeDirty(stack []Dependent) {
 		}
 	}
 	e.dirty = true
-	e.NotifyDependents(append(stack, e))
 }
 
 func (e *Expression) ChangeCode(code string, position *PositionRange) {
@@ -124,7 +116,6 @@ func (e *Expression) ChangeCode(code string, position *PositionRange) {
 	e.code = code
 	e.ClearDependencies()
 	e.dirty = true
-	e.NotifyDependents(nil)
 }
 
 func (e *Expression) ClearDependencies() {
@@ -134,27 +125,12 @@ func (e *Expression) ClearDependencies() {
 	e.dependencies = make(map[Value]bool)
 }
 
-// NotifyDependents informs all expressions that depend on the result of this expression that they will need to be reevaluated
-func (e *Expression) NotifyDependents(stack []Dependent) {
-	for exp := range e.dependents {
-		exp.MakeDirty(stack)
-	}
-}
-
 func (e *Expression) IsConstant() bool {
 	return len(e.dependencies) == 0
 }
 
 func (e *Expression) GetExpression() *Expression {
 	return e
-}
-
-func (e *Expression) AddDependent(exp Dependent) {
-	e.dependents[exp] = true
-}
-
-func (e *Expression) RemoveDependent(exp Dependent) {
-	delete(e.dependents, exp)
 }
 
 func (e *Expression) Err() error {

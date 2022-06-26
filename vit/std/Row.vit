@@ -7,6 +7,6 @@ Item {
     #gen-onchange="recalculateLayout" property float padding: 0
     #gen-onchange="recalculateLayout" property float spacing: 0
 
-    #gen-internal #gen-type="vit.LayoutList" #gen-initializer="make(vit.LayoutList)" #gen-private #gen-onchange="recalculateLayout" property any childLayouts
+    #gen-internal #gen-type="vit.LayoutList" #gen-initializer="make(vit.LayoutList)" #gen-private property any childLayouts
     #gen-onchange="childWasAdded" property any children
 }

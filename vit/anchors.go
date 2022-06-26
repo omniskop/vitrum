@@ -186,7 +186,6 @@ func (a *AnchorsValue) SetProperty(key string, value interface{}) error {
 }
 
 func (a *AnchorsValue) SetPropertyExpression(key string, expression string, position *PositionRange) bool {
-	fmt.Printf("[anchors] setting property %q\n", key)
 	switch key {
 	case "alignWhenCentered":
 		a.AlignWhenCentered.SetExpression(expression, position)
@@ -460,6 +459,7 @@ func (v *AnchorLineValue) SetOffset(offset float64) {
 		v.offset = offset
 		v.changed = true
 	}
+	v.notifyDependents([]Dependent{v})
 }
 
 func (v *AnchorLineValue) SetAbsolute(value float64) {
@@ -472,6 +472,7 @@ func (v *AnchorLineValue) SetAbsolute(value float64) {
 		v.offset = value
 		v.changed = true
 	}
+	v.notifyDependents([]Dependent{v})
 }
 
 func (v *AnchorLineValue) SetExpression(code string, pos *PositionRange) {
@@ -496,6 +497,7 @@ func (v *AnchorLineValue) AssignTo(comp Component, lineType AnchorLine) {
 	v.source.AddDependent(v)
 	v.offset = 0
 	v.changed = true
+	v.notifyDependents([]Dependent{v})
 }
 
 func (v *AnchorLineValue) IsAbsolute() bool {

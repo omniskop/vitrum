@@ -12,19 +12,20 @@ type RepeaterItem struct {
 	Value     interface{}
 }
 
-func (r *Repeater) evaluateInternals(interface{}) error {
+func (r *Repeater) evaluateInternals() {
 	if r.delegate.GetValue() == nil {
 		// No delegate available to instantiate
 		// delete existing items
 		for _, item := range r.items {
 			r.RemoveChild(item.Component)
 		}
-		return nil
+		return
 	}
 
 	model, err := r.interpretModel()
 	if err != nil {
-		return err
+		// TODO: handle error
+		return
 	}
 
 	compDef := r.delegate.ComponentDefinition()
@@ -33,7 +34,7 @@ func (r *Repeater) evaluateInternals(interface{}) error {
 
 	// remove existing items
 	for _, item := range r.items {
-		r.RemoveChild(item.Component)
+		r.Parent().RootC().RemoveChild(item.Component)
 	}
 
 	// create items
@@ -41,7 +42,8 @@ func (r *Repeater) evaluateInternals(interface{}) error {
 	for _, m := range model {
 		instance, err := r.InstantiateInScope(compDef)
 		if err != nil {
-			return err
+			// TODO: handle error
+			return
 		}
 		r.items = append(r.items, RepeaterItem{
 			Component: instance,
@@ -58,7 +60,7 @@ func (r *Repeater) evaluateInternals(interface{}) error {
 		instance.UpdateExpressions()
 	}
 
-	return nil
+	return
 }
 
 func (e *Repeater) ItemAt(index int) (vit.Component, bool) {
