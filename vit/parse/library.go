@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/omniskop/vitrum/gui"
 	"github.com/omniskop/vitrum/vit"
 	"github.com/omniskop/vitrum/vit/std"
 )
@@ -25,6 +26,10 @@ func resolveLibraryImport(namespace []string) (Library, error) {
 	case "Vit":
 		if len(namespace) == 1 {
 			return std.StdLib{}, nil
+		}
+	case "GUI":
+		if len(namespace) == 1 {
+			return gui.GUILib{}, nil
 		}
 	case "QtQuick":
 		return std.StdLib{}, nil

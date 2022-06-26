@@ -1,0 +1,9 @@
+import Vit 1.0
+
+Item {
+    property string title
+    property float maxWidth
+    property float maxHeight
+    property float minWidth
+    property float minHeight
+}

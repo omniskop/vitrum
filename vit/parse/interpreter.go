@@ -141,6 +141,7 @@ func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name st
 func instantiateComponent(def *vit.ComponentDefinition, components vit.ComponentContainer) (vit.Component, error) {
 	src, ok := components.Get(def.BaseName)
 	if !ok {
+		// TODO: improve context for error; either here or upstream
 		return nil, unknownComponentError{def.BaseName}
 	}
 	instance, err := src.Instantiate(def.ID, components)
