@@ -158,6 +158,16 @@ func (l *lexer) Lex() (token, error) {
 			continue
 		case r == '"' || r == '\'' || r == '`':
 			return l.scanString(r)
+		case r == '(':
+			return token{
+				tokenType: tokenLeftParenthesis,
+				position:  vit.NewRangeFromPosition(pos),
+			}, nil
+		case r == ')':
+			return token{
+				tokenType: tokenRightParenthesis,
+				position:  vit.NewRangeFromPosition(pos),
+			}, nil
 		case r == '{':
 			return token{
 				tokenType: tokenLeftBrace,

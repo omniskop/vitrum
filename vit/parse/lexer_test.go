@@ -132,6 +132,9 @@ func TestLex(t *testing.T) {
 		input:  ":`a${\n5}b`",
 		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "`a${\n5}b`", vit.PositionRange{"", 1, 2, 2, 4}}},
 	}, {
+		input:  "event onClicked(MouseEvent event)",
+		output: []interface{}{token{tokenIdentifier, "event", vit.PositionRange{"", 1, 1, 1, 5}}, token{tokenIdentifier, "onClicked", vit.PositionRange{"", 1, 7, 1, 15}}, token{tokenLeftParenthesis, "", vit.PositionRange{"", 1, 16, 1, 17}}, token{tokenIdentifier, "MouseEvent", vit.PositionRange{"", 1, 18, 1, 26}}, token{tokenIdentifier, "event", vit.PositionRange{"", 1, 27, 1, 31}}, token{tokenRightParenthesis, "", vit.PositionRange{"", 1, 32, 1, 33}}},
+	}, {
 		input: `Rectangle {width: 100; height: 100; gradient: Gradient { }}`,
 		output: []interface{}{
 			token{tokenIdentifier, "Rectangle", vit.PositionRange{"", 1, 1, 1, 9}},      // Rectangle
