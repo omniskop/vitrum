@@ -1,0 +1,94 @@
+import Vit 1.0
+import GUI 1.0
+
+Window {
+    title: "Vitrum Demo"
+    width: 500
+    height: 500
+    // maxWidth: 600
+    // maxHeight: 600
+    // minWidth: 400
+    // minHeight: 400
+
+    Rectangle {
+        id: container
+        anchors.fill: parent
+        anchors.margins: 10
+        color: mouseArea.pressed ? "green" : "red"
+
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+            acceptedButtons: MouseArea.leftButton
+        }
+
+        Rectangle {
+            width: 20
+            height: 20
+            color: "yellow"
+            x: mouseArea.mouseX
+            y: mouseArea.mouseY
+        }
+
+        Rectangle {
+            width: 50
+            height: 50
+            anchors.left: parent.left
+            anchors.top: parent.top
+            color: "blue"
+        }
+
+        Rectangle {
+            id: miau
+            width: 50
+            height: 50
+            anchors.right: parent.right
+            anchors.top: parent.top
+            color: "blue"
+        }
+
+        Rectangle {
+            width: 50
+            height: 50
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            color: "blue"
+        }
+
+        Rectangle {
+            width: 50
+            height: 50
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            color: "blue"
+        }
+
+        Rectangle {
+            id: affe
+            anchors.left: parent.left
+            anchors.leftMargin: 75
+            anchors.right: parent.right
+            anchors.rightMargin: 75
+            anchors.top: parent.top
+            height: 50
+            color: Vit.rgba(0, 0, 0, 127)
+
+            Text {
+                anchors.fill: parent
+                color: "white"
+                text: "Das ist ein langer Text um zu schauen was genau passieren wird."
+                font.pointSize: 50
+                font.family: "Montserrat"
+                font.weight: Text.Medium
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideMiddle
+            }
+        }
+
+        
+    }
+}
+
+
+
