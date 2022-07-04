@@ -93,8 +93,7 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 }
 
 // interpret takes the parsed document and creates the appropriate component tree.
-// The returned error will always be of type ParseError
-func interpret(document VitDocument, id string, components vit.ComponentContainer) ([]vit.Component, error) {
+func interpret(document VitDocument, id string, context vit.ComponentContext) ([]vit.Component, error) {
 	for _, imp := range document.Imports {
 		if len(imp.file) != 0 {
 			// file import
@@ -106,7 +105,7 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 				return nil, ParseError{imp.position, err}
 			}
 			for _, name := range lib.ComponentNames() {
-				components.Set(name, &LibraryInstantiator{lib, name})
+				context.KnownComponents.Set(name, &LibraryInstantiator{lib, name})
 			}
 		} else {
 			return nil, genericErrorf(imp.position, "incomplete namespace")
@@ -115,7 +114,7 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 
 	var instances []vit.Component
 	for _, comp := range document.Components {
-		instance, err := instantiateCustomComponent(comp, id, document.Name, components)
+		instance, err := instantiateCustomComponent(comp, id, document.Name, context)
 		if err != nil {
 			return nil, err
 		}
@@ -126,8 +125,8 @@ func interpret(document VitDocument, id string, components vit.ComponentContaine
 }
 
 // instantiateCustomComponent creates a component described by a componentDefinition and wraps it in a Custom component with the given id.
-func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name string, components vit.ComponentContainer) (vit.Component, error) {
-	comp, err := instantiateComponent(def, components)
+func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name string, context vit.ComponentContext) (vit.Component, error) {
+	comp, err := instantiateComponent(def, context)
 	if err != nil {
 		return nil, err
 	}
@@ -138,27 +137,30 @@ func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name st
 }
 
 // instantiateComponent creates a component described by a componentDefinition.
-func instantiateComponent(def *vit.ComponentDefinition, components vit.ComponentContainer) (vit.Component, error) {
-	src, ok := components.Get(def.BaseName)
+func instantiateComponent(def *vit.ComponentDefinition, context vit.ComponentContext) (vit.Component, error) {
+	src, ok := context.KnownComponents.Get(def.BaseName)
 	if !ok {
 		// TODO: improve context for error; either here or upstream
 		return nil, unknownComponentError{def.BaseName}
 	}
-	instance, err := src.Instantiate(def.ID, components)
+	instance, err := src.Instantiate(def.ID, context)
 	if err != nil {
 		return nil, componentError{src, err}
 	}
 
-	err = populateComponent(instance, def, components)
+	err = populateComponent(instance, def, context)
 	if err != nil {
 		return instance, componentError{src, err}
 	}
+
+	context.Environment.RegisterComponent(instance)
+	// TODO: figure out where the components will be unregistered again
 
 	return instance, nil
 }
 
 // populateComponent takes a fresh component instance as well as it's definition and populates all attributes and children with their correct values.
-func populateComponent(instance vit.Component, def *vit.ComponentDefinition, components vit.ComponentContainer) error {
+func populateComponent(instance vit.Component, def *vit.ComponentDefinition, context vit.ComponentContext) error {
 	for _, enum := range def.Enumerations {
 		if !instance.DefineEnum(enum) {
 			return genericErrorf(*enum.Position, "enum %q already defined", enum.Name)
@@ -221,7 +223,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, com
 	}
 
 	for _, childDef := range def.Children {
-		childInstance, err := instantiateComponent(childDef, components)
+		childInstance, err := instantiateComponent(childDef, context)
 		if err != nil {
 			return err
 		}

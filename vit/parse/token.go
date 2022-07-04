@@ -132,14 +132,28 @@ func (t token) IntValue() int {
 		panic(fmt.Errorf("token is not a number"))
 	}
 
-	i, err := strconv.Atoi(t.literal)
+	// detect number base and prepare string
+	var stringToParse = t.literal
+	var numberBase int = 10
+	if len(t.literal) >= 2 {
+		switch t.literal[:2] {
+		case "0x", "0X":
+			numberBase = 16
+			stringToParse = t.literal[2:]
+		case "0b", "0B":
+			numberBase = 2
+			stringToParse = t.literal[2:]
+		}
+	}
+
+	i, err := strconv.ParseInt(stringToParse, numberBase, 64)
 	if err != nil {
 		// If we get here the lexer has failed
 		// as it should only return number tokens when a conversion is possible.
 		panic(fmt.Errorf("lexer wrongly interpreted literal %q at %s as a number but it can't be converted: %w", t.literal, t.position.Start(), err))
 	}
 
-	return i
+	return int(i)
 }
 
 // FloatValue converts the literal of this token to a float.

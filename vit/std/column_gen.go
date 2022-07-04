@@ -20,9 +20,9 @@ type Column struct {
 	childLayouts  vit.LayoutList
 }
 
-func NewColumn(id string, scope vit.ComponentContainer) *Column {
+func NewColumn(id string, context vit.ComponentContext) *Column {
 	c := &Column{
-		Item:          NewItem(id, scope),
+		Item:          NewItem(id, context),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
 		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),

@@ -8,6 +8,8 @@ import (
 	"github.com/omniskop/vitrum/vit/script"
 )
 
+// TODO: Change all values to only update when their value actually changed (either through expression or directly)
+
 type Value interface {
 	GetValue() interface{}                // returns the current value in it's natural type
 	SetFromProperty(PropertyDefinition)   // sets the value based on a property definition
@@ -588,9 +590,11 @@ func (v *BoolValue) SetValue(newValue interface{}) error {
 }
 
 func (v *BoolValue) SetBoolValue(newValue bool) {
-	v.value = newValue
 	v.expression = nil
-	v.notifyDependents(nil) // as this is a fixed value there is no need to add ourself to the stack
+	if v.value != newValue {
+		v.value = newValue
+		v.notifyDependents(nil) // as this is a fixed value there is no need to add ourself to the stack
+	}
 }
 
 func (v *BoolValue) SetExpression(code string, pos *PositionRange) {

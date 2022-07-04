@@ -29,9 +29,9 @@ type Item struct {
 	layout *vit.Layout
 }
 
-func NewItem(id string, scope vit.ComponentContainer) *Item {
+func NewItem(id string, context vit.ComponentContext) *Item {
 	i := &Item{
-		Root:             vit.NewRoot(id, scope),
+		Root:             vit.NewRoot(id, context),
 		id:               id,
 		width:            *vit.NewEmptyFloatValue(),
 		height:           *vit.NewEmptyFloatValue(),

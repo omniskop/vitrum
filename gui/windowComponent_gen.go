@@ -8,7 +8,7 @@ import (
 	std "github.com/omniskop/vitrum/vit/std"
 )
 
-type Window struct {
+type WindowComponent struct {
 	*std.Item
 	id string
 
@@ -19,9 +19,9 @@ type Window struct {
 	minHeight vit.FloatValue
 }
 
-func NewWindow(id string, scope vit.ComponentContainer) *Window {
-	w := &Window{
-		Item:      std.NewItem(id, scope),
+func NewWindowComponent(id string, context vit.ComponentContext) *WindowComponent {
+	w := &WindowComponent{
+		Item:      std.NewItem(id, context),
 		id:        id,
 		title:     *vit.NewEmptyStringValue(),
 		maxWidth:  *vit.NewEmptyFloatValue(),
@@ -32,11 +32,11 @@ func NewWindow(id string, scope vit.ComponentContainer) *Window {
 	return w
 }
 
-func (w *Window) String() string {
-	return fmt.Sprintf("Window(%s)", w.id)
+func (w *WindowComponent) String() string {
+	return fmt.Sprintf("WindowComponent(%s)", w.id)
 }
 
-func (w *Window) Property(key string) (vit.Value, bool) {
+func (w *WindowComponent) Property(key string) (vit.Value, bool) {
 	switch key {
 	case "title":
 		return &w.title, true
@@ -53,7 +53,7 @@ func (w *Window) Property(key string) (vit.Value, bool) {
 	}
 }
 
-func (w *Window) MustProperty(key string) vit.Value {
+func (w *WindowComponent) MustProperty(key string) vit.Value {
 	v, ok := w.Property(key)
 	if !ok {
 		panic(fmt.Errorf("MustProperty called with unknown key %q", key))
@@ -61,7 +61,7 @@ func (w *Window) MustProperty(key string) vit.Value {
 	return v
 }
 
-func (w *Window) SetProperty(key string, value interface{}) error {
+func (w *WindowComponent) SetProperty(key string, value interface{}) error {
 	var err error
 	switch key {
 	case "title":
@@ -78,12 +78,12 @@ func (w *Window) SetProperty(key string, value interface{}) error {
 		return w.Item.SetProperty(key, value)
 	}
 	if err != nil {
-		return vit.NewPropertyError("Window", key, w.id, err)
+		return vit.NewPropertyError("WindowComponent", key, w.id, err)
 	}
 	return nil
 }
 
-func (w *Window) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (w *WindowComponent) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
 	switch key {
 	case "title":
 		w.title.SetExpression(code, pos)
@@ -101,7 +101,7 @@ func (w *Window) SetPropertyExpression(key string, code string, pos *vit.Positio
 	return nil
 }
 
-func (w *Window) ResolveVariable(key string) (interface{}, bool) {
+func (w *WindowComponent) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case w.id:
 		return w, true
@@ -120,12 +120,12 @@ func (w *Window) ResolveVariable(key string) (interface{}, bool) {
 	}
 }
 
-func (w *Window) AddChild(child vit.Component) {
+func (w *WindowComponent) AddChild(child vit.Component) {
 	child.SetParent(w)
 	w.AddChildButKeepParent(child)
 }
 
-func (w *Window) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
+func (w *WindowComponent) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
 	var targetType vit.Component = afterThis
 
 	for ind, child := range w.Children() {
@@ -138,38 +138,38 @@ func (w *Window) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
 	w.AddChild(addThis)
 }
 
-func (w *Window) UpdateExpressions() (int, vit.ErrorGroup) {
+func (w *WindowComponent) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
 	if changed, err := w.title.Update(w); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(vit.NewPropertyError("Window", "title", w.id, err))
+			errs.Add(vit.NewPropertyError("WindowComponent", "title", w.id, err))
 		}
 	}
 	if changed, err := w.maxWidth.Update(w); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(vit.NewPropertyError("Window", "maxWidth", w.id, err))
+			errs.Add(vit.NewPropertyError("WindowComponent", "maxWidth", w.id, err))
 		}
 	}
 	if changed, err := w.maxHeight.Update(w); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(vit.NewPropertyError("Window", "maxHeight", w.id, err))
+			errs.Add(vit.NewPropertyError("WindowComponent", "maxHeight", w.id, err))
 		}
 	}
 	if changed, err := w.minWidth.Update(w); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(vit.NewPropertyError("Window", "minWidth", w.id, err))
+			errs.Add(vit.NewPropertyError("WindowComponent", "minWidth", w.id, err))
 		}
 	}
 	if changed, err := w.minHeight.Update(w); changed || err != nil {
 		sum++
 		if err != nil {
-			errs.Add(vit.NewPropertyError("Window", "minHeight", w.id, err))
+			errs.Add(vit.NewPropertyError("WindowComponent", "minHeight", w.id, err))
 		}
 	}
 
@@ -183,18 +183,18 @@ func (w *Window) UpdateExpressions() (int, vit.ErrorGroup) {
 	return sum, errs
 }
 
-func (w *Window) As(target *vit.Component) bool {
-	if _, ok := (*target).(*Window); ok {
+func (w *WindowComponent) As(target *vit.Component) bool {
+	if _, ok := (*target).(*WindowComponent); ok {
 		*target = w
 		return true
 	}
 	return w.Item.As(target)
 }
 
-func (w *Window) ID() string {
+func (w *WindowComponent) ID() string {
 	return w.id
 }
 
-func (w *Window) Finish() error {
+func (w *WindowComponent) Finish() error {
 	return w.RootC().FinishInContext(w)
 }

@@ -71,7 +71,7 @@ func (m *Manager) SetSource(filePath string) error {
 }
 
 // Run instantiates the primary component and reports any errors in doing so
-func (m *Manager) Run() error {
+func (m *Manager) Run(environment vit.ExecutionEnvironment) error {
 	var documents = vit.NewComponentContainer()
 	var main VitDocument
 	for _, cFile := range m.knownComponents {
@@ -88,7 +88,12 @@ func (m *Manager) Run() error {
 
 	documents = documents.ToGlobal()
 
-	components, err := interpret(main, "", documents)
+	context := vit.ComponentContext{
+		KnownComponents: documents,
+		Environment:     environment,
+	}
+
+	components, err := interpret(main, "", context)
 	if err != nil {
 		return err
 	}

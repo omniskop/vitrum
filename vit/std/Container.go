@@ -15,7 +15,7 @@ type Container struct {
 	children []vit.Component
 }
 
-func NewContainer(id string, scope vit.ComponentContainer) *Container {
+func NewContainer(id string, scope vit.ComponentContext) *Container {
 	return &Container{
 		Item:    *NewItem(id, scope),
 		id:      id,

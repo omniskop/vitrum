@@ -565,6 +565,7 @@ func (l *lexer) scanNumber() (token, error) {
 	var str strings.Builder
 	var isFloatingPoint bool
 	var invalid bool
+	var numberBase int = 10
 	for {
 		r, pos, err := l.nextRune()
 		if err != nil {
@@ -587,8 +588,24 @@ func (l *lexer) scanNumber() (token, error) {
 				l.unreadRune()
 				goto parseAndReturn
 			}
+		case (r == 'x' || r == 'X') && numberBase == 10:
+			if str.String() == "0" {
+				numberBase = 16
+			} else {
+				l.unreadRune()
+				goto parseAndReturn
+			}
+		case (r == 'b' || r == 'B') && numberBase == 10:
+			if str.String() == "0" {
+				numberBase = 2
+			} else {
+				l.unreadRune()
+				goto parseAndReturn
+			}
 		case unicode.IsNumber(r):
 
+		case numberBase == 16 && ((r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')):
+			// hexadecimal number
 		default:
 			// the number has ended
 			l.unreadRune()
@@ -617,13 +634,23 @@ parseAndReturn:
 	}
 
 	if isFloatingPoint {
+		if numberBase != 10 {
+			return t, LexError{t.position.Start(), fmt.Sprintf("floating point number %q must be decimal", stringN)}
+		}
 		_, err := strconv.ParseFloat(stringN, 64)
 		if err != nil {
 			return t, LexError{t.position.Start(), fmt.Sprintf("%q is not a valid number: %v", stringN, err)}
 		}
 		t.tokenType = tokenFloat
 	} else {
-		_, err := strconv.ParseInt(stringN, 10, 64)
+		stringToParse := stringN
+		if numberBase != 10 {
+			stringToParse = stringN[2:]
+			if len(stringToParse) == 0 {
+				return t, LexError{t.position.Start(), fmt.Sprintf("number %q is incomplete", stringN)}
+			}
+		}
+		_, err := strconv.ParseInt(stringToParse, numberBase, 64)
 		if err != nil {
 			return t, LexError{t.position.Start(), fmt.Sprintf("%q is not a valid number: %v", stringN, err)}
 		}

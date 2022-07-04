@@ -66,9 +66,9 @@ type Text struct {
 	fontFaceData        *canvas.FontFace
 }
 
-func NewText(id string, scope vit.ComponentContainer) *Text {
+func NewText(id string, context vit.ComponentContext) *Text {
 	t := &Text{
-		Item:                NewItem(id, scope),
+		Item:                NewItem(id, context),
 		id:                  id,
 		text:                *vit.NewEmptyStringValue(),
 		color:               *vit.NewColorValueFromExpression("\"black\"", nil),

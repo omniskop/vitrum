@@ -69,14 +69,14 @@ func TestLex(t *testing.T) {
 		input:  `Rectangle { color: "red" }`,
 		output: []interface{}{token{tokenIdentifier, "Rectangle", vit.PositionRange{"", 1, 1, 1, 9}}, token{tokenLeftBrace, "", vit.PositionRange{"", 1, 11, 1, 11}}, token{tokenIdentifier, "color", vit.PositionRange{"", 1, 13, 1, 17}}, token{tokenColon, "", vit.PositionRange{"", 1, 18, 1, 18}}, token{tokenExpression, `"red" `, vit.PositionRange{"", 1, 20, 1, 25}}, token{tokenRightBrace, "", vit.PositionRange{"", 1, 26, 1, 26}}},
 	}, {
-		input:  "5",
-		output: []interface{}{token{tokenInteger, "5", vit.PositionRange{"", 1, 1, 1, 1}}},
+		input:  "0xx5",
+		output: []interface{}{LexError{}, token{tokenIdentifier, "x5", vit.PositionRange{"", 1, 3, 1, 4}}},
+	}, {
+		input:  "1x1",
+		output: []interface{}{token{tokenInteger, "1", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "x1", vit.PositionRange{"", 1, 2, 1, 3}}},
 	}, {
 		input:  "5test: 12.3",
 		output: []interface{}{token{tokenInteger, "5", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenIdentifier, "test", vit.PositionRange{"", 1, 2, 1, 5}}, token{tokenColon, "", vit.PositionRange{"", 1, 6, 1, 6}}, token{tokenExpression, "12.3", vit.PositionRange{"", 1, 8, 1, 11}}},
-	}, {
-		input:  "12.34",
-		output: []interface{}{token{tokenFloat, "12.34", vit.PositionRange{"", 1, 1, 1, 5}}},
 	}, {
 		input:  "one: 1\n    two: 2",
 		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "1", vit.PositionRange{"", 1, 6, 1, 6}}, token{tokenNewline, "", vit.PositionRange{"", 1, 7, 1, 7}}, token{tokenIdentifier, "two", vit.PositionRange{"", 2, 5, 2, 7}}, token{tokenColon, "", vit.PositionRange{"", 2, 8, 2, 8}}, token{tokenExpression, "2", vit.PositionRange{"", 2, 10, 2, 10}}},
@@ -213,6 +213,21 @@ func TestScanNumber(t *testing.T) {
 	}, {
 		input:  "01.20",
 		output: token{tokenFloat, "01.20", vit.PositionRange{"", 1, 1, 1, 5}},
+	}, {
+		input:  "5",
+		output: token{tokenInteger, "5", vit.PositionRange{"", 1, 1, 1, 1}},
+	}, {
+		input:  "-5",
+		output: token{tokenInteger, "-5", vit.PositionRange{"", 1, 1, 1, 2}},
+	}, {
+		input:  "0x1abcdefABCDEF",
+		output: token{tokenInteger, "0x1abcdefABCDEF", vit.PositionRange{"", 1, 1, 1, 15}},
+	}, {
+		input:  "0b10011001",
+		output: token{tokenInteger, "0b10011001", vit.PositionRange{"", 1, 1, 1, 10}},
+	}, {
+		input:  "12.34",
+		output: token{tokenFloat, "12.34", vit.PositionRange{"", 1, 1, 1, 5}},
 	}}
 	for _, test := range tests {
 		l := NewLexer(strings.NewReader(test.input), "")
@@ -221,6 +236,22 @@ func TestScanNumber(t *testing.T) {
 		if ok, msg := checkLexResult(tok, err, test.output); !ok {
 			t.Logf("input %q:", test.input)
 			t.Error(msg)
+		}
+
+		if _, ok := test.output.(LexError); ok {
+			continue // skip further tests if this produced an error
+		}
+
+		// validate int and float conversion
+		// these methods will panic when they fail, thus I have wrapped them in a subtest
+		if tok.tokenType == tokenInteger {
+			t.Run(fmt.Sprintf("input %q:", test.input), func(t *testing.T) {
+				tok.IntValue()
+			})
+		} else if tok.tokenType == tokenFloat {
+			t.Run(fmt.Sprintf("input %q:", test.input), func(t *testing.T) {
+				tok.FloatValue()
+			})
 		}
 	}
 }

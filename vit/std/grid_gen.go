@@ -50,9 +50,9 @@ type Grid struct {
 	childLayouts            vit.LayoutList
 }
 
-func NewGrid(id string, scope vit.ComponentContainer) *Grid {
+func NewGrid(id string, context vit.ComponentContext) *Grid {
 	g := &Grid{
-		Item:                    NewItem(id, scope),
+		Item:                    NewItem(id, context),
 		id:                      id,
 		topPadding:              *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
 		rightPadding:            *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),

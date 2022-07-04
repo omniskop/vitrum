@@ -4,7 +4,7 @@ import "fmt"
 
 // Root is the base component all other components embed. It provides some basic functionality.
 type Root struct {
-	scope        ComponentContainer
+	context      ComponentContext
 	parent       Component
 	id           string           // id of this component. Can only be set on creation and not be changed.
 	properties   map[string]Value // custom properties defined in a vit file
@@ -12,9 +12,9 @@ type Root struct {
 	children     []Component
 }
 
-func NewRoot(id string, scope ComponentContainer) Root {
+func NewRoot(id string, context ComponentContext) Root {
 	return Root{
-		scope:        scope,
+		context:      context,
 		id:           id,
 		properties:   make(map[string]Value),
 		enumerations: make(map[string]Enumeration),
@@ -26,7 +26,7 @@ func (r *Root) String() string {
 }
 
 // DefineProperty creates a new property on the component.
-// TODO: currently properties can be redefined. Make a decision on that behaviour and update the documentation accordingly (inclusing the Component interface).
+// TODO: currently properties can be redefined. Make a decision on that behaviour and update the documentation accordingly (including the Component interface).
 func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 	name := propDef.Identifier[0]
 	if propDef.VitType == "componentdef" {
@@ -105,7 +105,7 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 	}
 
 	// check components in scope
-	abs, ok := r.scope.Get(key)
+	abs, ok := r.context.KnownComponents.Get(key)
 	if ok {
 		return abs, true
 	}
@@ -240,7 +240,7 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 
 // InstantiateInScope will instantiate the given component in the scope of this root component.
 func (r *Root) InstantiateInScope(comp *ComponentDefinition) (Component, error) {
-	return InstantiateComponent(comp, r.scope)
+	return InstantiateComponent(comp, r.context)
 }
 
 func (r *Root) ID() string {

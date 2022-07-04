@@ -9,16 +9,17 @@ import vit "github.com/omniskop/vitrum/vit"
 //go:generate ./gencmd -i Column.vit -o column_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i Grid.vit -o grid_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i Text.vit -o text_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i MouseArea.vit -o mouseArea_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate rm ./gencmd
 
 type StdLib struct {
 }
 
 func (l StdLib) ComponentNames() []string {
-	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text"}
+	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea"}
 }
 
-func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContainer) (vit.Component, bool) {
+func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContext) (vit.Component, bool) {
 	switch name {
 	case "Item":
 		return NewItem(id, scope), true
@@ -36,6 +37,8 @@ func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContaine
 		return NewGrid(id, scope), true
 	case "Text":
 		return NewText(id, scope), true
+	case "MouseArea":
+		return NewMouseArea(id, scope), true
 	}
 	return nil, false
 }
@@ -46,6 +49,8 @@ func (l StdLib) StaticAttribute(componentName string, attributeName string) (int
 		return (*Grid)(nil).staticAttribute(attributeName)
 	case "Text":
 		return (*Text)(nil).staticAttribute(attributeName)
+	case "MouseArea":
+		return (*MouseArea)(nil).staticAttribute(attributeName)
 	}
 	return nil, false
 }

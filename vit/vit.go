@@ -9,7 +9,7 @@ import (
 // This will be set by the parser package at initialization.
 // It is ugly but we can't use circular dependencies.
 // Right now the alternative would be to pass a type from the parser package to every vit component specifically for this purpose and that's not really what I want to do either.
-var InstantiateComponent func(*ComponentDefinition, ComponentContainer) (Component, error)
+var InstantiateComponent func(*ComponentDefinition, ComponentContext) (Component, error)
 
 // Component describes a generic vit component
 type Component interface {
@@ -58,7 +58,7 @@ func (e Enumeration) ResolveVariable(name string) (interface{}, bool) {
 
 type AbstractComponent interface {
 	script.VariableSource
-	Instantiate(string, ComponentContainer) (Component, error)
+	Instantiate(string, ComponentContext) (Component, error)
 	Name() string
 	// Static values
 }
@@ -102,6 +102,16 @@ func (c ComponentContainer) Get(names string) (AbstractComponent, bool) {
 		src, ok = c.Global[names]
 	}
 	return src, ok
+}
+
+type ComponentContext struct {
+	KnownComponents ComponentContainer
+	Environment     ExecutionEnvironment
+}
+
+type ExecutionEnvironment interface {
+	RegisterComponent(Component)
+	UnregisterComponent(Component)
 }
 
 // ErrorGroup contains a list of multiple error and may be used whenever multiple errors may occur without the need to fail immediately.

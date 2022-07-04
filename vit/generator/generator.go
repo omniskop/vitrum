@@ -129,7 +129,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	// All property instantiations
 	// we could use jen.Dict here but I wan't to preserve the property order
 	propertyInstantiations := []jen.Code{
-		jen.Line().Id(comp.BaseName).Op(":").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("scope").Op(")"),
+		jen.Line().Id(comp.BaseName).Op(":").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("context").Op(")"),
 		jen.Line().Id("id").Op(":").Id("id"),
 	}
 
@@ -159,7 +159,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	// constructor
 	f.Func().
 		Id(fmt.Sprintf("New%s", compName)).
-		Params(jen.Id("id").String(), jen.Id("scope").Qual(vitPackage, "ComponentContainer")).
+		Params(jen.Id("id").String(), jen.Id("context").Qual(vitPackage, "ComponentContext")).
 		Params(jen.Op("*").Id(compName)).
 		BlockFunc(func(g *jen.Group) {
 			g.Id(receiverName).Op(":=").Op("&").Id(compName).Values(propertyInstantiations...)

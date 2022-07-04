@@ -125,8 +125,9 @@ var layoutingTests = []struct {
 func TestLayouting(t *testing.T) {
 testLoop:
 	for i, test := range layoutingTests {
-		container := NewItem("", vit.NewComponentContainer())
-		itm := NewItem("", vit.NewComponentContainer())
+		context := createComponentContext()
+		container := NewItem("", context)
+		itm := NewItem("", context)
 		container.AddChild(itm)
 
 		container.SetProperty("x", 10)
@@ -197,6 +198,10 @@ testLoop:
 			t.Errorf("expected center Y to be %v, got %v", test.expected.CenterY(), bounds.CenterY())
 		}
 	}
+}
+
+func createComponentContext() vit.ComponentContext {
+	return vit.ComponentContext{KnownComponents: vit.NewComponentContainer()}
 }
 
 func valuesEqual(a, b interface{}) bool {

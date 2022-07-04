@@ -59,6 +59,10 @@ func (r Rect) Left() float64 {
 	return r.X1
 }
 
+func (r Rect) Contains(X, Y float64) bool {
+	return r.X1 <= X && X <= r.X2 && r.Y1 <= Y && Y <= r.Y2
+}
+
 type DrawingContext struct {
 	*canvas.Context
 }

@@ -17,9 +17,9 @@ type Repeater struct {
 	items    []RepeaterItem
 }
 
-func NewRepeater(id string, scope vit.ComponentContainer) *Repeater {
+func NewRepeater(id string, context vit.ComponentContext) *Repeater {
 	r := &Repeater{
-		Item:     NewItem(id, scope),
+		Item:     NewItem(id, context),
 		id:       id,
 		count:    *vit.NewEmptyIntValue(),
 		delegate: *vit.NewEmptyComponentDefValue(),

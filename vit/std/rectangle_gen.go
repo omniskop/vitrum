@@ -16,9 +16,9 @@ type Rectangle struct {
 	border vit.GroupValue
 }
 
-func NewRectangle(id string, scope vit.ComponentContainer) *Rectangle {
+func NewRectangle(id string, context vit.ComponentContext) *Rectangle {
 	r := &Rectangle{
-		Item:   NewItem(id, scope),
+		Item:   NewItem(id, context),
 		id:     id,
 		color:  *vit.NewColorValueFromExpression("Vit.rgb(0, 0, 0)", nil),
 		radius: *vit.NewFloatValueFromExpression("0", nil),

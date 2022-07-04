@@ -20,9 +20,9 @@ type Row struct {
 	childLayouts  vit.LayoutList
 }
 
-func NewRow(id string, scope vit.ComponentContainer) *Row {
+func NewRow(id string, context vit.ComponentContext) *Row {
 	r := &Row{
-		Item:          NewItem(id, scope),
+		Item:          NewItem(id, context),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
 		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),

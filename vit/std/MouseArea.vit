@@ -1,0 +1,37 @@
+
+Item {
+    embedded bitfield enum MouseButtons {
+        noButton = 0x0,
+        allButtons = 0x07ffffff,
+        leftButton = 0x01,
+        rightButton = 0x02,
+        middleButton = 0x04,
+    }
+
+    property MouseButtons acceptedButtons: MouseButtons.leftButton
+    property bool containsMouse
+    // property bool containsPress
+    // property CursorShape cursorShape
+    // property group drag: {
+    //     property bool active
+    //     // property var axis
+    //     property bool filterChildren
+    //     property float maximumX
+    //     property float maximumY
+    //     property float minimumX
+    //     property float minimumY
+    //     property bool smoothed
+    //     property component target
+    //     property float threshold
+    // }
+    #gen-onchange="enableDisable" property bool enabled: true
+    property bool hoverEnabled
+    property float mouseX
+    property float mouseY
+    // property int pressAndHoldInterval
+    property bool pressed
+    property MouseButtons pressedButtons
+    // property bool preventStealing
+    // property bool propagateComposedEvents
+    // property bool scrollGestureEnabled
+}
