@@ -17,10 +17,12 @@ const (
 	tokenIdentifier           // a single word
 	tokenExpression           // an expression that describes the value of a property
 
-	tokenLeftBrace    // {
-	tokenRightBrace   // }
-	tokenLeftBracket  // [
-	tokenRightBracket // ]
+	tokenLeftParenthesis  // '('
+	tokenRightParenthesis // ')'
+	tokenLeftBrace        // {
+	tokenRightBrace       // }
+	tokenLeftBracket      // [
+	tokenRightBracket     // ]
 
 	tokenInteger // the actual number value of a token with this type can be read by calling IntValue()
 	tokenFloat   // the actual number value of a token with this type can be read by calling FloatValue()
@@ -47,6 +49,10 @@ func (tt tokenType) String() string {
 	case tokenExpression:
 		return "expression"
 
+	case tokenLeftParenthesis:
+		return "("
+	case tokenRightParenthesis:
+		return ")"
 	case tokenLeftBrace:
 		return "'{'"
 	case tokenRightBrace:

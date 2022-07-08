@@ -56,6 +56,38 @@ func (e Enumeration) ResolveVariable(name string) (interface{}, bool) {
 	return nil, false
 }
 
+type EventDefinition struct {
+	Name       string
+	Parameters []PropertyDefinition
+	Position   *PositionRange
+}
+
+type Listener[EventType any] *func(EventType)
+
+type EventAttribute[EventType any] struct {
+	Listeners Set[Listener[EventType]]
+}
+
+func NewEventAttribute[EventType any]() *EventAttribute[EventType] {
+	return &EventAttribute[EventType]{
+		Listeners: NewSet[Listener[EventType]](),
+	}
+}
+
+func (a *EventAttribute[EventType]) AddListener(l Listener[EventType]) {
+	a.Listeners.Add(l)
+}
+
+func (a *EventAttribute[EventType]) RemoveListener(l Listener[EventType]) {
+	a.Listeners.Remove(l)
+}
+
+func (a *EventAttribute[EventType]) Fire(e EventType) {
+	a.Listeners.ForEach(func(l Listener[EventType]) {
+		(*l)(e)
+	})
+}
+
 type AbstractComponent interface {
 	script.VariableSource
 	Instantiate(string, ComponentContext) (Component, error)

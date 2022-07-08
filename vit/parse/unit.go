@@ -12,6 +12,7 @@ const (
 	unitTypeComponentEnd                 // a component has ended
 	unitTypeProperty                     // a property has been parsed
 	unitTypeEnum                         // an enum has been parsed
+	unitTypeEvent                        // an event has been parsed
 )
 
 // String returns the name of a unitType as a string
@@ -27,6 +28,8 @@ func (uType unitType) String() string {
 		return "property"
 	case unitTypeEnum:
 		return "enum"
+	case unitTypeEvent:
+		return "event"
 	default:
 		return "unknown unit"
 	}
@@ -61,3 +64,8 @@ func propertyUnit(position vit.PositionRange, prop vit.PropertyDefinition) unit 
 func enumUnit(position vit.PositionRange, enum vit.Enumeration) unit {
 	return unit{position, unitTypeEnum, enum}
 }
+
+func eventUnit(position vit.PositionRange, event vit.EventDefinition) unit {
+	return unit{position, unitTypeEvent, event}
+}
+

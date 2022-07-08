@@ -13,6 +13,7 @@ type ComponentDefinition struct {
 	Properties   []PropertyDefinition   // all explicitly defined or declared properties
 	Children     []*ComponentDefinition // child components
 	Enumerations []Enumeration          // all explicitly defined enumerations
+	Events       []EventDefinition
 }
 
 // IdentifierIsKnown returns true of the given identifier has already been defined

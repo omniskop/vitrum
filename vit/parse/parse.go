@@ -71,6 +71,7 @@ func (e unexpectedTokenError) Is(subject error) bool {
 // a list of some keywords that are used to detect component attributes
 var keywords = map[string]bool{
 	"property": true,
+	"event":    true,
 	"default":  true,
 	"required": true,
 	"readonly": true,
@@ -327,7 +328,7 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*vit.ComponentDefin
 				// check if the property has already been defined before
 				if c.IdentifierIsKnown(prop.Identifier) {
 					// TODO: theoretically we could get and show the position of the previous declaration here
-					return c, parseErrorf(prop.Pos, "identifier %v is already defined", prop.Identifier)
+					return c, parseErrorf(prop.Pos, "attribute %v is already defined", prop.Identifier)
 				}
 				// save it in the component
 				c.Properties = append(c.Properties, prop)
@@ -335,9 +336,15 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*vit.ComponentDefin
 		case unitTypeEnum: // an enumeration
 			enum := parsedUnit.value.(vit.Enumeration)
 			if c.IdentifierIsKnown([]string{enum.Name}) {
-				return c, parseErrorf(parsedUnit.position, "identifier %q is already defined", enum.Name)
+				return c, parseErrorf(parsedUnit.position, "attribute %q is already defined", enum.Name)
 			}
 			c.Enumerations = append(c.Enumerations, enum)
+		case unitTypeEvent:
+			event := parsedUnit.value.(vit.EventDefinition)
+			if c.IdentifierIsKnown([]string{event.Name}) {
+				return c, parseErrorf(parsedUnit.position, "attribute %q is already defined", event.Name)
+			}
+			c.Events = append(c.Events, event)
 		case unitTypeComponent: // child component
 			child := parsedUnit.value.(*vit.ComponentDefinition)
 			c.Children = append(c.Children, child)
@@ -372,6 +379,13 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 				return nilUnit(), err
 			}
 			return enumUnit(*en.Position, en), nil
+		case "event":
+			// this attribute is an event
+			ev, err := parseEvent(tokens, modifiers, startingPosition)
+			if err != nil {
+				return nilUnit(), err
+			}
+			return eventUnit(*ev.Position, ev), nil
 		default:
 			// a modifier
 			modifierName := t.literal
@@ -574,6 +588,85 @@ lineLoop:
 	return enum, nil
 }
 
+// parse event definition
+func parseEvent(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.EventDefinition, error) {
+	event := vit.EventDefinition{}
+
+	// name of the event
+	t, err := expectToken(tokens.next, tokenIdentifier)
+	if err != nil {
+		return event, err
+	}
+	event.Name = t.literal
+
+	// expect a '('
+	t, err = expectToken(tokens.next, tokenLeftParenthesis)
+	if err != nil {
+		return event, err
+	}
+
+parameterLoop:
+	for {
+		t = tokens.next()
+		switch t.tokenType {
+		case tokenIdentifier:
+			// a new parameter starts
+			var param = vit.PropertyDefinition{
+				Tags: make(map[string]string),
+			}
+
+		startOfParameter:
+			// check if this is a tag ...
+			tagName, tagValue, foundTag, err := maybeReadTag(tokens, t)
+			if err != nil {
+				return event, err
+			}
+
+			// ... and store it if it is
+			if foundTag {
+				param.Tags[tagName] = tagValue
+				// then start anew
+				t = tokens.next()
+				goto startOfParameter
+			}
+
+			// set the parameter type
+			param.VitType = t.literal
+
+			// the type can be followed by an optional name
+			t = tokens.next()
+			if t.tokenType == tokenIdentifier {
+				param.Identifier = []string{t.literal}
+				t = tokens.next()
+			}
+
+			// store the parameter
+			event.Parameters = append(event.Parameters, param)
+
+			// next can either come a new parameter or the list as ended
+			switch t.tokenType {
+			case tokenColon:
+				continue parameterLoop // next parameter
+			case tokenRightParenthesis:
+				break parameterLoop // list has ended
+			default:
+				return event, unexpectedToken(t, tokenColon, tokenRightParenthesis)
+			}
+
+		case tokenRightParenthesis:
+			// parameter list has ended
+			break parameterLoop
+		default:
+			return event, unexpectedToken(t, tokenIdentifier, tokenRightParenthesis)
+		}
+	}
+
+	pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
+	event.Position = &pos
+
+	return event, nil
+}
+
 // ParseGroupDefinition can be used externally to parse a group definition.
 func ParseGroupDefinition(code string, position vit.Position) ([]vit.PropertyDefinition, error) {
 	r := strings.NewReader(code)
@@ -687,4 +780,28 @@ func dissectModifiers(modifiers [][]string) (unknown []string, tags map[string]s
 		}
 	}
 	return
+}
+
+// maybeReadTag takes a token (and the source) and it will check if that token is a tag (starts with a '#').
+// It returns the tag name, an optional tag value and a boolean indicating that a tag was indeed found.
+// The returned error is only set if a tag was started but not defined properly.
+func maybeReadTag(tokens *tokenBuffer, t token) (string, string, bool, error) {
+	if len(t.literal) == 0 {
+		return "", "", false, nil
+	}
+	if t.literal[0] != '#' {
+		return "", "", false, nil
+	}
+
+	tagName := t.literal[1:] // without the '#'
+	t = tokens.peek()
+	if t.tokenType != tokenAssignment {
+		return tagName, "", true, nil
+	}
+	tokens.next()
+	tagValue, err := expectToken(tokens.next, tokenString)
+	if err != nil {
+		return tagName, "", true, err
+	}
+	return tagName, tagValue.literal, true, nil
 }

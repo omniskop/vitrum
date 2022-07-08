@@ -152,6 +152,26 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(prop.Identifier[0]).Op(":").Add(propConstructor))
 	}
 
+	// setup all event attributes
+	for _, ev := range comp.Events {
+		var eventType *jen.Statement
+		if len(ev.Parameters) == 0 {
+			return fmt.Errorf("event %q has no parameters", ev.Name)
+		}
+		if typeName, ok := ev.Parameters[0].Tags[typeTag]; ok {
+			eventType = generateCustomType(typeName)
+		} else {
+			var err error
+			eventType, _, err = vitTypeInfo(comp, ev.Parameters[0])
+			if err != nil {
+				return err
+			}
+		}
+		properties = append(properties, jen.Line())
+		properties = append(properties, jen.Id(ev.Name).Qual(vitPackage, "EventAttribute").Types(eventType))
+		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(ev.Name).Op(":").Op("*").Qual(vitPackage, "NewEventAttribute").Types(eventType).Call())
+	}
+
 	propertyInstantiations = append(propertyInstantiations, jen.Line())
 
 	f.Type().Id(compName).Struct(properties...)
@@ -521,18 +541,7 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 		constructor = jen.Id(init) // a custom initializer is provided
 		// this also requires a custom initializer
 		if typeString, ok := prop.Tags[typeTag]; ok {
-			// check if the type contains a period, which indicates that it refers to a type in another package
-			if strings.Contains(typeString, ".") {
-				// split the type apart and get the package path and the actual type name
-				packagePath, typeName, isPointer := splitCustomType(typeString)
-				if isPointer {
-					propType = jen.Op("*").Qual(packagePath, typeName)
-				} else {
-					propType = jen.Qual(packagePath, typeName)
-				}
-			} else {
-				propType = jen.Id(typeString) // a custom type is provided
-			}
+			propType = generateCustomType(typeString)
 
 			if prop.HasTag(optionalTag) {
 				// a custom type can't be optional at the same time
@@ -627,6 +636,24 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 	}
 
 	return
+}
+
+// generateCustomType takes a string representation of a custom type and returns the appropriate generated code.
+func generateCustomType(typeString string) *jen.Statement {
+	var propType *jen.Statement
+	// check if the type contains a period, which indicates that it refers to a type in another package
+	if strings.Contains(typeString, ".") {
+		// split the type apart and get the package path and the actual type name
+		packagePath, typeName, isPointer := splitCustomType(typeString)
+		if isPointer {
+			propType = jen.Op("*").Qual(packagePath, typeName)
+		} else {
+			propType = jen.Qual(packagePath, typeName)
+		}
+	} else {
+		propType = jen.Id(typeString) // a custom type is provided
+	}
+	return propType
 }
 
 func standardConstructor(prop vit.PropertyDefinition, typeName string) *jen.Statement {
