@@ -20,6 +20,7 @@ func Setup() {
 	runtime = goja.New()
 	runtime.SetParserOptions(parser.WithDisableSourceMaps)
 	runtime.Set("Vit", builtinFunctions)
+	runtime.Set("console", globalConsole)
 }
 
 type Script struct {
@@ -117,6 +118,7 @@ func RunContained(code string, variables VariableSource) (interface{}, error) {
 	runtime := goja.New()
 	runtime.SetParserOptions(parser.WithDisableSourceMaps)
 	runtime.Set("Vit", builtinFunctions)
+	runtime.Set("console", globalConsole)
 	global := runtime.GlobalObject()
 	global.SetPrototype(bridgeObj)
 	val, err := runtime.RunString(code)
