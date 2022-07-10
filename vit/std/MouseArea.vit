@@ -34,4 +34,6 @@ Item {
     // property bool preventStealing
     // property bool propagateComposedEvents
     // property bool scrollGestureEnabled
+
+    event onClicked(#gen-type="MouseEvent" var event)
 }

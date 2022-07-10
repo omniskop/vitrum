@@ -29,6 +29,8 @@ type MouseArea struct {
 	mouseY          vit.FloatValue
 	pressed         vit.BoolValue
 	pressedButtons  vit.IntValue
+
+	onClicked vit.EventAttribute[MouseEvent]
 }
 
 func NewMouseArea(id string, context vit.ComponentContext) *MouseArea {
@@ -43,6 +45,7 @@ func NewMouseArea(id string, context vit.ComponentContext) *MouseArea {
 		mouseY:          *vit.NewEmptyFloatValue(),
 		pressed:         *vit.NewEmptyBoolValue(),
 		pressedButtons:  *vit.NewEmptyIntValue(),
+		onClicked:       *vit.NewEventAttribute[MouseEvent](),
 	}
 	m.enabled.AddDependent(vit.FuncDep(m.enableDisable))
 	m.DefineEnum(vit.Enumeration{
@@ -161,6 +164,8 @@ func (m *MouseArea) ResolveVariable(key string) (interface{}, bool) {
 		return &m.pressed, true
 	case "pressedButtons":
 		return &m.pressedButtons, true
+	case "onClicked":
+		return &m.onClicked, true
 	default:
 		return m.Item.ResolveVariable(key)
 	}

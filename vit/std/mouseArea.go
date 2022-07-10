@@ -14,6 +14,7 @@ func (m *MouseArea) enableDisable() {
 	}
 }
 
+// TriggerEvent will be called by vitrum when a mouse event is received
 func (m *MouseArea) TriggerEvent(e MouseEvent) {
 	if !m.enabled.Bool() {
 		return
@@ -27,7 +28,12 @@ func (m *MouseArea) TriggerEvent(e MouseEvent) {
 	m.mouseY.SetFloatValue(float64(e.Y))
 
 	filtered := e.Buttons & MouseArea_MouseButtons(m.acceptedButtons.Int())
+	wasPressed := m.pressed.Bool()
 	m.pressed.SetBoolValue(filtered > 0)
 
 	m.pressedButtons.SetIntValue(int(e.Buttons))
+
+	if filtered == 0 && wasPressed {
+		m.onClicked.Fire(&e)
+	}
 }
