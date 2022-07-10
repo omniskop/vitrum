@@ -2,44 +2,26 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 
-	"github.com/omniskop/vitrum/vit/parse"
-	"github.com/omniskop/vitrum/vit/script"
+	"github.com/omniskop/vitrum/gui"
 )
 
-// //go: generate go run generate.go -i Item.txt -o Item.go
-
 func main() {
-	// err := parse.Open("test.vit")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
+	app := gui.NewApplication()
+	app.SetLogger(log.New(os.Stdout, "app: ", 0))
+	app.AddImportPath("sources")
 
-	script.Setup()
-
-	mngr := parse.NewManager()
-
-	mngr.AddImportPath("sources")
-	err := mngr.SetSource("sources/test.vit")
-	// err := mngr.SetSource("firefly/LaunchWindow.vit")
+	_, err := app.NewWindow("sources/appTest.vit")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	err = mngr.Run()
+	err = app.Run()
 	if err != nil {
-		fmt.Println(parse.FormatError(err))
+		fmt.Println(err)
 		return
 	}
-
-	fmt.Println("======================================")
-
-	component := mngr.MainComponent()
-	_ = component
-
-	// fmt.Println(component.Children()[0].MustProperty("horizontalAlignment"))
-	// c, _ := component.Children()[0].Property("color")
-	// fmt.Println(c.(color.Color).RGBA())
 }
