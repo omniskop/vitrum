@@ -30,6 +30,11 @@ func NewExpression(code string, position *PositionRange) *Expression {
 	if err != nil {
 		err = NewExpressionError(code, position, err)
 	}
+	if position != nil {
+		// adjust position in a way to hide the fact that we added the parenthesis around the code
+		p := position.StartColumnShifted(-1)
+		position = &p
+	}
 	return &Expression{
 		code:         code,
 		dirty:        true,
@@ -138,7 +143,7 @@ func (e *Expression) Err() error {
 }
 
 type AccessCollector struct {
-	context       Component
+	context       Component // TODO: could this be a script.variableSource?
 	readValues    *map[Value]bool
 	writtenValues *map[Value]bool
 }
@@ -253,14 +258,19 @@ func NewExpressionError(code string, pos *PositionRange, wrappedErr error) Expre
 	// check if we can get some more information from the error
 	var cErr *goja.CompilerSyntaxError
 	if errors.As(wrappedErr, &cErr) {
+		// example:
 		// "expression: Line 3:13 Unexpected identifier (and 5 more errors)"
 		matches := compilerErrorRegex.FindStringSubmatch(cErr.CompilerError.Message)
 		if len(matches) > 0 {
 			line, err := strconv.Atoi(matches[1])
 			column, err2 := strconv.Atoi(matches[2])
 			if err == nil && err2 == nil {
-				pos.StartLine += line - 1
-				pos.StartColumn = column
+				if line == 1 {
+					pos.StartColumn += column - 1
+				} else {
+					pos.StartLine += line - 1
+					pos.StartColumn = column
+				}
 				pos.SetEnd(pos.Start())
 				wrappedErr = errors.New(matches[3])
 			}

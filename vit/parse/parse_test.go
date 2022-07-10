@@ -189,7 +189,7 @@ Item {
         one: 1
     }
 
-	#test1 #test2="two" readonly property bool local: true;
+	#test1 #test2="two" readonly property bool local: true; // this line is indented by a tab instead of spaces
 
     Label {
         wrapMode: Text.WordWrap
@@ -211,6 +211,7 @@ var validDocument = &VitDocument{
 			Properties: []vit.PropertyDefinition{
 				{
 					Pos:         vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
+					ValuePos:    &vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 19, EndLine: 13, EndColumn: 34},
 					Identifier:  []string{"anchors", "left"},
 					Expression:  "parent.left + 10",
 					Components:  nil,
@@ -221,6 +222,7 @@ var validDocument = &VitDocument{
 				},
 				{
 					Pos:        vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 16, EndColumn: 5},
+					ValuePos:   &vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 11, EndLine: 16, EndColumn: 5},
 					Identifier: []string{"affe"},
 					Expression: "/*#invalid stuff#*/ Item {\n        one: 1\n    }",
 					Components: []*vit.ComponentDefinition{{
@@ -230,6 +232,7 @@ var validDocument = &VitDocument{
 						Properties: []vit.PropertyDefinition{
 							{
 								Pos:        vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
+								ValuePos:   &vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 14, EndLine: 15, EndColumn: 14},
 								Identifier: []string{"one"},
 								VitType:    "", Expression: "1", Components: nil,
 								ReadOnly:    false,
@@ -248,6 +251,7 @@ var validDocument = &VitDocument{
 				},
 				{
 					Pos:         vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 55},
+					ValuePos:    &vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 52, EndLine: 18, EndColumn: 55},
 					Identifier:  []string{"local"},
 					VitType:     "bool",
 					Expression:  "true",
@@ -262,8 +266,14 @@ var validDocument = &VitDocument{
 				{
 					BaseName: "Label",
 					Properties: []vit.PropertyDefinition{
-						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap", Pos: vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31}},
-						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`, Pos: vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38}},
+						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap",
+							Pos:      vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31},
+							ValuePos: &vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 19, EndLine: 21, EndColumn: 31},
+						},
+						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`,
+							Pos:      vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38},
+							ValuePos: &vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 15, EndLine: 22, EndColumn: 38},
+						},
 					},
 				},
 			},

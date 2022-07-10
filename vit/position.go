@@ -158,6 +158,22 @@ func (p *PositionRange) SetEnd(pos Position) {
 	p.EndColumn = pos.Column
 }
 
+// StartColumnShifted returns a new position range whose start has been shifted by the given amount.
+// If the end is on the same line it's column is shifted as well.
+func (p PositionRange) StartColumnShifted(amount int) PositionRange {
+	pos := PositionRange{
+		FilePath:    p.FilePath,
+		StartLine:   p.StartLine,
+		StartColumn: p.StartColumn - 10,
+		EndLine:     p.EndLine,
+		EndColumn:   p.EndColumn + 10,
+	}
+	if pos.EndLine == pos.StartLine {
+		pos.EndColumn -= 10
+	}
+	return pos
+}
+
 // formatLineNumber returns a stringified version of the line number with enough padded spaces to accommodate the highest line number
 func formatLineNumber(line int, highest int) string {
 	return fmt.Sprintf(

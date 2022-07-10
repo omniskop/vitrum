@@ -74,6 +74,7 @@ func (d *ComponentDefinition) GetEnum(name string) (*Enumeration, bool) {
 // PropertyDefinition contains everything about a defined or declared PropertyDefinition
 type PropertyDefinition struct {
 	Pos        PositionRange          // position of the property declaration
+	ValuePos   *PositionRange         // Position of the property value
 	Identifier []string               // Identifier of this property. This will usually be only one value but can contain multiple parts for example with 'Anchors.fill'
 	Expression string                 // Expression string that defines the property. Can be empty.
 	Components []*ComponentDefinition // Only set if this properties type is a component or list of components.

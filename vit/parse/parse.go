@@ -282,6 +282,7 @@ scanAgain:
 		}
 		property := vit.PropertyDefinition{
 			Pos:        vit.NewRangeFromStartToEnd(startingPosition, t.position.End()),
+			ValuePos:   &t.position,
 			Identifier: literalsToStrings(lineIdentifier),
 			Expression: t.literal,
 		}
@@ -489,6 +490,7 @@ start:
 	if err != nil {
 		return prop, err
 	}
+	prop.ValuePos = &t.position
 	prop.Pos.SetEnd(t.position.End())
 
 	if value.valueType == valueTypeExpression {
@@ -613,6 +615,7 @@ parameterLoop:
 			// a new parameter starts
 			var param = vit.PropertyDefinition{
 				Tags: make(map[string]string),
+				Pos:  vit.NewRangeFromPosition(t.position.Start()),
 			}
 
 		startOfParameter:
@@ -632,12 +635,14 @@ parameterLoop:
 
 			// set the parameter type
 			param.VitType = t.literal
+			param.Pos.SetEnd(t.position.Start())
 
 			// the type can be followed by an optional name
 			t = tokens.next()
 			if t.tokenType == tokenIdentifier {
 				param.Identifier = []string{t.literal}
 				t = tokens.next()
+				param.Pos.SetEnd(t.position.Start())
 			}
 
 			// store the parameter
