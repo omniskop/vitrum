@@ -55,6 +55,42 @@ func (s *Script) Run(variables VariableSource) (interface{}, error) {
 	return val.Export(), nil
 }
 
+// Call executes the script in the assumption that it defines a function.
+// It will then call this function using the provided arguments.
+// The value returned by that function will in turn be returned by this method.
+func (s *Script) Call(variables VariableSource, arguments ...interface{}) (interface{}, error) {
+	runtimeMux.Lock()
+	defer runtimeMux.Unlock()
+
+	bridgeObj := runtime.NewDynamicObject(&VariableBridge{variables})
+	// TODO: figure out if this has to be deleted from the runtime manually afterwards
+	global := runtime.GlobalObject()
+	global.SetPrototype(bridgeObj)
+	defer global.SetPrototype(nil)
+	val, err := runtime.RunProgram(s.compiled)
+	if err != nil {
+		if exception, ok := err.(*goja.Exception); ok {
+			return nil, errors.New(exception.Value().String())
+		}
+		return nil, err
+	}
+
+	f, ok := goja.AssertFunction(val)
+	if !ok {
+		return nil, errors.New("not a function")
+	}
+	var argumentValues = make([]goja.Value, len(arguments))
+	for i, arg := range arguments {
+		// TODO: figure out if these values have to be deleted form the runtime manually afterwards
+		argumentValues[i] = runtime.ToValue(arg)
+	}
+	result, err := f(goja.Undefined(), argumentValues...)
+	if err != nil {
+		return nil, err
+	}
+	return result.Export(), nil
+}
+
 // Run executes the given code with the provided variable context.
 // The resulting value and a potential error is returned.
 func Run(code string, variables VariableSource) (interface{}, error) {
