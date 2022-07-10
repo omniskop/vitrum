@@ -79,6 +79,7 @@ var keywords = map[string]bool{
 	"enum":     true,
 	"embedded": true,
 	"optional": true,
+	"method":   true,
 }
 
 // a list of known modifiers that can be applied to component attributes
@@ -112,7 +113,7 @@ func Parse(tokens *tokenBuffer) (file *VitDocument, err error) {
 					// LexError, the source contained a lexical error
 					err = le
 				} else {
-					// if you end up here due to a panic check the next but one entry in the stack trace for the actual error location
+					// if you end up here due to a panic check the next entry in the stack trace for the actual error location
 					panic(r)
 				}
 			} else {
@@ -346,11 +347,17 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*vit.ComponentDefin
 				return c, parseErrorf(parsedUnit.position, "attribute %q is already defined", event.Name)
 			}
 			c.Events = append(c.Events, event)
+		case unitTypeMethod:
+			method := parsedUnit.value.(vit.Method)
+			if c.IdentifierIsKnown([]string{method.Name}) {
+				return c, parseErrorf(parsedUnit.position, "attribute %q is already defined", method.Name)
+			}
+			c.Methods = append(c.Methods, method)
 		case unitTypeComponent: // child component
 			child := parsedUnit.value.(*vit.ComponentDefinition)
 			c.Children = append(c.Children, child)
 		default:
-			return c, parseErrorf(parsedUnit.position, "unexpected %v while parsing unit", parsedUnit.kind)
+			return c, parseErrorf(parsedUnit.position, "unexpected unit '%v' while parsing component", parsedUnit.kind)
 		}
 	}
 }
@@ -387,6 +394,13 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 				return nilUnit(), err
 			}
 			return eventUnit(*ev.Position, ev), nil
+		case "method":
+			// this attribute is a method
+			meth, err := parseMethod(tokens, modifiers, startingPosition)
+			if err != nil {
+				return nilUnit(), err
+			}
+			return methodUnit(*meth.Position, meth), nil
 		default:
 			// a modifier
 			modifierName := t.literal
@@ -670,6 +684,32 @@ parameterLoop:
 	event.Position = &pos
 
 	return event, nil
+}
+
+// parse method definition
+func parseMethod(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.Method, error) {
+	// this will be called after the word 'method' has been read
+	// next we expect the name
+	t, err := expectToken(tokens.next, tokenIdentifier)
+	if err != nil {
+		return vit.Method{}, err
+	}
+	name := t.literal
+
+	_, err = expectToken(tokens.next, tokenColon)
+	if err != nil {
+		return vit.Method{}, err
+	}
+
+	t, err = expectToken(tokens.next, tokenExpression)
+	if err != nil {
+		return vit.Method{}, err
+	}
+
+	pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
+	method := vit.NewMethod(name, t.literal, &pos)
+
+	return method, nil
 }
 
 // ParseGroupDefinition can be used externally to parse a group definition.

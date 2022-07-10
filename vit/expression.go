@@ -179,6 +179,10 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 		return &variableConverter{actual}, true
 	case Enumeration:
 		return &variableConverter{actual}, true
+	case *Method:
+		return actual, true
+	case Listenable:
+		return EventAdapter{c.context, actual}, true
 	case Value:
 		(*c.readValues)[actual] = true // mark as read
 		return actual.GetValue(), true
@@ -225,6 +229,15 @@ func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
 	default:
 		panic(script.Exception(fmt.Sprintf("resolved variable %q to unhandled type %T", key, actual)))
 	}
+}
+
+type EventAdapter struct {
+	context Component
+	event   Listenable
+}
+
+func (a EventAdapter) AddEventListener(f *Method) {
+	a.event.AddListenerFunction(&f.AsyncFunction)
 }
 
 func castList[ElementType Value](val interface{}) ([]ElementType, bool) {

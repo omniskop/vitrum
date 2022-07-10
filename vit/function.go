@@ -10,11 +10,12 @@ import (
 type Function struct {
 	code     string
 	program  script.Script
-	position *PositionRange
+	Position *PositionRange
 	err      error
 }
 
 func NewFunction(code string, position *PositionRange) *Function {
+	originalCode := code
 	// convert code that is just enclosed in curly braces to a valid function
 	if startsWith(code, '{') {
 		code = fmt.Sprintf("function()%s", code)
@@ -34,13 +35,13 @@ func NewFunction(code string, position *PositionRange) *Function {
 
 	prog, err := script.NewScript("function", code)
 	if err != nil {
-		err = NewExpressionError(code, position, err)
+		err = NewExpressionError(originalCode, position, err)
 	}
 
 	return &Function{
-		code:     code,
+		code:     originalCode,
 		program:  prog,
-		position: position,
+		Position: position,
 		err:      err,
 	}
 }
@@ -53,7 +54,7 @@ func (f *Function) Call(context Component, args ...interface{}) (interface{}, er
 	collector := NewAccessCollector(context)
 	val, err := f.program.Call(collector, args)
 	if err != nil {
-		return nil, NewExpressionError(f.code, f.position, err)
+		return nil, NewExpressionError(f.code, f.Position, err)
 	}
 	return val, nil
 }

@@ -14,6 +14,7 @@ type ComponentDefinition struct {
 	Children     []*ComponentDefinition // child components
 	Enumerations []Enumeration          // all explicitly defined enumerations
 	Events       []EventDefinition
+	Methods      []Method
 }
 
 // IdentifierIsKnown returns true of the given identifier has already been defined

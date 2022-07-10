@@ -15,6 +15,7 @@ var InstantiateComponent func(*ComponentDefinition, ComponentContext) (Component
 type Component interface {
 	DefineProperty(PropertyDefinition) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
+	DefineMethod(Method) bool
 	Property(name string) (Value, bool)                                            // returns the property with the given name, and a boolean indicating whether the property exists
 	MustProperty(name string) Value                                                // same as Property but panics if the property doesn't exist
 	SetProperty(name string, value interface{}) error                              // sets the property with the given name to the given value
@@ -56,36 +57,16 @@ func (e Enumeration) ResolveVariable(name string) (interface{}, bool) {
 	return nil, false
 }
 
-type EventDefinition struct {
-	Name       string
-	Parameters []PropertyDefinition
-	Position   *PositionRange
+type Method struct {
+	Name string
+	AsyncFunction
 }
 
-type Listener[EventType any] *func(EventType)
-
-type EventAttribute[EventType any] struct {
-	Listeners Set[Listener[EventType]]
-}
-
-func NewEventAttribute[EventType any]() *EventAttribute[EventType] {
-	return &EventAttribute[EventType]{
-		Listeners: NewSet[Listener[EventType]](),
+func NewMethod(name string, code string, positon *PositionRange) Method {
+	return Method{
+		Name:          name,
+		AsyncFunction: *NewAsyncFunction(code, positon),
 	}
-}
-
-func (a *EventAttribute[EventType]) AddListener(l Listener[EventType]) {
-	a.Listeners.Add(l)
-}
-
-func (a *EventAttribute[EventType]) RemoveListener(l Listener[EventType]) {
-	a.Listeners.Remove(l)
-}
-
-func (a *EventAttribute[EventType]) Fire(e EventType) {
-	a.Listeners.ForEach(func(l Listener[EventType]) {
-		(*l)(e)
-	})
 }
 
 type AbstractComponent interface {

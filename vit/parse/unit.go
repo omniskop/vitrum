@@ -13,6 +13,7 @@ const (
 	unitTypeProperty                     // a property has been parsed
 	unitTypeEnum                         // an enum has been parsed
 	unitTypeEvent                        // an event has been parsed
+	unitTypeMethod                       // a method has been parsed
 )
 
 // String returns the name of a unitType as a string
@@ -30,6 +31,8 @@ func (uType unitType) String() string {
 		return "enum"
 	case unitTypeEvent:
 		return "event"
+	case unitTypeMethod:
+		return "method"
 	default:
 		return "unknown unit"
 	}
@@ -69,3 +72,6 @@ func eventUnit(position vit.PositionRange, event vit.EventDefinition) unit {
 	return unit{position, unitTypeEvent, event}
 }
 
+func methodUnit(position vit.PositionRange, method vit.Method) unit {
+	return unit{position, unitTypeMethod, method}
+}

@@ -167,6 +167,12 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 		}
 	}
 
+	for _, method := range def.Methods {
+		if !instance.DefineMethod(method) {
+			return genericErrorf(*method.AsyncFunction.Position, "method %q already defined", method.Name)
+		}
+	}
+
 	for _, prop := range def.Properties {
 		if prop.VitType != "" {
 			// this defines a new property
@@ -209,14 +215,23 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 				if !ok {
 					return genericErrorf(prop.Pos, "unknown property %q of component %q", prop.Identifier[0], def.BaseName)
 				}
-				group, ok := v.(*vit.GroupValue)
-				if !ok {
-					return genericErrorf(prop.Pos, "cannot assign to non group-property %q of component %q", prop.Identifier[0], def.BaseName)
-				}
-
-				err := group.SetExpressionOf(prop.Identifier[1], prop.Expression, &prop.Pos)
-				if err != nil {
-					return genericErrorf(prop.Pos, "group-property %q of component %q: %w", prop.Identifier[0], def.BaseName, err)
+				switch v := v.(type) {
+				case *vit.GroupValue:
+					// set property of group value
+					err := v.SetExpressionOf(prop.Identifier[1], prop.Expression, prop.ValuePos)
+					if err != nil {
+						return genericErrorf(prop.Pos, "group-property %q of component %q: %w", prop.Identifier[0], def.BaseName, err)
+					}
+				case *vit.ComponentRefValue:
+					// add listener to an event of another component
+					event, ok := v.Component().RootC().Event(prop.Identifier[1])
+					if !ok {
+						return genericErrorf(prop.Pos, "unknown event %q of component %q", prop.Identifier[1], prop.Identifier[0])
+					}
+					l := event.CreateListener(prop.Expression, prop.ValuePos)
+					instance.RootC().AddListenerFunction(l)
+				default:
+					return genericErrorf(prop.Pos, "cannot assign %q on property %q of component %q", prop.Identifier[1], prop.Identifier[0], def.BaseName)
 				}
 			}
 		}

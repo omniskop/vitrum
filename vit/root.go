@@ -4,13 +4,18 @@ import "fmt"
 
 // Root is the base component all other components embed. It provides some basic functionality.
 type Root struct {
-	context      ComponentContext
-	parent       Component
-	id           string           // id of this component. Can only be set on creation and not be changed.
-	properties   map[string]Value // custom properties defined in a vit file
-	enumerations map[string]Enumeration
-	children     []Component
+	context        ComponentContext
+	parent         Component
+	id             string           // id of this component. Can only be set on creation and not be changed.
+	properties     map[string]Value // custom properties defined in a vit file
+	enumerations   map[string]Enumeration
+	methods        map[string]*Method
+	eventListeners []Evaluater // functions that are defined on this component that will be triggered through external events
+	onCompleted    EventAttribute[struct{}]
+	children       []Component
 }
+
+// TODO: Investigate wether we could bring eventListeners into methods. They kinda do the same.
 
 func NewRoot(id string, context ComponentContext) Root {
 	return Root{
@@ -18,6 +23,9 @@ func NewRoot(id string, context ComponentContext) Root {
 		id:           id,
 		properties:   make(map[string]Value),
 		enumerations: make(map[string]Enumeration),
+		methods:      make(map[string]*Method),
+
+		onCompleted: *NewEventAttribute[struct{}](),
 	}
 }
 
@@ -54,7 +62,19 @@ func (r *Root) DefineEnum(enum Enumeration) bool {
 	return true
 }
 
+func (r *Root) DefineMethod(method Method) bool {
+	if _, ok := r.methods[method.Name]; ok {
+		return false
+	}
+	r.methods[method.Name] = &method
+	return true
+}
+
 func (r *Root) Property(key string) (Value, bool) {
+	if key == "Root" {
+		// this is a special case for now
+		return NewComponentRefValue(r), true
+	}
 	v, ok := r.properties[key]
 	if ok {
 		return v, true
@@ -91,6 +111,19 @@ func (r *Root) SetPropertyExpression(key string, expression string, position *Po
 	return nil
 }
 
+func (r *Root) AddListenerFunction(f Evaluater) {
+	// TODO: offer a way to maybe remove these again?
+	r.eventListeners = append(r.eventListeners, f)
+}
+
+func (r *Root) Event(name string) (Listenable, bool) {
+	switch name {
+	case "onCompleted":
+		return &r.onCompleted, true
+	}
+	return nil, false
+}
+
 // ResolveVariable; THIS NEEDS TO BE REIMPLEMENTED BY THE EMBEDDING STRUCTS TO RETURN THE CORRECT TYPE IF THE ID OF THIS COMPONENT IS REQUESTED
 func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 	if key == "parent" {
@@ -119,6 +152,12 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 	for name, prop := range r.properties {
 		if name == key {
 			return prop, true
+		}
+	}
+
+	for name, meth := range r.methods {
+		if name == key {
+			return meth, true
 		}
 	}
 
@@ -235,6 +274,24 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 			}
 		}
 	}
+	for _, f := range r.eventListeners {
+		if f.ShouldEvaluate() {
+			_, err := f.Evaluate(context)
+			sum++
+			if err != nil {
+				errs.Add(NewPropertyError("", "<eventListener>", r.id, err))
+			}
+		}
+	}
+	for _, m := range r.methods {
+		if m.ShouldEvaluate() {
+			_, err := m.Evaluate(context)
+			sum++
+			if err != nil {
+				errs.Add(NewPropertyError("", "<method>", r.id, err))
+			}
+		}
+	}
 	return sum, errs
 }
 
@@ -278,6 +335,9 @@ func (r *Root) Finish() error {
 			return err
 		}
 	}
+
+	r.onCompleted.Fire(nil)
+
 	return nil
 }
 
@@ -300,6 +360,9 @@ func (r *Root) FinishInContext(context Component) error {
 			return err
 		}
 	}
+
+	r.onCompleted.Fire(nil)
+
 	return nil
 }
 

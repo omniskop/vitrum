@@ -308,24 +308,32 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params(jen.Id("key").String()).
 		Params(jen.Interface(), jen.Bool()).
 		Block(
-			jen.Switch(jen.Id("key")).Block(
-				prepend(
-					jen.Case(jen.Id(receiverName).Dot("id")).Block(
-						jen.Return(jen.Id(receiverName), jen.True()),
-					),
-					mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
-						if !isReadable(prop) {
-							return nil // don't add unreadable properties
-						}
-						return jen.Case(jen.Lit(propId)).Block(
-							jen.Return(jen.Op("&").Id(receiverName).Dot(propId), jen.True()),
-						)
-					}),
-					jen.Default().Block(
-						jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("ResolveVariable").Call(jen.Id("key"))),
-					),
-				)...,
-			),
+			jen.Switch(jen.Id("key")).BlockFunc(func(g *jen.Group) {
+				g.Case(jen.Id(receiverName).Dot("id")).Block(
+					jen.Return(jen.Id(receiverName), jen.True()),
+				)
+				for _, prop := range comp.Properties {
+					if isInternalProperty(prop) || !isReadable(prop) {
+						continue
+					}
+					g.Case(jen.Lit(prop.Identifier[0])).Block(
+						jen.Return(jen.Op("&").Id(receiverName).Dot(prop.Identifier[0]), jen.True()),
+					)
+				}
+				for _, method := range comp.Methods {
+					g.Case(jen.Lit(method.Name)).Block(
+						jen.Return(jen.Op("&").Id(receiverName).Dot(method.Name), jen.True()),
+					)
+				}
+				for _, event := range comp.Events {
+					g.Case(jen.Lit(event.Name)).Block(
+						jen.Return(jen.Op("&").Id(receiverName).Dot(event.Name), jen.True()),
+					)
+				}
+				g.Default().Block(
+					jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("ResolveVariable").Call(jen.Id("key"))),
+				)
+			}),
 		).
 		Line()
 
@@ -504,7 +512,7 @@ func generateComponentDefinition(comp *vit.ComponentDefinition) *jen.Statement {
 // mapProperties calls function 'f' for every property and combines their generated codes into one block.
 // It skips properties that are considered to be internal.
 // 'f' will be called with it's property definition and identifier of the property.
-// It should the corresponding code for the property. It may return nil to indicate that no code should be added.
+// It should return the corresponding code for the property. It may return nil to indicate that no code should be added.
 func mapProperties(props []vit.PropertyDefinition, f func(vit.PropertyDefinition, string) jen.Code) []jen.Code {
 	var result []jen.Code
 	for _, prop := range props {
