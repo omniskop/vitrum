@@ -3,6 +3,9 @@
 /gencmd
 /gencmd.exe
 
+# Taskfile internals 
+.task
+
 # visual studio code
 .vscode
 

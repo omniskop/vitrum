@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  generate-local:
+    cmds:
+      - echo "generating in $(pwd)"
+      - defer: rm ./gencmd
+      - go generate ./...
+    sources:
+      - ./*.vit
+      - "{{.ROOT}}/vit/generator/**/*"
+    generates:
+      - ./*_gen.go

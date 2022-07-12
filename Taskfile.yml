@@ -1,0 +1,37 @@
+version: '3'
+
+# We embed a generic task to run in the different directories.
+# Using a local task with a variable to set the target directory also works but breaks the system
+# that determines wether the source files have changed since the last run.
+
+includes:
+  std:
+    taskfile: Generate.yml
+    dir: vit/std
+    vars: {Root: "{{.ROOT}}"}
+
+  gui:
+    taskfile: Generate.yml
+    dir: gui
+    vars: {Root: "{{.ROOT}}"}
+
+  controls:
+    taskfile: Generate.yml
+    dir: controls
+    vars: {Root: "{{.ROOT}}"}
+
+vars:
+  ROOT:
+    sh: "echo $(pwd)"
+
+tasks:
+  generate:
+    deps:
+      - std:generate-local
+      - gui:generate-local
+      - controls:generate-local
+  
+  build:
+    deps: [ generate ]
+    cmds:
+      - go build
