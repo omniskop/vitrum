@@ -70,7 +70,7 @@ func (e genericError) Unwrap() error {
 }
 
 func init() {
-	vit.InstantiateComponent = instantiateComponent
+	vit.InstantiateComponent = InstantiateComponent
 }
 
 // parseFile parsed a given file into a document with the given component name.
@@ -126,7 +126,7 @@ func interpret(document VitDocument, id string, context vit.ComponentContext) ([
 
 // instantiateCustomComponent creates a component described by a componentDefinition and wraps it in a Custom component with the given id.
 func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name string, context vit.ComponentContext) (vit.Component, error) {
-	comp, err := instantiateComponent(def, context)
+	comp, err := InstantiateComponent(def, context)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +136,8 @@ func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name st
 	return cst, nil
 }
 
-// instantiateComponent creates a component described by a componentDefinition.
-func instantiateComponent(def *vit.ComponentDefinition, context vit.ComponentContext) (vit.Component, error) {
+// InstantiateComponent creates a component described by a componentDefinition.
+func InstantiateComponent(def *vit.ComponentDefinition, context vit.ComponentContext) (vit.Component, error) {
 	src, ok := context.KnownComponents.Get(def.BaseName)
 	if !ok {
 		// TODO: improve context for error; either here or upstream
@@ -238,7 +238,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 	}
 
 	for _, childDef := range def.Children {
-		childInstance, err := instantiateComponent(childDef, context)
+		childInstance, err := InstantiateComponent(childDef, context)
 		if err != nil {
 			return err
 		}

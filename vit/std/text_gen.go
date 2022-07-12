@@ -88,7 +88,11 @@ func NewText(id string, context vit.ComponentContext) *Text {
 		fontData:     nil,
 		fontFaceData: nil,
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
 	t.font.AddDependent(vit.FuncDep(t.updateFont))
+	// register event listeners
+	// register enumerations
 	t.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "HorizontalAlignment",
@@ -113,6 +117,10 @@ func NewText(id string, context vit.ComponentContext) *Text {
 		Position: nil,
 		Values:   map[string]int{"ElideNone": 0, "ElideLeft": 1, "ElideMiddle": 2, "ElideRight": 3},
 	})
+	// add child components
+
+	context.Environment.RegisterComponent(t)
+
 	return t
 }
 

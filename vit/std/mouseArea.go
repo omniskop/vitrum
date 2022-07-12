@@ -1,5 +1,7 @@
 package std
 
+import "fmt"
+
 type MouseEvent struct {
 	X, Y    int
 	Buttons MouseArea_MouseButtons
@@ -34,6 +36,7 @@ func (m *MouseArea) TriggerEvent(e MouseEvent) {
 	m.pressedButtons.SetIntValue(int(e.Buttons))
 
 	if filtered == 0 && wasPressed {
+		fmt.Println("fired")
 		m.onClicked.Fire(&e)
 	}
 }

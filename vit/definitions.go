@@ -98,6 +98,11 @@ func (p PropertyDefinition) String() string {
 	return fmt.Sprintf("%s (%s): %s", ident, p.VitType, p.Expression)
 }
 
+// IsNewDefinition returns true if this defines a new property instead of just assigning a value to an existing one.
+func (p PropertyDefinition) IsNewDefinition() bool {
+	return p.VitType != ""
+}
+
 func (p PropertyDefinition) Position() PositionRange {
 	return p.Pos
 }

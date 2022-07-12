@@ -32,12 +32,20 @@ func NewColumn(id string, context vit.ComponentContext) *Column {
 		spacing:       *vit.NewFloatValueFromExpression("0", nil),
 		childLayouts:  make(vit.LayoutList),
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
 	c.topPadding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.rightPadding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.bottomPadding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.leftPadding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.padding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.spacing.AddDependent(vit.FuncDep(c.recalculateLayout))
+	// register event listeners
+	// register enumerations
+	// add child components
+
+	context.Environment.RegisterComponent(c)
+
 	return c
 }
 

@@ -87,7 +87,7 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 			propType = jen.Qual(vitPackage, "IntValue")
 			constructor = standardConstructor(prop, "Int")
 		} else {
-			err = fmt.Errorf("property %s has unknown type %q", prop.Identifier, prop.VitType)
+			err = fmt.Errorf("property %q has unknown type %q", strings.Join(prop.Identifier, "."), prop.VitType)
 			return
 		}
 	}

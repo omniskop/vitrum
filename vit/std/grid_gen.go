@@ -69,6 +69,8 @@ func NewGrid(id string, context vit.ComponentContext) *Grid {
 		flow:                    *vit.NewIntValueFromExpression("Flow.LeftToRight", nil),
 		childLayouts:            make(vit.LayoutList),
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
 	g.topPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.rightPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.bottomPadding.AddDependent(vit.FuncDep(g.recalculateLayout))
@@ -82,6 +84,8 @@ func NewGrid(id string, context vit.ComponentContext) *Grid {
 	g.horizontalItemAlignment.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.verticalItemAlignment.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.flow.AddDependent(vit.FuncDep(g.recalculateLayout))
+	// register event listeners
+	// register enumerations
 	g.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "HorizontalItemAlignment",
@@ -100,6 +104,10 @@ func NewGrid(id string, context vit.ComponentContext) *Grid {
 		Position: nil,
 		Values:   map[string]int{"LeftToRight": 0, "TopToBottom": 1},
 	})
+	// add child components
+
+	context.Environment.RegisterComponent(g)
+
 	return g
 }
 

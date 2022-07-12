@@ -2,12 +2,13 @@ package generator
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/omniskop/vitrum/vit"
 )
 
-// This file contains functions that generate code describing specific data structures.
+// This file contains functions that generate code describing specific data structures. (Sub-Generators)
 
 // ============================== Type Definition for Enumerations =================================
 
@@ -46,7 +47,7 @@ func generatePositionRange(pos vit.PositionRange) *jen.Statement {
 // ==================================== Component Definition =======================================
 
 func generateComponentDefinition(comp *vit.ComponentDefinition) *jen.Statement {
-	return jen.Id(fmt.Sprintf("%#v", comp))
+	return generateFromValue(reflect.ValueOf(comp))
 }
 
 // ============================================= Map ===============================================
@@ -78,4 +79,69 @@ func generateEnumeration(enum vit.Enumeration) *jen.Statement {
 		jen.Id("Values"):   valueMap,
 		jen.Id("Position"): generatePositionRange(*enum.Position),
 	})
+}
+
+// =================================== Generic Type Generation =====================================
+
+// generateFromValue generates code that recreates the given value.
+// Attention: This function must not be called with recursive values. It will loop endlessly otherwise.
+// It was inspired by fmt.printValue which does a similar thing. (https://cs.opensource.google/go/go/+/master:src/fmt/print.go)
+func generateFromValue(value reflect.Value) *jen.Statement {
+	switch f := value; value.Kind() {
+	case reflect.Invalid:
+		panic("invalid value")
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128,
+		reflect.String,
+		reflect.Bool:
+		return jen.Lit(value.Interface())
+	case reflect.Map:
+		return jen.Map(jen.Id(value.Type().Key().String())).Id(value.Type().Elem().String()).ValuesFunc(func(g *jen.Group) {
+			sorted := sortMap(f)
+			for _, item := range sorted {
+				g.Add(jen.Id(item.key)).Op(":").Add(generateFromValue(item.value))
+			}
+		})
+	case reflect.Struct:
+		if f.IsZero() {
+			return jen.Id(f.Type().String()).Values()
+		}
+		return jen.Id(f.Type().String()).ValuesFunc(func(g *jen.Group) {
+			for i := 0; i < f.NumField(); i++ {
+				fieldValue := f.Field(i)
+				if fieldValue.IsZero() {
+					continue // skip fields whose value is zero
+				}
+				if name := f.Type().Field(i).Name; name != "" {
+					g.Id(name).Op(":").Add(generateFromValue(fieldValue))
+				} else {
+					g.Add(generateFromValue(fieldValue))
+				}
+			}
+		})
+	case reflect.Interface:
+		value := f.Elem()
+		if !value.IsValid() {
+			return jen.Nil()
+		} else {
+			return jen.Add(generateFromValue(value))
+		}
+	case reflect.Array, reflect.Slice:
+		return jen.Index().Id(f.Type().Elem().String()).ValuesFunc(func(g *jen.Group) {
+			for i := 0; i < f.Len(); i++ {
+				g.Add(generateFromValue(f.Index(i)))
+			}
+		})
+	case reflect.Pointer:
+		if f.Pointer() == 0 {
+			jen.Nil()
+		}
+		return jen.Op("&").Add(generateFromValue(f.Elem()))
+	case reflect.Chan, reflect.Func, reflect.UnsafePointer:
+		return jen.Nil()
+	default:
+		panic(fmt.Sprintf("unsupported type: %s", value.Type()))
+	}
 }

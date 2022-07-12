@@ -47,13 +47,21 @@ func NewMouseArea(id string, context vit.ComponentContext) *MouseArea {
 		pressedButtons:  *vit.NewEmptyIntValue(),
 		onClicked:       *vit.NewEventAttribute[MouseEvent](),
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
 	m.enabled.AddDependent(vit.FuncDep(m.enableDisable))
+	// register event listeners
+	// register enumerations
 	m.DefineEnum(vit.Enumeration{
 		Embedded: true,
 		Name:     "MouseButtons",
 		Position: nil,
 		Values:   map[string]int{"noButton": 0, "leftButton": 1, "rightButton": 2, "middleButton": 4, "allButtons": 134217727},
 	})
+	// add child components
+
+	context.Environment.RegisterComponent(m)
+
 	return m
 }
 

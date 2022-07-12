@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"reflect"
 	"sort"
 
 	"github.com/dave/jennifer/jen"
@@ -10,13 +11,13 @@ import (
 // This file contains various helper functions that make generating code easier.
 
 // mapProperties calls function 'f' for every property and combines their generated codes into one block.
-// It skips properties that are considered to be internal.
+// It skips properties that are considered to be internal or that are just assignments instead of new definitions.
 // 'f' will be called with it's property definition and identifier of the property.
 // It should return the corresponding code for the property. It may return nil to indicate that no code should be added.
 func mapProperties(props []vit.PropertyDefinition, f func(vit.PropertyDefinition, string) jen.Code) []jen.Code {
 	var result []jen.Code
 	for _, prop := range props {
-		if isInternalProperty(prop) {
+		if isInternalProperty(prop) || !prop.IsNewDefinition() {
 			continue
 		}
 		// NOTE: properties with multiple identifiers are currently not supported
@@ -113,4 +114,34 @@ func (v enumValueList) Less(i, j int) bool {
 
 func (v enumValueList) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
+}
+
+type mapItem struct {
+	key   string
+	value reflect.Value
+}
+
+type mapValueList []mapItem
+
+func (l mapValueList) Len() int {
+	return len(l)
+}
+
+func (l mapValueList) Less(i, j int) bool {
+	return l[i].key < l[j].key
+}
+func (l mapValueList) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
+}
+
+// sortMap sorts a map by it's keys.
+// The key must be of type string.
+func sortMap(mapValue reflect.Value) []mapItem {
+	var list = make(mapValueList, 0, mapValue.Len())
+	iter := mapValue.MapRange()
+	for iter.Next() {
+		list = append(list, mapItem{iter.Key().String(), iter.Value()})
+	}
+	sort.Sort(list)
+	return list
 }

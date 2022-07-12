@@ -59,6 +59,10 @@ func (f *Function) Call(context Component, args ...interface{}) (interface{}, er
 	return val, nil
 }
 
+func (f *Function) Code() string {
+	return f.code
+}
+
 type AsyncFunction struct {
 	Function
 	arguments []interface{}

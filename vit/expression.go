@@ -278,13 +278,15 @@ func NewExpressionError(code string, pos *PositionRange, wrappedErr error) Expre
 			line, err := strconv.Atoi(matches[1])
 			column, err2 := strconv.Atoi(matches[2])
 			if err == nil && err2 == nil {
-				if line == 1 {
-					pos.StartColumn += column - 1
-				} else {
-					pos.StartLine += line - 1
-					pos.StartColumn = column
+				if pos != nil {
+					if line == 1 {
+						pos.StartColumn += column - 1
+					} else {
+						pos.StartLine += line - 1
+						pos.StartColumn = column
+					}
+					pos.SetEnd(pos.Start())
 				}
-				pos.SetEnd(pos.Start())
 				wrappedErr = errors.New(matches[3])
 			}
 		}

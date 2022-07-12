@@ -153,7 +153,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 
 	// setup all properties for the struct definition as well as the instantiations
 	for _, prop := range comp.Properties {
-		if isInternalProperty(prop) {
+		if isInternalProperty(prop) || !prop.IsNewDefinition() {
 			continue
 		}
 		propType, propConstructor, err := vitTypeInfo(comp, prop)
@@ -166,6 +166,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		// property instantiation
 		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(prop.Identifier[0]).Op(":").Add(propConstructor))
 	}
+	properties = append(properties, jen.Line())
 
 	// setup all event attributes
 	for _, ev := range comp.Events {
@@ -182,9 +183,15 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 				return err
 			}
 		}
-		properties = append(properties, jen.Line())
 		properties = append(properties, jen.Id(ev.Name).Qual(vitPackage, "EventAttribute").Types(eventType))
 		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(ev.Name).Op(":").Op("*").Qual(vitPackage, "NewEventAttribute").Types(eventType).Call())
+	}
+	properties = append(properties, jen.Line())
+
+	// setup all method attributes
+	for _, m := range comp.Methods {
+		properties = append(properties, jen.Id(m.Name).Qual(vitPackage, "Method"))
+		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(m.Name).Op(":").Qual(vitPackage, "NewMethod").Call(jen.Lit(m.Name), jen.Lit(m.Code()), generatePositionRange(*m.Position)))
 	}
 
 	propertyInstantiations = append(propertyInstantiations, jen.Line())
@@ -198,17 +205,60 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params(jen.Op("*").Id(compName)).
 		BlockFunc(func(g *jen.Group) {
 			g.Id(receiverName).Op(":=").Op("&").Id(compName).Values(propertyInstantiations...)
-			// properties
+			// property assignments
+			g.Comment("property assignments on embedded components")
+			for _, prop := range comp.Properties {
+				if isInternalProperty(prop) || prop.IsNewDefinition() || len(prop.Identifier) > 1 {
+					continue
+				}
+				// TODO: implement group properties
+				g.Id(receiverName).Dot(comp.BaseName).Dot("SetPropertyExpression").Call(jen.Lit(prop.Identifier[0]), jen.Lit(prop.Expression), generatePositionRange(*prop.ValuePos))
+			}
+			// property change listeners
+			g.Comment("register listeners for when a property changes")
 			addMultiple(g, mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
 				if tag, ok := prop.Tags[onChangeTag]; ok {
 					return jen.Id(receiverName).Dot(propId).Dot("AddDependent").Call(jen.Id("vit").Dot("FuncDep").Call(jen.Id(receiverName).Dot(tag)))
 				}
 				return nil
 			}))
+			// event listeners
+			g.Comment("register event listeners")
+			firstEventListener := true
+			for _, prop := range comp.Properties {
+				if isInternalProperty(prop) || len(prop.Identifier) <= 1 {
+					continue
+				}
+				if firstEventListener {
+					firstEventListener = false
+					g.Var().Id("event").Qual(vitPackage, "Listenable")
+					g.Var().Id("listener").Qual(vitPackage, "Evaluater")
+				}
+				if prop.Identifier[0] == "Root" {
+					g.Id("event").Op(",").Id("_").Op("=").Id(receiverName).Dot("Root").Dot("Event").Call(jen.Lit(prop.Identifier[1]))
+					g.Id("listener").Op("=").Id("event").Dot("CreateListener").Call(jen.Lit(prop.Expression), generatePositionRange(prop.Pos))
+					g.Id(receiverName).Dot("RootC").Call().Dot("AddListenerFunction").Call(jen.Id("listener"))
+				} else {
+					fmt.Fprintf(os.Stderr, "setting a property like %q is not currently supported\r\n", strings.Join(prop.Identifier, "."))
+				}
+			}
 			// enumerations
+			g.Comment("register enumerations")
 			for _, enum := range comp.Enumerations {
 				g.Id(receiverName).Dot("DefineEnum").Call(generateEnumeration(enum))
 			}
+			// children
+			g.Comment("add child components")
+			if len(comp.Children) > 0 {
+				g.Var().Id("child").Qual(vitPackage, "Component")
+				for _, child := range comp.Children {
+					g.List(jen.Id("child"), jen.Op("_")).Op("=").Qual(parsePackage, "InstantiateComponent").Call(generateComponentDefinition(child), jen.Id("context"))
+					g.Id(receiverName).Dot("AddChild").Call(jen.Id("child"))
+				}
+			}
+			g.Line()
+			g.Id("context").Dot("Environment").Dot("RegisterComponent").Call(jen.Id(receiverName))
+			g.Line()
 			g.Return(jen.Id(receiverName))
 		})
 
@@ -330,7 +380,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 					jen.Return(jen.Id(receiverName), jen.True()),
 				)
 				for _, prop := range comp.Properties {
-					if isInternalProperty(prop) || !isReadable(prop) {
+					if isInternalProperty(prop) || !isReadable(prop) || !prop.IsNewDefinition() {
 						continue
 					}
 					g.Case(jen.Lit(prop.Identifier[0])).Block(

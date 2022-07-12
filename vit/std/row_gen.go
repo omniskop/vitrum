@@ -32,12 +32,20 @@ func NewRow(id string, context vit.ComponentContext) *Row {
 		spacing:       *vit.NewFloatValueFromExpression("0", nil),
 		childLayouts:  make(vit.LayoutList),
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
 	r.topPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.rightPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.bottomPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.leftPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.padding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.spacing.AddDependent(vit.FuncDep(r.recalculateLayout))
+	// register event listeners
+	// register enumerations
+	// add child components
+
+	context.Environment.RegisterComponent(r)
+
 	return r
 }
 

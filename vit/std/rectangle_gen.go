@@ -27,6 +27,14 @@ func NewRectangle(id string, context vit.ComponentContext) *Rectangle {
 			"width": vit.NewIntValueFromExpression("0", nil),
 		}),
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
+	// register event listeners
+	// register enumerations
+	// add child components
+
+	context.Environment.RegisterComponent(r)
+
 	return r
 }
 

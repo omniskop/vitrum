@@ -26,9 +26,17 @@ func NewRepeater(id string, context vit.ComponentContext) *Repeater {
 		model:    *vit.NewEmptyAnyValue(),
 		items:    []RepeaterItem{},
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
 	r.count.AddDependent(vit.FuncDep(r.evaluateInternals))
 	r.delegate.AddDependent(vit.FuncDep(r.evaluateInternals))
 	r.model.AddDependent(vit.FuncDep(r.evaluateInternals))
+	// register event listeners
+	// register enumerations
+	// add child components
+
+	context.Environment.RegisterComponent(r)
+
 	return r
 }
 
