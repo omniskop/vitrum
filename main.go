@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/omniskop/vitrum/controls"
+	// _ "github.com/omniskop/vitrum/controls"
 	"github.com/omniskop/vitrum/gui"
 	_ "github.com/omniskop/vitrum/vit/std"
 )
