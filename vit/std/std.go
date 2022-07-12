@@ -1,6 +1,9 @@
 package std
 
-import vit "github.com/omniskop/vitrum/vit"
+import (
+	vit "github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/parse"
+)
 
 //go:generate go build -o gencmd github.com/omniskop/vitrum/vit/generator/gencmd
 //go:generate ./gencmd -i Rectangle.vit -o rectangle_gen.go -p github.com/omniskop/vitrum/vit/std
@@ -11,6 +14,10 @@ import vit "github.com/omniskop/vitrum/vit"
 //go:generate ./gencmd -i Text.vit -o text_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i MouseArea.vit -o mouseArea_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate rm ./gencmd
+
+func init() {
+	parse.RegisterLibrary("Vit", StdLib{})
+}
 
 type StdLib struct {
 }
