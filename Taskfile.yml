@@ -24,13 +24,24 @@ vars:
   ROOT:
     sh: "echo $(pwd)"
 
+output: group
+
 tasks:
   generate:
-    deps:
+    deps: [ check-generator-build ]
+    cmds:
+      - task: generate-files
+  
+  generate-files:
+    deps: # runs them all in parallel
       - std:generate-local
       - gui:generate-local
       - controls:generate-local
-  
+
+  check-generator-build:
+    - cmd: go vet github.com/omniskop/vitrum/vit/generator/gencmd # we use go vet to check for errors in the package
+      silent: true
+
   build:
     deps: [ generate ]
     cmds:

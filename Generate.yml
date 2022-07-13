@@ -3,9 +3,11 @@ version: '3'
 tasks:
   generate-local:
     cmds:
-      - echo "generating in $(pwd)"
-      - defer: rm ./gencmd
-      - go generate ./...
+      - cmd: echo "generating in $(pwd)"
+        silent: true
+      - defer: rm ./gencmd 2> /dev/null
+        silent: true
+      - cmd: go generate ./...
     sources:
       - ./*.vit
       - "{{.ROOT}}/vit/generator/**/*"
