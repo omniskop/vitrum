@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"fmt"
+
 	vit "github.com/omniskop/vitrum/vit"
 	"github.com/omniskop/vitrum/vit/parse"
 )
@@ -19,12 +21,20 @@ func (l GUILib) ComponentNames() []string {
 	return []string{"Window"}
 }
 
-func (l GUILib) NewComponent(name string, id string, scope vit.ComponentContext) (vit.Component, bool) {
+func (l GUILib) NewComponent(name string, id string, globalCtx *vit.GlobalContext) (vit.Component, bool) {
+	var comp vit.Component
+	var err error
 	switch name {
 	case "Window":
-		return NewWindowComponent(id, scope), true
+		comp, err = newWindowComponentInGlobal(id, globalCtx)
+	default:
+		return nil, false
 	}
-	return nil, false
+	if err != nil {
+		fmt.Println(err)
+		return nil, false
+	}
+	return comp, true
 }
 
 func (l GUILib) StaticAttribute(componentName string, attributeName string) (interface{}, bool) {

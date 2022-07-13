@@ -7,6 +7,10 @@ import (
 	vit "github.com/omniskop/vitrum/vit"
 )
 
+func newFileContextForMouseArea(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	return vit.NewFileContext(globalCtx), nil
+}
+
 type MouseArea_MouseButtons uint
 
 const (
@@ -33,13 +37,22 @@ type MouseArea struct {
 	onClicked vit.EventAttribute[MouseEvent]
 }
 
-func NewMouseArea(id string, context vit.ComponentContext) *MouseArea {
+// newMouseAreaInGlobal creates an appropriate file context for the component and then returns a new MouseArea instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newMouseAreaInGlobal(id string, globalCtx *vit.GlobalContext) (*MouseArea, error) {
+	fileCtx, err := newFileContextForMouseArea(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewMouseArea(id, fileCtx), nil
+}
+func NewMouseArea(id string, context *vit.FileContext) *MouseArea {
 	m := &MouseArea{
 		Item:            NewItem(id, context),
 		id:              id,
-		acceptedButtons: *vit.NewIntValueFromExpression("MouseButtons.leftButton", nil),
+		acceptedButtons: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "MouseButtons.leftButton", Position: nil}),
 		containsMouse:   *vit.NewEmptyBoolValue(),
-		enabled:         *vit.NewBoolValueFromExpression("true", nil),
+		enabled:         *vit.NewBoolValueFromCode(vit.Code{FileCtx: context, Code: "true", Position: nil}),
 		hoverEnabled:    *vit.NewEmptyBoolValue(),
 		mouseX:          *vit.NewEmptyFloatValue(),
 		mouseY:          *vit.NewEmptyFloatValue(),
@@ -60,7 +73,7 @@ func NewMouseArea(id string, context vit.ComponentContext) *MouseArea {
 	})
 	// add child components
 
-	context.Environment.RegisterComponent(m)
+	context.RegisterComponent(m)
 
 	return m
 }
@@ -128,26 +141,26 @@ func (m *MouseArea) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (m *MouseArea) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (m *MouseArea) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "acceptedButtons":
-		m.acceptedButtons.SetExpression(code, pos)
+		m.acceptedButtons.SetCode(code)
 	case "containsMouse":
-		m.containsMouse.SetExpression(code, pos)
+		m.containsMouse.SetCode(code)
 	case "enabled":
-		m.enabled.SetExpression(code, pos)
+		m.enabled.SetCode(code)
 	case "hoverEnabled":
-		m.hoverEnabled.SetExpression(code, pos)
+		m.hoverEnabled.SetCode(code)
 	case "mouseX":
-		m.mouseX.SetExpression(code, pos)
+		m.mouseX.SetCode(code)
 	case "mouseY":
-		m.mouseY.SetExpression(code, pos)
+		m.mouseY.SetCode(code)
 	case "pressed":
-		m.pressed.SetExpression(code, pos)
+		m.pressed.SetCode(code)
 	case "pressedButtons":
-		m.pressedButtons.SetExpression(code, pos)
+		m.pressedButtons.SetCode(code)
 	default:
-		return m.Item.SetPropertyExpression(key, code, pos)
+		return m.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -201,6 +214,7 @@ func (m *MouseArea) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := m.acceptedButtons.Update(m); changed || err != nil {
 		sum++
 		if err != nil {
@@ -249,6 +263,8 @@ func (m *MouseArea) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("MouseArea", "pressedButtons", m.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := m.UpdatePropertiesInContext(m)

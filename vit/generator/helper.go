@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -39,6 +40,16 @@ func addMultiple(g *jen.Group, code []jen.Code) {
 	}
 }
 
+// generateSlice creates code that describes the given slice.
+// Important: The element type of the slice must be compatible with 'jen.Lit'.
+func generateSlice[T any](s []T) *jen.Statement {
+	return jen.Index().Id(fmt.Sprintf("%T", *new(T))).ValuesFunc(func(g *jen.Group) {
+		for _, v := range s {
+			g.Lit(v)
+		}
+	})
+}
+
 // generateCallbackForAddedChild checks if the component provides a callback for the event that a child has been added to the component.
 // If that is the case it returns a defer statement that should be added to the top of all methods that add a child.
 // If no callback is provided it returns nil.
@@ -48,6 +59,14 @@ func generateCallbackForAddedChild(comp *vit.ComponentDefinition, receiverName, 
 		return jen.Defer().Id(receiverName).Dot(childrenProp.Tags[onChangeTag]).Call(jen.Id(parameterName))
 	}
 	return nil
+}
+
+func generateCode(code string, pos vit.PositionRange, ctxIdentifier string) *jen.Statement {
+	return jen.Qual(vitPackage, "Code").Values(
+		jen.Id("FileCtx").Op(":").Id(ctxIdentifier),
+		jen.Id("Code").Op(":").Lit(code),
+		jen.Id("Position").Op(":").Add(generatePositionRange(pos)),
+	)
 }
 
 // unpointer removes the first '*' from statements.

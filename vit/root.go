@@ -4,7 +4,7 @@ import "fmt"
 
 // Root is the base component all other components embed. It provides some basic functionality.
 type Root struct {
-	context        ComponentContext
+	context        *FileContext
 	parent         Component
 	id             string           // id of this component. Can only be set on creation and not be changed.
 	properties     map[string]Value // custom properties defined in a vit file
@@ -17,7 +17,7 @@ type Root struct {
 
 // TODO: Investigate wether we could bring eventListeners into methods. They kinda do the same.
 
-func NewRoot(id string, context ComponentContext) Root {
+func NewRoot(id string, context *FileContext) Root {
 	return Root{
 		context:      context,
 		id:           id,
@@ -44,7 +44,7 @@ func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 			r.properties[name] = NewComponentDefValue(propDef.Components[0])
 		}
 	} else {
-		value, err := newValueForType(propDef.VitType, propDef.Expression, &propDef.Pos)
+		value, err := newValueForType(propDef.VitType, Code{Code: propDef.Expression, Position: &propDef.Pos})
 		if err != nil {
 			// TODO: add more info?
 			return err
@@ -102,12 +102,12 @@ func (r *Root) SetProperty(key string, newValue interface{}) error {
 	return nil
 }
 
-func (r *Root) SetPropertyExpression(key string, expression string, position *PositionRange) error {
+func (r *Root) SetPropertyCode(key string, code Code) error {
 	prop, ok := r.properties[key]
 	if !ok {
 		return unknownPropErr("", key, r.id)
 	}
-	prop.SetExpression(expression, position)
+	prop.SetCode(code)
 	return nil
 }
 
@@ -133,12 +133,9 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 		return r.parent, true
 	}
-	if key == r.id {
-		return r, true
-	}
 
 	// check components in scope
-	abs, ok := r.context.KnownComponents.Get(key)
+	abs, ok := r.context.Get(key)
 	if ok {
 		return abs, true
 	}
@@ -161,40 +158,6 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		}
 	}
 
-	// for children we only check id's and not properties
-	for _, child := range r.children {
-		if child.ID() == key {
-			return child, true
-		}
-		if comp, ok := child.ResolveID(key); ok {
-			return comp, true
-		}
-	}
-
-	if r.parent != nil {
-		// This will recursively search the tree upwards but it should stop on the document level. Would that mean the 'Custom' component?
-		for _, child := range r.parent.Children() {
-			if child == r {
-				continue
-			}
-			if child.ID() == key {
-				return child, true
-			}
-			if comp, ok := child.ResolveID(key); ok {
-				return comp, true
-			}
-		}
-	}
-
-	return nil, false
-}
-
-func (r *Root) ResolveID(id string) (Component, bool) {
-	for _, child := range r.children {
-		if child.ID() == id {
-			return child, true
-		}
-	}
 	return nil, false
 }
 

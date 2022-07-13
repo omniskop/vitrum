@@ -88,12 +88,12 @@ func (m *Manager) Run(environment vit.ExecutionEnvironment) error {
 
 	documents = documents.ToGlobal()
 
-	context := vit.ComponentContext{
+	globalCtx := vit.GlobalContext{
 		KnownComponents: documents,
 		Environment:     environment,
 	}
 
-	components, err := interpret(main, "", context)
+	components, err := interpret(main, "", &globalCtx)
 	if err != nil {
 		return err
 	}

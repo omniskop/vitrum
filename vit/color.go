@@ -12,11 +12,11 @@ type ColorValue struct {
 	expression *Expression
 }
 
-func NewColorValueFromExpression(expression string, position *PositionRange) *ColorValue {
+func NewColorValueFromCode(code Code) *ColorValue {
 	return &ColorValue{
 		baseValue:  newBaseValue(),
 		value:      color.Black,
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -54,11 +54,6 @@ func (v *ColorValue) Color() color.Color {
 	return v.value
 }
 
-func (v *ColorValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *ColorValue) SetValue(newValue interface{}) error {
 	switch actualValue := newValue.(type) {
 	case color.Color:
@@ -86,8 +81,8 @@ func (v *ColorValue) SetColor(newValue color.Color) {
 	v.notifyDependents(nil)
 }
 
-func (v *ColorValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *ColorValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 

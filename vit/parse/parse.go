@@ -152,8 +152,8 @@ scanComponents:
 }
 
 // parseImports parses all import statements at the beginning of a file
-func parseImports(tokens *tokenBuffer) ([]importStatement, error) {
-	statements := make([]importStatement, 0)
+func parseImports(tokens *tokenBuffer) ([]ImportStatement, error) {
+	statements := make([]ImportStatement, 0)
 	for {
 		ignoreTokens(tokens, tokenNewline)
 
@@ -166,7 +166,7 @@ func parseImports(tokens *tokenBuffer) ([]importStatement, error) {
 		t := tokens.next()
 
 		imp, err := parseSingleImport(tokens)
-		imp.position = vit.CombineRanges(imp.position, t.position)
+		imp.Position = vit.CombineRanges(imp.Position, t.position)
 		if err != nil {
 			return statements, err
 		}
@@ -175,17 +175,17 @@ func parseImports(tokens *tokenBuffer) ([]importStatement, error) {
 }
 
 // parseSingleImport parses a single import statement
-func parseSingleImport(tokens *tokenBuffer) (importStatement, error) {
-	var imp importStatement
+func parseSingleImport(tokens *tokenBuffer) (ImportStatement, error) {
+	var imp ImportStatement
 
 	// parse imported namespace or filepath
 	var namespaceImport bool
 scanAgain:
 	t := tokens.next()
-	imp.position = t.position
+	imp.Position = t.position
 	if t.tokenType == tokenIdentifier {
 		namespaceImport = true
-		imp.namespace = append(imp.namespace, t.literal)
+		imp.Namespace = append(imp.Namespace, t.literal)
 		nextToken := tokens.peek()
 		if nextToken.tokenType == tokenPeriod {
 			tokens.next()
@@ -198,7 +198,7 @@ scanAgain:
 		if namespaceImport {
 			return imp, unexpectedToken(t, tokenIdentifier)
 		}
-		imp.file = t.literal
+		imp.File = t.literal
 	} else {
 		return imp, unexpectedToken(t, tokenIdentifier, tokenString)
 	}
@@ -208,8 +208,8 @@ scanAgain:
 	if err != nil {
 		return imp, err
 	}
-	imp.version = t.literal
-	imp.position.SetEnd(t.position.End())
+	imp.Version = t.literal
+	imp.Position.SetEnd(t.position.End())
 
 	_, err = expectToken(tokens.next, tokenNewline, tokenSemicolon)
 	if err != nil {
@@ -707,7 +707,7 @@ func parseMethod(tokens *tokenBuffer, modifiers [][]string, startingPosition vit
 	}
 
 	pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
-	method := vit.NewMethod(name, t.literal, &pos)
+	method := vit.NewMethod(name, t.literal, &pos, nil)
 
 	return method, nil
 }

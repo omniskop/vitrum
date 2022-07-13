@@ -1,6 +1,8 @@
 package std
 
 import (
+	"fmt"
+
 	vit "github.com/omniskop/vitrum/vit"
 	"github.com/omniskop/vitrum/vit/parse"
 )
@@ -26,28 +28,38 @@ func (l StdLib) ComponentNames() []string {
 	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea"}
 }
 
-func (l StdLib) NewComponent(name string, id string, scope vit.ComponentContext) (vit.Component, bool) {
+func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContext) (vit.Component, bool) {
+	var comp vit.Component
+	var err error
 	switch name {
 	case "Item":
-		return NewItem(id, scope), true
+		var fileCtx = vit.NewFileContext(globalCtx)
+		return NewItem(id, fileCtx), true
 	case "Rectangle":
-		return NewRectangle(id, scope), true
+		comp, err = newRectangleInGlobal(id, globalCtx)
 	case "Repeater":
-		return NewRepeater(id, scope), true
+		comp, err = newRepeaterInGlobal(id, globalCtx)
 	case "Container":
-		return NewContainer(id, scope), true
+		var fileCtx = vit.NewFileContext(globalCtx)
+		return NewContainer(id, fileCtx), true
 	case "Row":
-		return NewRow(id, scope), true
+		comp, err = newRowInGlobal(id, globalCtx)
 	case "Column":
-		return NewColumn(id, scope), true
+		comp, err = newColumnInGlobal(id, globalCtx)
 	case "Grid":
-		return NewGrid(id, scope), true
+		comp, err = newGridInGlobal(id, globalCtx)
 	case "Text":
-		return NewText(id, scope), true
+		comp, err = newTextInGlobal(id, globalCtx)
 	case "MouseArea":
-		return NewMouseArea(id, scope), true
+		comp, err = newMouseAreaInGlobal(id, globalCtx)
+	default:
+		return nil, false
 	}
-	return nil, false
+	if err != nil {
+		fmt.Println(err)
+		return nil, false
+	}
+	return comp, true
 }
 
 func (l StdLib) StaticAttribute(componentName string, attributeName string) (interface{}, bool) {

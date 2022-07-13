@@ -199,9 +199,9 @@ Item {
 `
 
 var validDocument = &VitDocument{
-	Imports: []importStatement{
-		{namespace: []string{"One"}, version: "1.23", position: vit.PositionRange{FilePath: "test", StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
-		{namespace: []string{"Two", "Three"}, version: "4.56", position: vit.PositionRange{FilePath: "test", StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
+	Imports: []ImportStatement{
+		{Namespace: []string{"One"}, Version: "1.23", Position: vit.PositionRange{FilePath: "test", StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
+		{Namespace: []string{"Two", "Three"}, Version: "4.56", Position: vit.PositionRange{FilePath: "test", StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
 	},
 	Components: []*vit.ComponentDefinition{
 		{
@@ -290,7 +290,7 @@ func TestParse(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	options := []cmp.Option{
-		cmp.AllowUnexported(VitDocument{}, vit.ComponentDefinition{}, vit.PropertyDefinition{}, importStatement{}), // allow comparison of unexported fields in these structs
+		cmp.AllowUnexported(VitDocument{}, vit.ComponentDefinition{}, vit.PropertyDefinition{}, ImportStatement{}), // allow comparison of unexported fields in these structs
 		cmpopts.EquateEmpty(), // allow nil to equal a slice or map of length 0
 	}
 	if !cmp.Equal(validDocument, doc, options...) {

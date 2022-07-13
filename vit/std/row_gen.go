@@ -7,6 +7,10 @@ import (
 	vit "github.com/omniskop/vitrum/vit"
 )
 
+func newFileContextForRow(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	return vit.NewFileContext(globalCtx), nil
+}
+
 type Row struct {
 	*Item
 	id string
@@ -20,16 +24,25 @@ type Row struct {
 	childLayouts  vit.LayoutList
 }
 
-func NewRow(id string, context vit.ComponentContext) *Row {
+// newRowInGlobal creates an appropriate file context for the component and then returns a new Row instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newRowInGlobal(id string, globalCtx *vit.GlobalContext) (*Row, error) {
+	fileCtx, err := newFileContextForRow(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewRow(id, fileCtx), nil
+}
+func NewRow(id string, context *vit.FileContext) *Row {
 	r := &Row{
 		Item:          NewItem(id, context),
 		id:            id,
-		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		bottomPadding: *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		leftPadding:   *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		padding:       *vit.NewFloatValueFromExpression("0", nil),
-		spacing:       *vit.NewFloatValueFromExpression("0", nil),
+		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		bottomPadding: *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		leftPadding:   *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		padding:       *vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
+		spacing:       *vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
 		childLayouts:  make(vit.LayoutList),
 	}
 	// property assignments on embedded components
@@ -44,7 +57,7 @@ func NewRow(id string, context vit.ComponentContext) *Row {
 	// register enumerations
 	// add child components
 
-	context.Environment.RegisterComponent(r)
+	context.RegisterComponent(r)
 
 	return r
 }
@@ -104,22 +117,22 @@ func (r *Row) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (r *Row) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (r *Row) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "topPadding":
-		r.topPadding.SetExpression(code, pos)
+		r.topPadding.SetCode(code)
 	case "rightPadding":
-		r.rightPadding.SetExpression(code, pos)
+		r.rightPadding.SetCode(code)
 	case "bottomPadding":
-		r.bottomPadding.SetExpression(code, pos)
+		r.bottomPadding.SetCode(code)
 	case "leftPadding":
-		r.leftPadding.SetExpression(code, pos)
+		r.leftPadding.SetCode(code)
 	case "padding":
-		r.padding.SetExpression(code, pos)
+		r.padding.SetCode(code)
 	case "spacing":
-		r.spacing.SetExpression(code, pos)
+		r.spacing.SetCode(code)
 	default:
-		return r.Item.SetPropertyExpression(key, code, pos)
+		return r.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -169,6 +182,7 @@ func (r *Row) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := r.topPadding.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
@@ -205,6 +219,8 @@ func (r *Row) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("Row", "spacing", r.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := r.UpdatePropertiesInContext(r)

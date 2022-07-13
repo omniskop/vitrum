@@ -8,13 +8,14 @@ import (
 )
 
 type Function struct {
+	fileCtx  *FileContext
 	code     string
 	program  script.Script
 	Position *PositionRange
 	err      error
 }
 
-func NewFunction(code string, position *PositionRange) *Function {
+func NewFunction(code string, position *PositionRange, fileCtx *FileContext) *Function {
 	originalCode := code
 	// convert code that is just enclosed in curly braces to a valid function
 	if startsWith(code, '{') {
@@ -39,6 +40,7 @@ func NewFunction(code string, position *PositionRange) *Function {
 	}
 
 	return &Function{
+		fileCtx:  fileCtx,
 		code:     originalCode,
 		program:  prog,
 		Position: position,
@@ -46,13 +48,17 @@ func NewFunction(code string, position *PositionRange) *Function {
 	}
 }
 
+func NewFunctionFromCode(code Code) *Function {
+	return NewFunction(code.Code, code.Position, code.FileCtx)
+}
+
 func (f *Function) Call(context Component, args ...interface{}) (interface{}, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
 
-	collector := NewAccessCollector(context)
-	val, err := f.program.Call(collector, args)
+	collector := NewAccessCollector(f.fileCtx, context)
+	val, err := f.program.Call(collector, args...)
 	if err != nil {
 		return nil, NewExpressionError(f.code, f.Position, err)
 	}
@@ -69,9 +75,9 @@ type AsyncFunction struct {
 	dirty     bool
 }
 
-func NewAsyncFunction(code string, position *PositionRange) *AsyncFunction {
+func NewAsyncFunction(code string, position *PositionRange, fileCtx *FileContext) *AsyncFunction {
 	return &AsyncFunction{
-		Function:  *NewFunction(code, position),
+		Function:  *NewFunction(code, position, fileCtx),
 		arguments: nil,
 		dirty:     false, // async functions start clean
 	}

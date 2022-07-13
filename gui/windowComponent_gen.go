@@ -5,8 +5,25 @@ package gui
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 	std "github.com/omniskop/vitrum/vit/std"
 )
+
+func newFileContextForWindowComponent(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	fileCtx := vit.NewFileContext(globalCtx)
+
+	var lib parse.Library
+	var err error
+	lib, err = parse.ResolveLibrary([]string{"Vit"})
+	if err != nil {
+		// The file used to generate the "WindowComponent" component imported a library called "Vit".
+		// If this error occurs that imported failed. Probably because the library is not known.
+		return nil, fmt.Errorf("unable to create file context for generated \"WindowComponent\" component: %w", err)
+	}
+	parse.AddLibraryToContainer(lib, &fileCtx.KnownComponents)
+
+	return fileCtx, nil
+}
 
 type WindowComponent struct {
 	*std.Item
@@ -19,7 +36,16 @@ type WindowComponent struct {
 	minHeight vit.FloatValue
 }
 
-func NewWindowComponent(id string, context vit.ComponentContext) *WindowComponent {
+// newWindowComponentInGlobal creates an appropriate file context for the component and then returns a new WindowComponent instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newWindowComponentInGlobal(id string, globalCtx *vit.GlobalContext) (*WindowComponent, error) {
+	fileCtx, err := newFileContextForWindowComponent(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewWindowComponent(id, fileCtx), nil
+}
+func NewWindowComponent(id string, context *vit.FileContext) *WindowComponent {
 	w := &WindowComponent{
 		Item:      std.NewItem(id, context),
 		id:        id,
@@ -29,6 +55,14 @@ func NewWindowComponent(id string, context vit.ComponentContext) *WindowComponen
 		minWidth:  *vit.NewEmptyFloatValue(),
 		minHeight: *vit.NewEmptyFloatValue(),
 	}
+	// property assignments on embedded components
+	// register listeners for when a property changes
+	// register event listeners
+	// register enumerations
+	// add child components
+
+	context.RegisterComponent(w)
+
 	return w
 }
 
@@ -83,20 +117,20 @@ func (w *WindowComponent) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (w *WindowComponent) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (w *WindowComponent) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "title":
-		w.title.SetExpression(code, pos)
+		w.title.SetCode(code)
 	case "maxWidth":
-		w.maxWidth.SetExpression(code, pos)
+		w.maxWidth.SetCode(code)
 	case "maxHeight":
-		w.maxHeight.SetExpression(code, pos)
+		w.maxHeight.SetCode(code)
 	case "minWidth":
-		w.minWidth.SetExpression(code, pos)
+		w.minWidth.SetCode(code)
 	case "minHeight":
-		w.minHeight.SetExpression(code, pos)
+		w.minHeight.SetCode(code)
 	default:
-		return w.Item.SetPropertyExpression(key, code, pos)
+		return w.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -142,6 +176,7 @@ func (w *WindowComponent) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := w.title.Update(w); changed || err != nil {
 		sum++
 		if err != nil {
@@ -172,6 +207,8 @@ func (w *WindowComponent) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("WindowComponent", "minHeight", w.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := w.UpdatePropertiesInContext(w)

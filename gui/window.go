@@ -178,7 +178,8 @@ func (w *Window) run(log *log.Logger) error {
 				w.mainComponent.SetProperty("height", virtualWindowBounds.Height())
 				err := w.updateExpressions()
 				if err.Failed() {
-					log.Println(fmt.Errorf("window update: %v", err))
+					log.Println(fmt.Errorf("window update:"))
+					log.Println(parse.FormatError(err))
 				}
 
 				// We give NewContain the virtual size of the window and it will calculate the necessary scaling factor

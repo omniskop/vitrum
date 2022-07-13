@@ -29,7 +29,7 @@ type Item struct {
 	layout *vit.Layout
 }
 
-func NewItem(id string, context vit.ComponentContext) *Item {
+func NewItem(id string, context *vit.FileContext) *Item {
 	i := &Item{
 		Root:             vit.NewRoot(id, context),
 		id:               id,
@@ -124,22 +124,22 @@ func (i *Item) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (i *Item) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (i *Item) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "width":
-		i.width.SetExpression(code, pos)
+		i.width.SetCode(code)
 	case "height":
-		i.height.SetExpression(code, pos)
+		i.height.SetCode(code)
 	case "anchors":
 		panic("not implemented")
 	case "x":
-		i.x.SetExpression(code, pos)
+		i.x.SetCode(code)
 	case "y":
-		i.y.SetExpression(code, pos)
+		i.y.SetCode(code)
 	case "z":
-		i.z.SetExpression(code, pos)
+		i.z.SetCode(code)
 	default:
-		return i.Root.SetPropertyExpression(key, code, pos)
+		return i.Root.SetPropertyCode(key, code)
 	}
 	return nil
 }

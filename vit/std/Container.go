@@ -15,9 +15,9 @@ type Container struct {
 	children []vit.Component
 }
 
-func NewContainer(id string, scope vit.ComponentContext) *Container {
+func NewContainer(id string, context *vit.FileContext) *Container {
 	return &Container{
-		Item:    *NewItem(id, scope),
+		Item:    *NewItem(id, context),
 		id:      id,
 		content: *vit.NewEmptyComponentDefListValue(),
 	}
@@ -57,12 +57,12 @@ func (r *Container) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (r *Container) SetPropertyExpression(key string, code string, position *vit.PositionRange) error {
+func (r *Container) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "content":
 		r.content.SetComponentDefinitions(nil)
 	default:
-		return r.Item.SetPropertyExpression(key, code, position)
+		return r.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }

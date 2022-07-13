@@ -8,6 +8,10 @@ import (
 	canvas "github.com/tdewolff/canvas"
 )
 
+func newFileContextForText(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	return vit.NewFileContext(globalCtx), nil
+}
+
 type Text_HorizontalAlignment uint
 
 const (
@@ -66,25 +70,34 @@ type Text struct {
 	fontFaceData        *canvas.FontFace
 }
 
-func NewText(id string, context vit.ComponentContext) *Text {
+// newTextInGlobal creates an appropriate file context for the component and then returns a new Text instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newTextInGlobal(id string, globalCtx *vit.GlobalContext) (*Text, error) {
+	fileCtx, err := newFileContextForText(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewText(id, fileCtx), nil
+}
+func NewText(id string, context *vit.FileContext) *Text {
 	t := &Text{
 		Item:                NewItem(id, context),
 		id:                  id,
 		text:                *vit.NewEmptyStringValue(),
-		color:               *vit.NewColorValueFromExpression("\"black\"", nil),
-		horizontalAlignment: *vit.NewIntValueFromExpression("HorizontalAlignment.AlignLeft", nil),
-		verticalAlignment:   *vit.NewIntValueFromExpression("VerticalAlignment.AlignTop", nil),
+		color:               *vit.NewColorValueFromCode(vit.Code{FileCtx: context, Code: "\"black\"", Position: nil}),
+		horizontalAlignment: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "HorizontalAlignment.AlignLeft", Position: nil}),
+		verticalAlignment:   *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "VerticalAlignment.AlignTop", Position: nil}),
 		font: *vit.NewEmptyGroupValue(map[string]vit.Value{
-			"bold":      vit.NewBoolValueFromExpression("false", nil),
-			"italic":    vit.NewBoolValueFromExpression("false", nil),
-			"strikeout": vit.NewBoolValueFromExpression("false", nil),
-			"underline": vit.NewBoolValueFromExpression("false", nil),
-			"pixelSize": vit.NewIntValueFromExpression("12", nil),
-			"pointSize": vit.NewFloatValueFromExpression("12", nil),
-			"family":    vit.NewStringValueFromExpression("\"Arial\"", nil),
-			"weight":    vit.NewIntValueFromExpression("FontWeight.Normal", nil),
+			"bold":      vit.NewBoolValueFromCode(vit.Code{FileCtx: context, Code: "false", Position: nil}),
+			"italic":    vit.NewBoolValueFromCode(vit.Code{FileCtx: context, Code: "false", Position: nil}),
+			"strikeout": vit.NewBoolValueFromCode(vit.Code{FileCtx: context, Code: "false", Position: nil}),
+			"underline": vit.NewBoolValueFromCode(vit.Code{FileCtx: context, Code: "false", Position: nil}),
+			"pixelSize": vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "12", Position: nil}),
+			"pointSize": vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "12", Position: nil}),
+			"family":    vit.NewStringValueFromCode(vit.Code{FileCtx: context, Code: "\"Arial\"", Position: nil}),
+			"weight":    vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "FontWeight.Normal", Position: nil}),
 		}),
-		elide:        *vit.NewIntValueFromExpression("Elide.ElideNone", nil),
+		elide:        *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "Elide.ElideNone", Position: nil}),
 		fontData:     nil,
 		fontFaceData: nil,
 	}
@@ -119,7 +132,7 @@ func NewText(id string, context vit.ComponentContext) *Text {
 	})
 	// add child components
 
-	context.Environment.RegisterComponent(t)
+	context.RegisterComponent(t)
 
 	return t
 }
@@ -179,22 +192,22 @@ func (t *Text) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (t *Text) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (t *Text) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "text":
-		t.text.SetExpression(code, pos)
+		t.text.SetCode(code)
 	case "color":
-		t.color.SetExpression(code, pos)
+		t.color.SetCode(code)
 	case "horizontalAlignment":
-		t.horizontalAlignment.SetExpression(code, pos)
+		t.horizontalAlignment.SetCode(code)
 	case "verticalAlignment":
-		t.verticalAlignment.SetExpression(code, pos)
+		t.verticalAlignment.SetCode(code)
 	case "font":
-		t.font.SetExpression(code, pos)
+		t.font.SetCode(code)
 	case "elide":
-		t.elide.SetExpression(code, pos)
+		t.elide.SetCode(code)
 	default:
-		return t.Item.SetPropertyExpression(key, code, pos)
+		return t.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -242,6 +255,7 @@ func (t *Text) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := t.text.Update(t); changed || err != nil {
 		sum++
 		if err != nil {
@@ -278,6 +292,8 @@ func (t *Text) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("Text", "elide", t.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := t.UpdatePropertiesInContext(t)

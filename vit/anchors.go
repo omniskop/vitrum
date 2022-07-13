@@ -185,44 +185,44 @@ func (a *AnchorsValue) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (a *AnchorsValue) SetPropertyExpression(key string, expression string, position *PositionRange) bool {
+func (a *AnchorsValue) SetPropertyCode(key string, code Code) bool {
 	switch key {
 	case "alignWhenCentered":
-		a.AlignWhenCentered.SetExpression(expression, position)
+		a.AlignWhenCentered.SetCode(code)
 	case "baseline":
-		a.Baseline.SetExpression(expression, position)
+		a.Baseline.SetCode(code)
 	case "baselineOffset":
-		a.BaselineOffset.SetExpression(expression, position)
+		a.BaselineOffset.SetCode(code)
 	case "bottom":
-		a.Bottom.SetExpression(expression, position)
+		a.Bottom.SetCode(code)
 	case "bottomMargin":
-		a.BottomMargin.SetExpression(expression, position)
+		a.BottomMargin.SetCode(code)
 	case "centerIn":
-		a.CenterIn.SetExpression(expression, position)
+		a.CenterIn.SetCode(code)
 	case "fill":
-		a.Fill.SetExpression(expression, position)
+		a.Fill.SetCode(code)
 	case "horizontalCenter":
-		a.HorizontalCenter.SetExpression(expression, position)
+		a.HorizontalCenter.SetCode(code)
 	case "horizontalCenterOffset":
-		a.HorizontalCenterOffset.SetExpression(expression, position)
+		a.HorizontalCenterOffset.SetCode(code)
 	case "left":
-		a.Left.SetExpression(expression, position)
+		a.Left.SetCode(code)
 	case "leftMargin":
-		a.LeftMargin.SetExpression(expression, position)
+		a.LeftMargin.SetCode(code)
 	case "margins":
-		a.Margins.SetExpression(expression, position)
+		a.Margins.SetCode(code)
 	case "right":
-		a.Right.SetExpression(expression, position)
+		a.Right.SetCode(code)
 	case "rightMargin":
-		a.RightMargin.SetExpression(expression, position)
+		a.RightMargin.SetCode(code)
 	case "top":
-		a.Top.SetExpression(expression, position)
+		a.Top.SetCode(code)
 	case "topMargin":
-		a.TopMargin.SetExpression(expression, position)
+		a.TopMargin.SetCode(code)
 	case "verticalCenter":
-		a.VerticalCenter.SetExpression(expression, position)
+		a.VerticalCenter.SetCode(code)
 	case "verticalCenterOffset":
-		a.VerticalCenterOffset.SetExpression(expression, position)
+		a.VerticalCenterOffset.SetCode(code)
 	default:
 		return false
 	}
@@ -388,10 +388,6 @@ func (a *AnchorsValue) GetValue() interface{} {
 	return a
 }
 
-func (a *AnchorsValue) SetFromProperty(PropertyDefinition) {
-	panic("not implemented")
-}
-
 func (a *AnchorsValue) AddDependent(Dependent) {
 	panic("not implemented")
 }
@@ -404,7 +400,7 @@ func (a *AnchorsValue) SetValue(interface{}) error {
 	panic("not implemented")
 }
 
-func (a *AnchorsValue) SetExpression(string, *PositionRange) {
+func (a *AnchorsValue) SetCode(Code) {
 	panic("not implemented")
 }
 
@@ -441,10 +437,6 @@ func (v *AnchorLineValue) Float64() float64 {
 	return v.source.Float64() + v.offset
 }
 
-func (v *AnchorLineValue) SetFromProperty(def PropertyDefinition) {
-	panic("not implemented")
-}
-
 func (v *AnchorLineValue) SetValue(newValue interface{}) error {
 	floatVal, ok := castFloat64(newValue)
 	if ok {
@@ -475,7 +467,7 @@ func (v *AnchorLineValue) SetAbsolute(value float64) {
 	v.notifyDependents([]Dependent{v})
 }
 
-func (v *AnchorLineValue) SetExpression(code string, pos *PositionRange) {
+func (v *AnchorLineValue) SetCode(code Code) {
 	panic("not implemented")
 }
 

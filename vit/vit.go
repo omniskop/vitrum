@@ -9,20 +9,19 @@ import (
 // This will be set by the parser package at initialization.
 // It is ugly but we can't use circular dependencies.
 // Right now the alternative would be to pass a type from the parser package to every vit component specifically for this purpose and that's not really what I want to do either.
-var InstantiateComponent func(*ComponentDefinition, ComponentContext) (Component, error)
+var InstantiateComponent func(*ComponentDefinition, *FileContext) (Component, error)
 
 // Component describes a generic vit component
 type Component interface {
 	DefineProperty(PropertyDefinition) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
 	DefineMethod(Method) bool
-	Property(name string) (Value, bool)                                            // returns the property with the given name, and a boolean indicating whether the property exists
-	MustProperty(name string) Value                                                // same as Property but panics if the property doesn't exist
-	SetProperty(name string, value interface{}) error                              // sets the property with the given name to the given value
-	SetPropertyExpression(name string, code string, position *PositionRange) error // sets the property with the given name to the given expression
-	ResolveVariable(name string) (interface{}, bool)                               // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
-	ResolveID(id string) (Component, bool)                                         // Recursively searches the children for a component with the given id. It does not check itself, only it's children!
-	AddChild(Component)                                                            // Adds the given component as a child and also set's their parent to this component
+	Property(name string) (Value, bool)               // returns the property with the given name, and a boolean indicating whether the property exists
+	MustProperty(name string) Value                   // same as Property but panics if the property doesn't exist
+	SetProperty(name string, value interface{}) error // sets the property with the given name to the given value
+	SetPropertyCode(name string, code Code) error     // sets the property with the given name to the given expression
+	ResolveVariable(name string) (interface{}, bool)  // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
+	AddChild(Component)                               // Adds the given component as a child and also set's their parent to this component
 	AddChildAfter(Component, Component)
 	Children() []Component                // Returns all children of this component
 	SetParent(Component)                  // Sets the parent of this component to the given component
@@ -62,16 +61,24 @@ type Method struct {
 	AsyncFunction
 }
 
-func NewMethod(name string, code string, positon *PositionRange) Method {
+func NewMethod(name string, code string, positon *PositionRange, fileCtx *FileContext) Method {
 	return Method{
 		Name:          name,
-		AsyncFunction: *NewAsyncFunction(code, positon),
+		AsyncFunction: *NewAsyncFunction(code, positon, fileCtx),
 	}
+}
+
+func NewMethodFromCode(name string, code Code) Method {
+	return NewMethod(name, code.Code, code.Position, code.FileCtx)
+}
+
+func (m Method) CopyInContext(fileCtx *FileContext) Method {
+	return NewMethod(m.Name, m.code, m.Position, fileCtx)
 }
 
 type AbstractComponent interface {
 	script.VariableSource
-	Instantiate(string, ComponentContext) (Component, error)
+	Instantiate(string, *GlobalContext) (Component, error)
 	Name() string
 	// Static values
 }
@@ -117,9 +124,65 @@ func (c ComponentContainer) Get(names string) (AbstractComponent, bool) {
 	return src, ok
 }
 
-type ComponentContext struct {
-	KnownComponents ComponentContainer
+type ComponentResolver interface {
+	Get(name string) (AbstractComponent, bool)
+}
+
+// GlobalContext holds information about a vitrum instance
+type GlobalContext struct {
+	KnownComponents ComponentContainer // globally known components
 	Environment     ExecutionEnvironment
+}
+
+func (c *GlobalContext) Get(name string) (AbstractComponent, bool) {
+	return c.KnownComponents.Get(name)
+}
+
+// FileContext holds information about a file.
+// It also contains a reference to the global context and can be used to access things like component definitions.
+type FileContext struct {
+	Global          *GlobalContext       // global context
+	KnownComponents ComponentContainer   // Components that are known inside the file
+	IDs             map[string]Component // mapping from id's to components in the file
+}
+
+func NewFileContext(global *GlobalContext) *FileContext {
+	return &FileContext{
+		Global:          global,
+		KnownComponents: NewComponentContainer(),
+		IDs:             make(map[string]Component),
+	}
+}
+
+func (ctx *FileContext) RegisterComponent(comp Component) {
+	ctx.IDs[comp.ID()] = comp
+	ctx.Global.Environment.RegisterComponent(comp)
+}
+
+func (ctx *FileContext) UnregisterComponent(comp Component) {
+	delete(ctx.IDs, comp.ID())
+	ctx.Global.Environment.UnregisterComponent(comp)
+}
+
+func (ctx *FileContext) Get(name string) (AbstractComponent, bool) {
+	if comp, ok := ctx.KnownComponents.Get(name); ok {
+		return comp, true
+	}
+	if comp, ok := ctx.Global.Get(name); ok {
+		return comp, true
+	}
+	return nil, false
+}
+
+// ResolveVariable returns defined components with the given name or existing components with the given id.
+func (ctx *FileContext) ResolveVariable(name string) (interface{}, bool) {
+	if comp, ok := ctx.Get(name); ok {
+		return comp, true
+	}
+	if comp, ok := ctx.IDs[name]; ok {
+		return comp, true
+	}
+	return nil, false
 }
 
 type ExecutionEnvironment interface {

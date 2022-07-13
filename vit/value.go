@@ -11,12 +11,11 @@ import (
 // TODO: Change all values to only update when their value actually changed (either through expression or directly)
 
 type Value interface {
-	GetValue() interface{}                // returns the current value in it's natural type
-	SetFromProperty(PropertyDefinition)   // sets the value based on a property definition
-	AddDependent(Dependent)               // adds a dependent that should be notified about changes to this value
-	RemoveDependent(Dependent)            // removes a dependent
-	SetValue(interface{}) error           // changes this value to a new one. The returned boolean indicates weather a correct type was supplied. If the type is incorrect the value will not be changed.
-	SetExpression(string, *PositionRange) // changes this value to the result of an expression
+	GetValue() interface{}      // returns the current value in it's natural type
+	AddDependent(Dependent)     // adds a dependent that should be notified about changes to this value
+	RemoveDependent(Dependent)  // removes a dependent
+	SetValue(interface{}) error // changes this value to a new one. The returned boolean indicates weather a correct type was supplied. If the type is incorrect the value will not be changed.
+	SetCode(Code)               // changes this value to the result of an expression
 	Update(context Component) (bool, error)
 }
 
@@ -64,25 +63,25 @@ func (v *baseValue) notifyDependents(stack []Dependent) {
 	}
 }
 
-func newValueForType(vitType string, expression string, position *PositionRange) (Value, error) {
+func newValueForType(vitType string, code Code) (Value, error) {
 	switch vitType {
 	case "int":
-		return NewIntValueFromExpression(expression, position), nil
+		return NewIntValueFromCode(code), nil
 	case "float":
-		return NewFloatValueFromExpression(expression, position), nil
+		return NewFloatValueFromCode(code), nil
 	case "string":
-		return NewStringValueFromExpression(expression, position), nil
+		return NewStringValueFromCode(code), nil
 	case "bool":
-		return NewBoolValueFromExpression(expression, position), nil
+		return NewBoolValueFromCode(code), nil
 	case "alias":
 		// TODO: implement
-		// return NewAliasValueFromExpression(expression, position), nil
+		// return NewAliasValueFromCode(code), nil
 	case "component":
-		return NewComponentRefValueFromExpression(expression, position), nil
+		return NewComponentRefValueFromCode(code), nil
 	case "var":
-		return NewAnyValueFromExpression(expression, position), nil
+		return NewAnyValueFromCode(code), nil
 	case "componentdef":
-		return nil, fmt.Errorf("unable to create ComponentDefValue from expression")
+		return nil, fmt.Errorf("unable to create ComponentDefValue from code")
 	}
 	return nil, UnknownTypeError{vitType}
 }
@@ -117,10 +116,10 @@ type ListValue[ElementType Value] struct {
 	expression *Expression
 }
 
-func NewListValueFromExpression[ElementType Value](expression string, position *PositionRange) *ListValue[ElementType] {
+func NewListValueFromCode[ElementType Value](code Code) *ListValue[ElementType] {
 	return &ListValue[ElementType]{
 		baseValue:  newBaseValue(),
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -150,11 +149,6 @@ func (v *ListValue[ElementType]) Slice() []ElementType {
 	return v.value
 }
 
-func (v *ListValue[ElementType]) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *ListValue[ElementType]) SetValue(value interface{}) error {
 	if value == nil {
 		v.value = make([]ElementType, 0)
@@ -173,8 +167,8 @@ func (v *ListValue[ElementType]) SetSlice(slice []ElementType) {
 	v.notifyDependents(nil)
 }
 
-func (v *ListValue[ElementType]) SetExpression(expression string, position *PositionRange) {
-	v.expression = NewExpression(expression, position)
+func (v *ListValue[ElementType]) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -209,11 +203,11 @@ type IntValue struct {
 	expression *Expression
 }
 
-func NewIntValueFromExpression(expression string, position *PositionRange) *IntValue {
+func NewIntValueFromCode(code Code) *IntValue {
 	return &IntValue{
 		baseValue:  newBaseValue(),
 		value:      0,
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -239,11 +233,6 @@ func (v *IntValue) Int() int {
 	return v.value
 }
 
-func (v *IntValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *IntValue) SetValue(newValue interface{}) error {
 	if intVal, ok := castInt(newValue); ok {
 		v.value = intVal
@@ -260,8 +249,8 @@ func (v *IntValue) SetIntValue(newValue int) {
 	v.notifyDependents(nil) // as this is a fixed value there is no need to add ourself to the stack
 }
 
-func (v *IntValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *IntValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -327,11 +316,11 @@ type FloatValue struct {
 	expression *Expression
 }
 
-func NewFloatValueFromExpression(expression string, position *PositionRange) *FloatValue {
+func NewFloatValueFromCode(code Code) *FloatValue {
 	return &FloatValue{
 		baseValue:  newBaseValue(),
 		value:      0,
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -357,11 +346,6 @@ func (v *FloatValue) Float64() float64 {
 	return v.value
 }
 
-func (v *FloatValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *FloatValue) SetValue(newValue interface{}) error {
 	if floatVal, ok := castFloat64(newValue); ok {
 		v.value = floatVal
@@ -378,8 +362,8 @@ func (v *FloatValue) SetFloatValue(newValue float64) {
 	v.notifyDependents(nil) // as this is a fixed value there is no need to add ourself to the stack
 }
 
-func (v *FloatValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *FloatValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -445,11 +429,11 @@ type StringValue struct {
 	expression *Expression
 }
 
-func NewStringValueFromExpression(expression string, position *PositionRange) *StringValue {
+func NewStringValueFromCode(code Code) *StringValue {
 	return &StringValue{
 		baseValue:  newBaseValue(),
 		value:      "",
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -475,11 +459,6 @@ func (v *StringValue) String() string {
 	return v.value
 }
 
-func (v *StringValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *StringValue) SetValue(newValue interface{}) error {
 	if strVal, ok := castString(newValue); ok {
 		v.value = strVal
@@ -496,8 +475,8 @@ func (v *StringValue) SetStringValue(newValue string) {
 	v.notifyDependents(nil)
 }
 
-func (v *StringValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *StringValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -544,11 +523,11 @@ type BoolValue struct {
 	expression *Expression
 }
 
-func NewBoolValueFromExpression(expression string, position *PositionRange) *BoolValue {
+func NewBoolValueFromCode(code Code) *BoolValue {
 	return &BoolValue{
 		baseValue:  newBaseValue(),
 		value:      false,
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -574,11 +553,6 @@ func (v *BoolValue) Bool() bool {
 	return v.value
 }
 
-func (v *BoolValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *BoolValue) SetValue(newValue interface{}) error {
 	if boolVal, ok := castBool(newValue); ok {
 		v.value = boolVal
@@ -597,8 +571,8 @@ func (v *BoolValue) SetBoolValue(newValue bool) {
 	}
 }
 
-func (v *BoolValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *BoolValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -645,15 +619,17 @@ type AliasValue struct {
 	baseValue
 	expression string
 	position   *PositionRange
+	fileCtx    *FileContext
 	other      Value
 	changed    bool
 }
 
-func NewAliasValue(expression string, position *PositionRange) *AliasValue {
+func NewAliasValue(code Code) *AliasValue {
 	return &AliasValue{
 		baseValue:  newBaseValue(),
-		expression: expression,
-		position:   position,
+		expression: code.Code,
+		position:   code.Position,
+		fileCtx:    code.FileCtx,
 		other:      nil,
 		changed:    true,
 	}
@@ -666,11 +642,6 @@ func (v *AliasValue) GetValue() interface{} {
 	return v.other.GetValue()
 }
 
-func (v *AliasValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = prop.Expression
-	v.changed = true
-}
-
 func (v *AliasValue) SetValue(newValue interface{}) error {
 	// TODO: Should this update the alias itself or the aliased valued?
 	if v.other != nil {
@@ -679,9 +650,9 @@ func (v *AliasValue) SetValue(newValue interface{}) error {
 	return nil
 }
 
-func (v *AliasValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = code
-	v.position = pos
+func (v *AliasValue) SetCode(code Code) {
+	v.expression = code.Code
+	v.position = code.Position
 	v.other = nil
 	v.changed = true
 }
@@ -695,30 +666,22 @@ func (v *AliasValue) Update(context Component) (bool, error) {
 		return false, NewExpressionError(v.expression, v.position, fmt.Errorf("expression is empty"))
 	}
 	parts := strings.Split(v.expression, ".")
-	var currentComponent Component = context
+	var comp Component = context
 	var currentProperty Value
-	// find component using the id's listed in the expression
-	for {
-		part := parts[0]
-
-		if strings.Contains(part, " ") {
-			return false, NewExpressionError(v.expression, v.position, fmt.Errorf("invalid alias reference: %q", v.expression))
-		}
-
-		if currentComponent.ID() == part {
-			parts = parts[1:]
-			continue // no change
-		}
-		if childComp, ok := currentComponent.ResolveID(part); ok {
-			currentComponent = childComp
-			parts = parts[1:]
-			continue
-		}
-		break
+	// find component using the id in the expression
+	if strings.Contains(parts[0], " ") {
+		return false, NewExpressionError(v.expression, v.position, fmt.Errorf("invalid alias reference: %q", v.expression))
 	}
+	var ok bool
+	comp, ok = v.fileCtx.IDs[parts[0]]
+	if !ok {
+		return false, NewExpressionError(v.expression, v.position, fmt.Errorf("unable to resolve alias reference: %q", v.expression))
+	}
+	parts = parts[1:]
+
 	// find property using the remaining parts
 	for _, part := range parts {
-		val, ok := currentComponent.Property(part)
+		val, ok := comp.Property(part)
 		if !ok {
 			return false, NewExpressionError(v.expression, v.position, fmt.Errorf("unable to resolve alias reference: %q", v.expression))
 		}
@@ -738,7 +701,7 @@ func (v *AliasValue) Update(context Component) (bool, error) {
 
 	// if we referenced another alias we need will update that as well and make sure there are no circular references
 	if otherAlias, ok := currentProperty.(*AliasValue); ok {
-		_, err := otherAlias.Update(currentComponent)
+		_, err := otherAlias.Update(comp)
 		if err != nil {
 			return false, NewExpressionError(v.expression, v.position, fmt.Errorf("error in nested alias update: %w", err))
 		}
@@ -782,11 +745,11 @@ type AnyValue struct {
 	expression *Expression
 }
 
-func NewAnyValueFromExpression(expression string, pos *PositionRange) *AnyValue {
+func NewAnyValueFromCode(code Code) *AnyValue {
 	return &AnyValue{
 		baseValue:  newBaseValue(),
 		value:      nil,
-		expression: NewExpression(expression, pos),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -810,11 +773,6 @@ func (v *AnyValue) GetValue() interface{} {
 	return v.value
 }
 
-func (v *AnyValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *AnyValue) SetValue(value interface{}) error {
 	v.value = value
 	v.expression = nil
@@ -822,8 +780,8 @@ func (v *AnyValue) SetValue(value interface{}) error {
 	return nil
 }
 
-func (v *AnyValue) SetExpression(expression string, pos *PositionRange) {
-	v.expression = NewExpression(expression, pos)
+func (v *AnyValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -879,21 +837,6 @@ func (v *ComponentDefValue) ComponentDefinition() *ComponentDefinition {
 	return v.value
 }
 
-func (v *ComponentDefValue) SetFromProperty(prop PropertyDefinition) {
-	if len(prop.Components) == 0 {
-		v.value = nil
-		v.err = nil
-	} else if len(prop.Components) == 1 {
-		v.value = prop.Components[0]
-		v.err = nil
-	} else {
-		v.value = prop.Components[0]
-		v.err = fmt.Errorf("cannot assign multiple components to a single component value at %s", prop.Pos.String())
-	}
-	v.changed = true
-	v.notifyDependents(nil)
-}
-
 func (v *ComponentDefValue) SetValue(newValue interface{}) error {
 	if compDef, ok := newValue.(*ComponentDefinition); ok {
 		v.value = compDef
@@ -912,7 +855,7 @@ func (v *ComponentDefValue) SetComponentDefinition(component *ComponentDefinitio
 	v.notifyDependents(nil)
 }
 
-func (v *ComponentDefValue) SetExpression(code string, pos *PositionRange) {
+func (v *ComponentDefValue) SetCode(code Code) {
 	panic("must not call SetExpression on ComponentDefValue")
 }
 
@@ -957,12 +900,6 @@ func (v *ComponentDefListValue) ComponentDefinitions() []*ComponentDefinition {
 	return v.components
 }
 
-func (v *ComponentDefListValue) SetFromProperty(prop PropertyDefinition) {
-	v.components = prop.Components
-	v.changed = true
-	v.notifyDependents(nil)
-}
-
 func (v *ComponentDefListValue) SetValue(newValue interface{}) error {
 	if compDefs, ok := newValue.([]*ComponentDefinition); ok {
 		v.components = compDefs
@@ -980,7 +917,7 @@ func (v *ComponentDefListValue) SetComponentDefinitions(components []*ComponentD
 	v.notifyDependents(nil)
 }
 
-func (v *ComponentDefListValue) SetExpression(code string, pos *PositionRange) {
+func (v *ComponentDefListValue) SetCode(code Code) {
 	panic("must not call SetExpression on ComponentDefListValue")
 }
 
@@ -1024,13 +961,6 @@ func (v *OptionalValue[T]) Value() T {
 	return v.value
 }
 
-func (v *OptionalValue[T]) SetFromProperty(prop PropertyDefinition) {
-	v.value.SetFromProperty(prop)
-	v.isSet = true
-	v.changed = true
-	v.notifyDependents(nil)
-}
-
 func (v *OptionalValue[T]) SetValue(newValue interface{}) error {
 	err := v.value.SetValue(newValue)
 	if err != nil {
@@ -1042,8 +972,8 @@ func (v *OptionalValue[T]) SetValue(newValue interface{}) error {
 	return nil
 }
 
-func (v *OptionalValue[T]) SetExpression(code string, pos *PositionRange) {
-	v.value.SetExpression(code, pos)
+func (v *OptionalValue[T]) SetCode(code Code) {
+	v.value.SetCode(code)
 	v.isSet = true
 	v.changed = true
 	v.notifyDependents([]Dependent{v})
@@ -1074,11 +1004,11 @@ type ComponentRefValue struct {
 	expression *Expression
 }
 
-func NewComponentRefValueFromExpression(expression string, position *PositionRange) *ComponentRefValue {
+func NewComponentRefValueFromCode(code Code) *ComponentRefValue {
 	return &ComponentRefValue{
 		baseValue:  newBaseValue(),
 		value:      nil,
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -1104,11 +1034,6 @@ func (v *ComponentRefValue) Component() Component {
 	return v.value
 }
 
-func (v *ComponentRefValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *ComponentRefValue) SetValue(newValue interface{}) error {
 	if comp, ok := newValue.(Component); ok {
 		v.value = comp
@@ -1125,8 +1050,8 @@ func (v *ComponentRefValue) SetComponent(comp Component) {
 	v.notifyDependents(nil)
 }
 
-func (v *ComponentRefValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *ComponentRefValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -1178,11 +1103,11 @@ type GroupValue struct {
 // But in order to do that we would need to access the parser.
 // If that will ever change in the future I don't think we would need the work around with the groupEntry anymore.
 
-func NewGroupValueFromExpression(schema map[string]Value, expression string, position *PositionRange) *GroupValue {
+func NewGroupValueFromCode(schema map[string]Value, code Code) *GroupValue {
 	return &GroupValue{
 		baseValue:  newBaseValue(),
 		values:     createGroupEntries(schema),
-		expression: NewExpression(expression, position),
+		expression: NewExpressionFromCode(code),
 	}
 }
 
@@ -1219,11 +1144,6 @@ func (v *GroupValue) MustGet(key string) Value {
 	return value.value
 }
 
-func (v *GroupValue) SetFromProperty(prop PropertyDefinition) {
-	v.expression = NewExpression(prop.Expression, &prop.Pos)
-	v.notifyDependents([]Dependent{v.expression})
-}
-
 func (v *GroupValue) SetValue(newValue interface{}) error {
 	var gErr ErrorGroup
 	if valueMap, ok := newValue.(map[string]interface{}); ok {
@@ -1245,8 +1165,8 @@ func (v *GroupValue) SetValue(newValue interface{}) error {
 	return nil
 }
 
-func (v *GroupValue) SetExpression(code string, pos *PositionRange) {
-	v.expression = NewExpression(code, pos)
+func (v *GroupValue) SetCode(code Code) {
+	v.expression = NewExpressionFromCode(code)
 	for _, value := range v.values {
 		// disable overwrites
 		// TODO: this disables all overwrites, even for properties that will not be set in this expression
@@ -1329,10 +1249,10 @@ func (v *GroupValue) SetValueOf(name string, newValue interface{}) error {
 	return fmt.Errorf("unknown group key %q", name)
 }
 
-func (v *GroupValue) SetExpressionOf(key string, code string, position *PositionRange) error {
+func (v *GroupValue) SetCodeOf(key string, code Code) error {
 	if value, ok := v.values[key]; ok {
 		value.overwritten = true
-		value.value.SetExpression(code, position)
+		value.value.SetCode(code)
 		return nil
 	}
 	return fmt.Errorf("unknown group key %q", key)

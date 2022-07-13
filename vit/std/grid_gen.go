@@ -7,6 +7,10 @@ import (
 	vit "github.com/omniskop/vitrum/vit"
 )
 
+func newFileContextForGrid(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	return vit.NewFileContext(globalCtx), nil
+}
+
 type Grid_HorizontalItemAlignment uint
 
 const (
@@ -50,23 +54,32 @@ type Grid struct {
 	childLayouts            vit.LayoutList
 }
 
-func NewGrid(id string, context vit.ComponentContext) *Grid {
+// newGridInGlobal creates an appropriate file context for the component and then returns a new Grid instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newGridInGlobal(id string, globalCtx *vit.GlobalContext) (*Grid, error) {
+	fileCtx, err := newFileContextForGrid(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewGrid(id, fileCtx), nil
+}
+func NewGrid(id string, context *vit.FileContext) *Grid {
 	g := &Grid{
 		Item:                    NewItem(id, context),
 		id:                      id,
-		topPadding:              *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		rightPadding:            *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		bottomPadding:           *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		leftPadding:             *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		padding:                 *vit.NewFloatValueFromExpression("0", nil),
-		spacing:                 *vit.NewFloatValueFromExpression("0", nil),
-		columnSpacing:           *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
-		rowSpacing:              *vit.NewOptionalValue(vit.NewFloatValueFromExpression("0", nil)),
+		topPadding:              *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		rightPadding:            *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		bottomPadding:           *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		leftPadding:             *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		padding:                 *vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
+		spacing:                 *vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
+		columnSpacing:           *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
+		rowSpacing:              *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
 		columns:                 *vit.NewOptionalValue(vit.NewEmptyIntValue()),
 		rows:                    *vit.NewOptionalValue(vit.NewEmptyIntValue()),
-		horizontalItemAlignment: *vit.NewIntValueFromExpression("HorizontalItemAlignment.AlignLeft", nil),
-		verticalItemAlignment:   *vit.NewIntValueFromExpression("VerticalItemAlignment.AlignTop", nil),
-		flow:                    *vit.NewIntValueFromExpression("Flow.LeftToRight", nil),
+		horizontalItemAlignment: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "HorizontalItemAlignment.AlignLeft", Position: nil}),
+		verticalItemAlignment:   *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "VerticalItemAlignment.AlignTop", Position: nil}),
+		flow:                    *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "Flow.LeftToRight", Position: nil}),
 		childLayouts:            make(vit.LayoutList),
 	}
 	// property assignments on embedded components
@@ -106,7 +119,7 @@ func NewGrid(id string, context vit.ComponentContext) *Grid {
 	})
 	// add child components
 
-	context.Environment.RegisterComponent(g)
+	context.RegisterComponent(g)
 
 	return g
 }
@@ -194,36 +207,36 @@ func (g *Grid) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (g *Grid) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (g *Grid) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "topPadding":
-		g.topPadding.SetExpression(code, pos)
+		g.topPadding.SetCode(code)
 	case "rightPadding":
-		g.rightPadding.SetExpression(code, pos)
+		g.rightPadding.SetCode(code)
 	case "bottomPadding":
-		g.bottomPadding.SetExpression(code, pos)
+		g.bottomPadding.SetCode(code)
 	case "leftPadding":
-		g.leftPadding.SetExpression(code, pos)
+		g.leftPadding.SetCode(code)
 	case "padding":
-		g.padding.SetExpression(code, pos)
+		g.padding.SetCode(code)
 	case "spacing":
-		g.spacing.SetExpression(code, pos)
+		g.spacing.SetCode(code)
 	case "columnSpacing":
-		g.columnSpacing.SetExpression(code, pos)
+		g.columnSpacing.SetCode(code)
 	case "rowSpacing":
-		g.rowSpacing.SetExpression(code, pos)
+		g.rowSpacing.SetCode(code)
 	case "columns":
-		g.columns.SetExpression(code, pos)
+		g.columns.SetCode(code)
 	case "rows":
-		g.rows.SetExpression(code, pos)
+		g.rows.SetCode(code)
 	case "horizontalItemAlignment":
-		g.horizontalItemAlignment.SetExpression(code, pos)
+		g.horizontalItemAlignment.SetCode(code)
 	case "verticalItemAlignment":
-		g.verticalItemAlignment.SetExpression(code, pos)
+		g.verticalItemAlignment.SetCode(code)
 	case "flow":
-		g.flow.SetExpression(code, pos)
+		g.flow.SetCode(code)
 	default:
-		return g.Item.SetPropertyExpression(key, code, pos)
+		return g.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -287,6 +300,7 @@ func (g *Grid) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := g.topPadding.Update(g); changed || err != nil {
 		sum++
 		if err != nil {
@@ -365,6 +379,8 @@ func (g *Grid) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("Grid", "flow", g.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := g.UpdatePropertiesInContext(g)

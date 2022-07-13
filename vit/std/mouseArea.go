@@ -7,6 +7,41 @@ type MouseEvent struct {
 	Buttons MouseArea_MouseButtons
 }
 
+func (e *MouseEvent) MaybeSet(input interface{}) error {
+	if input == nil {
+		return fmt.Errorf("value is nil")
+	}
+	switch input := input.(type) {
+	case *MouseEvent:
+		e.X = input.X
+		e.Y = input.Y
+		e.Buttons = input.Buttons
+	case MouseEvent:
+		e.X = input.X
+		e.Y = input.Y
+		e.Buttons = input.Buttons
+	case map[string]interface{}:
+		if x, ok := input["x"]; ok {
+			if x, ok := x.(int); ok {
+				e.X = x
+			}
+		}
+		if y, ok := input["y"]; ok {
+			if y, ok := y.(int); ok {
+				e.Y = y
+			}
+		}
+		if buttons, ok := input["buttons"]; ok {
+			if buttons, ok := buttons.(int); ok {
+				e.Buttons = MouseArea_MouseButtons(buttons)
+			}
+		}
+	default:
+		return fmt.Errorf("value of type %T can't be converted to MouseEvent", input)
+	}
+	return nil
+}
+
 func (m *MouseArea) enableDisable() {
 	if !m.enabled.Bool() {
 		// MouseArea was just disabled
@@ -36,7 +71,6 @@ func (m *MouseArea) TriggerEvent(e MouseEvent) {
 	m.pressedButtons.SetIntValue(int(e.Buttons))
 
 	if filtered == 0 && wasPressed {
-		fmt.Println("fired")
 		m.onClicked.Fire(&e)
 	}
 }

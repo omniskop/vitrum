@@ -169,7 +169,7 @@ func (b *VariableBridge) Get(key string) goja.Value {
 }
 
 func (b *VariableBridge) Set(key string, value goja.Value) bool {
-	// fmt.Printf("[VariableBridge] set %q: %v (%T)", key, value, value)
+	// fmt.Printf("[VariableBridge] set %q: %v (%T)\n", key, value, value)
 	return true
 }
 

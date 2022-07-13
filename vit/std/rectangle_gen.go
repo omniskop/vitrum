@@ -7,6 +7,10 @@ import (
 	vit "github.com/omniskop/vitrum/vit"
 )
 
+func newFileContextForRectangle(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	return vit.NewFileContext(globalCtx), nil
+}
+
 type Rectangle struct {
 	*Item
 	id string
@@ -16,15 +20,24 @@ type Rectangle struct {
 	border vit.GroupValue
 }
 
-func NewRectangle(id string, context vit.ComponentContext) *Rectangle {
+// newRectangleInGlobal creates an appropriate file context for the component and then returns a new Rectangle instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newRectangleInGlobal(id string, globalCtx *vit.GlobalContext) (*Rectangle, error) {
+	fileCtx, err := newFileContextForRectangle(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewRectangle(id, fileCtx), nil
+}
+func NewRectangle(id string, context *vit.FileContext) *Rectangle {
 	r := &Rectangle{
 		Item:   NewItem(id, context),
 		id:     id,
-		color:  *vit.NewColorValueFromExpression("Vit.rgb(0, 0, 0)", nil),
-		radius: *vit.NewFloatValueFromExpression("0", nil),
+		color:  *vit.NewColorValueFromCode(vit.Code{FileCtx: context, Code: "Vit.rgb(0, 0, 0)", Position: nil}),
+		radius: *vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
 		border: *vit.NewEmptyGroupValue(map[string]vit.Value{
-			"color": vit.NewColorValueFromExpression("\"transparent\"", nil),
-			"width": vit.NewIntValueFromExpression("0", nil),
+			"color": vit.NewColorValueFromCode(vit.Code{FileCtx: context, Code: "\"transparent\"", Position: nil}),
+			"width": vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
 		}),
 	}
 	// property assignments on embedded components
@@ -33,7 +46,7 @@ func NewRectangle(id string, context vit.ComponentContext) *Rectangle {
 	// register enumerations
 	// add child components
 
-	context.Environment.RegisterComponent(r)
+	context.RegisterComponent(r)
 
 	return r
 }
@@ -81,16 +94,16 @@ func (r *Rectangle) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (r *Rectangle) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (r *Rectangle) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "color":
-		r.color.SetExpression(code, pos)
+		r.color.SetCode(code)
 	case "radius":
-		r.radius.SetExpression(code, pos)
+		r.radius.SetCode(code)
 	case "border":
-		r.border.SetExpression(code, pos)
+		r.border.SetCode(code)
 	default:
-		return r.Item.SetPropertyExpression(key, code, pos)
+		return r.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -132,6 +145,7 @@ func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := r.color.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
@@ -150,6 +164,8 @@ func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("Rectangle", "border", r.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := r.UpdatePropertiesInContext(r)

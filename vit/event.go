@@ -1,5 +1,7 @@
 package vit
 
+import "fmt"
+
 // EventDefinition from a vit file
 type EventDefinition struct {
 	Name       string
@@ -26,9 +28,9 @@ type EventListenerFunction[EventType any] struct {
 }
 
 // Creates a new EventListenerFunction using the specific code.
-func NewEventListenerFunction[EventType any](code string, position *PositionRange) *EventListenerFunction[EventType] {
+func NewEventListenerFunction[EventType any](code Code) *EventListenerFunction[EventType] {
 	return &EventListenerFunction[EventType]{
-		Function: *NewFunction(code, position),
+		Function: *NewFunctionFromCode(code),
 		event:    nil,
 		dirty:    false, // async functions start clean
 	}
@@ -67,9 +69,20 @@ func (l *JSListener[EventType]) Notify(event *EventType) {
 // Listenable provides a universal interface for all events that can be listened for, no matter the EventType.
 type Listenable interface {
 	// Creates a new listener for the event using the code. The listener is registered with this event and is returned in the form of an Evaluater.
-	CreateListener(string, *PositionRange) Evaluater
+	CreateListener(Code) Evaluater
 	// Adds an async function as a listener
 	AddListenerFunction(*AsyncFunction)
+}
+
+// Can be implemented by Events to enable vitrum to automatically create an event from a javascript value.
+type MaybeSetable interface {
+	MaybeSet(any) error // Tries to set the implementing struct based on the passed value. Returns an error if the value is not valid.
+}
+
+// EventSource provides a universal interface for EventAttributes without the generic event type.
+type EventSource interface {
+	Listenable
+	MaybeFire(any) error // Tries to fire an event using the passed value. Returns an error if the value can't be converted to the correct event type.
 }
 
 // an EventAttribute that is defined on a component.
@@ -87,8 +100,8 @@ func (a *EventAttribute[EventType]) AddListener(l Listener[EventType]) {
 	a.Listeners[l] = true
 }
 
-func (a *EventAttribute[EventType]) CreateListener(code string, position *PositionRange) Evaluater {
-	l := NewEventListenerFunction[EventType](code, position)
+func (a *EventAttribute[EventType]) CreateListener(code Code) Evaluater {
+	l := NewEventListenerFunction[EventType](code)
 	a.Listeners[l] = true
 	return l
 }
@@ -106,4 +119,24 @@ func (a *EventAttribute[EventType]) Fire(e *EventType) {
 	for l := range a.Listeners {
 		l.Notify(e)
 	}
+}
+
+// MaybeFire tries to convert the value to the correct EventType and if that's possible fires the event.
+// The event type has to implement the MaybeSetable interface.
+// If the value can't be converted the event will not be fired and an error will be returned.
+func (a *EventAttribute[EventType]) MaybeFire(v any) error {
+	var event = new(EventType)
+	if setable, ok := any(event).(MaybeSetable); ok {
+		err := setable.MaybeSet(v)
+		if err != nil {
+			return err
+		}
+		a.Fire(event)
+		return nil
+	}
+	return fmt.Errorf("event %T can't be set from interface{}", new(EventType))
+}
+
+func (a *EventAttribute[EventType]) eventType() any {
+	return new(EventType)
 }

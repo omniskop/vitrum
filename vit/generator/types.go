@@ -13,7 +13,7 @@ import (
 // It might return an error if the property contains incompatible tags or the type is unknown.
 // For example for a property of type 'float' the returned code might look like this:
 //     propType:    vit.FloatType
-//     constructor: *vit.NewFloatValueFromExpression("0", nil),
+//     constructor: *vit.NewFloatValueFromCode(code),
 func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (propType *jen.Statement, constructor *jen.Statement, err error) {
 	// handles gen-initializer and gen-type
 	if init, ok := prop.Tags[initializerTag]; ok {
@@ -121,7 +121,9 @@ func standardConstructor(prop vit.PropertyDefinition, typeName string) *jen.Stat
 	if prop.Expression == "" {
 		return jen.Op("*").Qual(vitPackage, fmt.Sprintf("NewEmpty%sValue", typeName)).Call()
 	} else {
-		return jen.Op("*").Qual(vitPackage, fmt.Sprintf("New%sValueFromExpression", typeName)).Call(jen.Lit(prop.Expression), generatePositionRange(prop.Pos))
+		return jen.Op("*").Qual(vitPackage, fmt.Sprintf("New%sValueFromCode", typeName)).Call(
+			generateCode(prop.Expression, *prop.ValuePos, "context"),
+		)
 	}
 }
 

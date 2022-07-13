@@ -125,7 +125,7 @@ var layoutingTests = []struct {
 func TestLayouting(t *testing.T) {
 testLoop:
 	for i, test := range layoutingTests {
-		context := createComponentContext()
+		context := createFileContext()
 		container := NewItem("", context)
 		itm := NewItem("", context)
 		container.AddChild(itm)
@@ -141,13 +141,13 @@ testLoop:
 				if prop.value != nil {
 					err = itm.SetProperty(prop.name, prop.value)
 				} else {
-					err = itm.SetPropertyExpression(prop.name, prop.expression, nil)
+					err = itm.SetPropertyCode(prop.name, vit.Code{Code: prop.expression, Position: nil})
 				}
 			} else if prop.anchors != "" {
 				if prop.value != nil {
 					err = itm.anchors.SetProperty(prop.anchors, prop.value)
 				} else {
-					ok := itm.anchors.SetPropertyExpression(prop.anchors, prop.expression, nil)
+					ok := itm.anchors.SetPropertyCode(prop.anchors, vit.Code{Code: prop.expression, Position: nil})
 					if !ok {
 						err = fmt.Errorf("anchors.%s not found", prop.anchors)
 					}
@@ -200,8 +200,8 @@ testLoop:
 	}
 }
 
-func createComponentContext() vit.ComponentContext {
-	return vit.ComponentContext{KnownComponents: vit.NewComponentContainer()}
+func createFileContext() *vit.FileContext {
+	return vit.NewFileContext(&vit.GlobalContext{KnownComponents: vit.NewComponentContainer()})
 }
 
 func valuesEqual(a, b interface{}) bool {

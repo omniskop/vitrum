@@ -93,28 +93,29 @@ func parseFile(fileName string, componentName string) (*VitDocument, error) {
 }
 
 // interpret takes the parsed document and creates the appropriate component tree.
-func interpret(document VitDocument, id string, context vit.ComponentContext) ([]vit.Component, error) {
+func interpret(document VitDocument, id string, globalCtx *vit.GlobalContext) ([]vit.Component, error) {
+	fileCtx := vit.NewFileContext(globalCtx)
 	for _, imp := range document.Imports {
-		if len(imp.file) != 0 {
+		if len(imp.File) != 0 {
 			// file import
-			return nil, genericErrorf(imp.position, "not yet implemented")
-		} else if len(imp.namespace) != 0 {
+			return nil, genericErrorf(imp.Position, "not yet implemented")
+		} else if len(imp.Namespace) != 0 {
 			// namespace import
-			lib, err := resolveLibraryImport(imp.namespace)
+			lib, err := ResolveLibrary(imp.Namespace)
 			if err != nil {
-				return nil, ParseError{imp.position, err}
+				return nil, ParseError{imp.Position, err}
 			}
 			for _, name := range lib.ComponentNames() {
-				context.KnownComponents.Set(name, &LibraryInstantiator{lib, name})
+				fileCtx.KnownComponents.Set(name, &LibraryInstantiator{lib, name})
 			}
 		} else {
-			return nil, genericErrorf(imp.position, "incomplete namespace")
+			return nil, genericErrorf(imp.Position, "incomplete namespace")
 		}
 	}
 
 	var instances []vit.Component
 	for _, comp := range document.Components {
-		instance, err := instantiateCustomComponent(comp, id, document.Name, context)
+		instance, err := instantiateCustomComponent(comp, id, document.Name, fileCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -125,8 +126,8 @@ func interpret(document VitDocument, id string, context vit.ComponentContext) ([
 }
 
 // instantiateCustomComponent creates a component described by a componentDefinition and wraps it in a Custom component with the given id.
-func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name string, context vit.ComponentContext) (vit.Component, error) {
-	comp, err := InstantiateComponent(def, context)
+func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name string, fileCtx *vit.FileContext) (vit.Component, error) {
+	comp, err := InstantiateComponent(def, fileCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -137,30 +138,30 @@ func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name st
 }
 
 // InstantiateComponent creates a component described by a componentDefinition.
-func InstantiateComponent(def *vit.ComponentDefinition, context vit.ComponentContext) (vit.Component, error) {
-	src, ok := context.KnownComponents.Get(def.BaseName)
+func InstantiateComponent(def *vit.ComponentDefinition, fileCtx *vit.FileContext) (vit.Component, error) {
+	src, ok := fileCtx.KnownComponents.Get(def.BaseName)
 	if !ok {
 		// TODO: improve context for error; either here or upstream
 		return nil, unknownComponentError{def.BaseName}
 	}
-	instance, err := src.Instantiate(def.ID, context)
+	instance, err := src.Instantiate(def.ID, fileCtx.Global)
 	if err != nil {
 		return nil, componentError{src, err}
 	}
 
-	err = populateComponent(instance, def, context)
+	err = populateComponent(instance, def, fileCtx)
 	if err != nil {
 		return instance, componentError{src, err}
 	}
 
-	context.Environment.RegisterComponent(instance)
+	fileCtx.RegisterComponent(instance)
 	// TODO: figure out where the components will be unregistered again
 
 	return instance, nil
 }
 
 // populateComponent takes a fresh component instance as well as it's definition and populates all attributes and children with their correct values.
-func populateComponent(instance vit.Component, def *vit.ComponentDefinition, context vit.ComponentContext) error {
+func populateComponent(instance vit.Component, def *vit.ComponentDefinition, fileCtx *vit.FileContext) error {
 	for _, enum := range def.Enumerations {
 		if !instance.DefineEnum(enum) {
 			return genericErrorf(*enum.Position, "enum %q already defined", enum.Name)
@@ -168,7 +169,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 	}
 
 	for _, method := range def.Methods {
-		if !instance.DefineMethod(method) {
+		if !instance.DefineMethod(method.CopyInContext(fileCtx)) {
 			return genericErrorf(*method.AsyncFunction.Position, "method %q already defined", method.Name)
 		}
 	}
@@ -184,7 +185,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 			// simple property assignment
 			var err error
 			if len(prop.Components) == 0 {
-				err = instance.SetPropertyExpression(prop.Identifier[0], prop.Expression, prop.ValuePos)
+				err = instance.SetPropertyCode(prop.Identifier[0], vit.Code{Code: prop.Expression, Position: &prop.Pos, FileCtx: fileCtx})
 			} else if len(prop.Components) == 1 {
 				err = instance.SetProperty(prop.Identifier[0], prop.Components[0])
 			} else {
@@ -206,7 +207,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 					return genericErrorf(prop.Pos, "cannot assign to non group-property %q of component %q", prop.Identifier[0], def.BaseName)
 				}
 
-				ok = anchors.SetPropertyExpression(prop.Identifier[1], prop.Expression, prop.ValuePos)
+				ok = anchors.SetPropertyCode(prop.Identifier[1], vit.Code{Code: prop.Expression, Position: prop.ValuePos, FileCtx: fileCtx})
 				if !ok {
 					return genericErrorf(prop.Pos, "unknown property %q of component %q", strings.Join(prop.Identifier, "."), def.BaseName)
 				}
@@ -218,7 +219,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 				switch v := v.(type) {
 				case *vit.GroupValue:
 					// set property of group value
-					err := v.SetExpressionOf(prop.Identifier[1], prop.Expression, prop.ValuePos)
+					err := v.SetCodeOf(prop.Identifier[1], vit.Code{Code: prop.Expression, Position: prop.ValuePos, FileCtx: fileCtx})
 					if err != nil {
 						return genericErrorf(prop.Pos, "group-property %q of component %q: %w", prop.Identifier[0], def.BaseName, err)
 					}
@@ -228,7 +229,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 					if !ok {
 						return genericErrorf(prop.Pos, "unknown event %q of component %q", prop.Identifier[1], prop.Identifier[0])
 					}
-					l := event.CreateListener(prop.Expression, prop.ValuePos)
+					l := event.CreateListener(vit.Code{Code: prop.Expression, Position: prop.ValuePos, FileCtx: fileCtx})
 					instance.RootC().AddListenerFunction(l)
 				default:
 					return genericErrorf(prop.Pos, "cannot assign %q on property %q of component %q", prop.Identifier[1], prop.Identifier[0], def.BaseName)
@@ -238,7 +239,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, con
 	}
 
 	for _, childDef := range def.Children {
-		childInstance, err := InstantiateComponent(childDef, context)
+		childInstance, err := InstantiateComponent(childDef, fileCtx)
 		if err != nil {
 			return err
 		}

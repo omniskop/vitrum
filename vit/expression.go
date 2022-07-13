@@ -13,8 +13,16 @@ import (
 // indicates that an expression was not evaluated fully because it read from another expression that has been marked as dirty
 var unsettledDependenciesError = errors.New("unsettled dependencies")
 
+// Code is a struct of values that are required to create an expression
+type Code struct {
+	FileCtx  *FileContext
+	Code     string
+	Position *PositionRange
+}
+
 // Expression contains JavaScript code that can be executed to get a value
 type Expression struct {
+	fileCtx      *FileContext
 	code         string
 	dirty        bool
 	dependencies map[Value]bool // values that are required by this expression
@@ -23,7 +31,7 @@ type Expression struct {
 	err          error
 }
 
-func NewExpression(code string, position *PositionRange) *Expression {
+func NewExpression(code string, fileCtx *FileContext, position *PositionRange) *Expression {
 	// The parenthesis around the code are needed to make sure we get the correct value from all expressions.
 	// For example objects (e.g. {one: 1}) would return the number '1' instead of a map.
 	prog, err := script.NewScript("expression", fmt.Sprintf("(%s)", code))
@@ -36,6 +44,7 @@ func NewExpression(code string, position *PositionRange) *Expression {
 		position = &p
 	}
 	return &Expression{
+		fileCtx:      fileCtx,
 		code:         code,
 		dirty:        true,
 		dependencies: make(map[Value]bool),
@@ -45,13 +54,17 @@ func NewExpression(code string, position *PositionRange) *Expression {
 	}
 }
 
+func NewExpressionFromCode(code Code) *Expression {
+	return NewExpression(code.Code, code.FileCtx, code.Position)
+}
+
 func (e *Expression) Evaluate(context Component) (interface{}, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
 
 	// fmt.Printf("[expression] evaluating %q from %v\n", e.code, e.position)
-	collector := NewAccessCollector(context)
+	collector := NewAccessCollector(e.fileCtx, context)
 	val, err := e.program.Run(collector)
 	variables := collector.GetReadValues()
 	// fmt.Printf("[expression] expression %q read from expressions:\n", e.code)
@@ -143,15 +156,17 @@ func (e *Expression) Err() error {
 }
 
 type AccessCollector struct {
+	fileCtx       *FileContext
 	context       Component // TODO: could this be a script.variableSource?
 	readValues    *map[Value]bool
 	writtenValues *map[Value]bool
 }
 
-func NewAccessCollector(context Component) *AccessCollector {
+func NewAccessCollector(fileCtx *FileContext, context Component) *AccessCollector {
 	r := make(map[Value]bool)
 	w := make(map[Value]bool)
 	return &AccessCollector{
+		fileCtx:       fileCtx,
 		context:       context,
 		readValues:    &r,
 		writtenValues: &w,
@@ -160,6 +175,7 @@ func NewAccessCollector(context Component) *AccessCollector {
 
 func (c *AccessCollector) SubContext(context Component) *AccessCollector {
 	return &AccessCollector{
+		fileCtx:       c.fileCtx,
 		context:       context,
 		readValues:    c.readValues,
 		writtenValues: c.writtenValues,
@@ -169,7 +185,10 @@ func (c *AccessCollector) SubContext(context Component) *AccessCollector {
 func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 	variable, ok := c.context.ResolveVariable(key)
 	if !ok {
-		return nil, false
+		variable, ok = c.fileCtx.ResolveVariable(key)
+		if !ok {
+			return nil, false
+		}
 	}
 
 	switch actual := variable.(type) {
@@ -181,7 +200,7 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 		return &variableConverter{actual}, true
 	case *Method:
 		return actual, true
-	case Listenable:
+	case EventSource:
 		return EventAdapter{c.context, actual}, true
 	case Value:
 		(*c.readValues)[actual] = true // mark as read
@@ -233,11 +252,18 @@ func (c *variableConverter) ResolveVariable(key string) (interface{}, bool) {
 
 type EventAdapter struct {
 	context Component
-	event   Listenable
+	event   EventSource
 }
 
 func (a EventAdapter) AddEventListener(f *Method) {
 	a.event.AddListenerFunction(&f.AsyncFunction)
+}
+
+func (a EventAdapter) Fire(event interface{}) {
+	err := a.event.MaybeFire(event)
+	if err != nil {
+		panic(script.Exception(fmt.Sprintf("event could'nt be fired: %v", err)))
+	}
 }
 
 func castList[ElementType Value](val interface{}) ([]ElementType, bool) {

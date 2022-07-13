@@ -7,6 +7,10 @@ import (
 	vit "github.com/omniskop/vitrum/vit"
 )
 
+func newFileContextForRepeater(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
+	return vit.NewFileContext(globalCtx), nil
+}
+
 type Repeater struct {
 	*Item
 	id string
@@ -17,7 +21,16 @@ type Repeater struct {
 	items    []RepeaterItem
 }
 
-func NewRepeater(id string, context vit.ComponentContext) *Repeater {
+// newRepeaterInGlobal creates an appropriate file context for the component and then returns a new Repeater instance.
+// The returned error will only be set if a library import that is required by the component fails.
+func newRepeaterInGlobal(id string, globalCtx *vit.GlobalContext) (*Repeater, error) {
+	fileCtx, err := newFileContextForRepeater(globalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return NewRepeater(id, fileCtx), nil
+}
+func NewRepeater(id string, context *vit.FileContext) *Repeater {
 	r := &Repeater{
 		Item:     NewItem(id, context),
 		id:       id,
@@ -35,7 +48,7 @@ func NewRepeater(id string, context vit.ComponentContext) *Repeater {
 	// register enumerations
 	// add child components
 
-	context.Environment.RegisterComponent(r)
+	context.RegisterComponent(r)
 
 	return r
 }
@@ -83,16 +96,16 @@ func (r *Repeater) SetProperty(key string, value interface{}) error {
 	return nil
 }
 
-func (r *Repeater) SetPropertyExpression(key string, code string, pos *vit.PositionRange) error {
+func (r *Repeater) SetPropertyCode(key string, code vit.Code) error {
 	switch key {
 	case "count":
-		r.count.SetExpression(code, pos)
+		r.count.SetCode(code)
 	case "delegate":
-		r.delegate.SetExpression(code, pos)
+		r.delegate.SetCode(code)
 	case "model":
-		r.model.SetExpression(code, pos)
+		r.model.SetCode(code)
 	default:
-		return r.Item.SetPropertyExpression(key, code, pos)
+		return r.Item.SetPropertyCode(key, code)
 	}
 	return nil
 }
@@ -134,6 +147,7 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	// properties
 	if changed, err := r.count.Update(r); changed || err != nil {
 		sum++
 		if err != nil {
@@ -152,6 +166,8 @@ func (r *Repeater) UpdateExpressions() (int, vit.ErrorGroup) {
 			errs.Add(vit.NewPropertyError("Repeater", "model", r.id, err))
 		}
 	}
+
+	// methods
 
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	n, err := r.UpdatePropertiesInContext(r)
