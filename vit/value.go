@@ -74,8 +74,7 @@ func newValueForType(vitType string, code Code) (Value, error) {
 	case "bool":
 		return NewBoolValueFromCode(code), nil
 	case "alias":
-		// TODO: implement
-		// return NewAliasValueFromCode(code), nil
+		return NewAliasValueFromCode(code), nil
 	case "component":
 		return NewComponentRefValueFromCode(code), nil
 	case "var":
@@ -624,7 +623,7 @@ type AliasValue struct {
 	changed    bool
 }
 
-func NewAliasValue(code Code) *AliasValue {
+func NewAliasValueFromCode(code Code) *AliasValue {
 	return &AliasValue{
 		baseValue:  newBaseValue(),
 		expression: code.Code,
@@ -653,6 +652,9 @@ func (v *AliasValue) SetValue(newValue interface{}) error {
 func (v *AliasValue) SetCode(code Code) {
 	v.expression = code.Code
 	v.position = code.Position
+	if v.other != nil {
+		v.other.RemoveDependent(v)
+	}
 	v.other = nil
 	v.changed = true
 }
@@ -710,7 +712,13 @@ func (v *AliasValue) Update(context Component) (bool, error) {
 		}
 	}
 
+	v.other.AddDependent(v)
+
 	return true, nil
+}
+
+func (v *AliasValue) MakeDirty(stack []Dependent) {
+	v.notifyDependents(append(stack, v))
 }
 
 func isAliasRecursive(alias *AliasValue, chain []*AliasValue) (bool, []*AliasValue) {
@@ -734,8 +742,6 @@ func formatAliasChain(chain []*AliasValue) string {
 	}
 	return strings.Join(steps, " -> ")
 }
-
-func (v *AliasValue) MakeDirty(stack []*Expression) {}
 
 // ========================================== Any Value ============================================
 

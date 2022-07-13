@@ -82,6 +82,9 @@ func vitTypeInfo(comp *vit.ComponentDefinition, prop vit.PropertyDefinition) (pr
 		if err != nil {
 			return
 		}
+	case "alias":
+		propType = jen.Qual(vitPackage, "AliasValue")
+		constructor = standardConstructor(prop, "Alias")
 	default:
 		if _, ok := comp.GetEnum(prop.VitType); ok {
 			propType = jen.Qual(vitPackage, "IntValue")
