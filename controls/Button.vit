@@ -1,0 +1,42 @@
+import Vit 1.0
+
+Item {
+    property string text
+    property alias pressed: mouseArea.pressed
+    width: 150
+    height: 25
+
+    event onClicked(#gen-type="github.com/omniskop/vitrum/vit/std.MouseEvent" var event)
+
+    method clicked: function(e) {
+        onClicked.Fire(e)
+    }
+
+    Root.onCompleted: function() {
+        mouseArea.onClicked.AddEventListener(clicked)
+    }
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        acceptedButtons: MouseArea.leftButton
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: Vit.rgb(200, 200, 200)
+        radius: 5
+    }
+
+    Text {
+        id: text
+        anchors.fill: parent
+        text: parent.text
+        font.pointSize: 40
+        font.family: "Montserrat"
+        font.weight: Text.Medium
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
+        elide: Text.ElideMiddle
+    }
+}
