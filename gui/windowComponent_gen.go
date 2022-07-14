@@ -135,6 +135,13 @@ func (w *WindowComponent) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (w *WindowComponent) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	default:
+		return w.Item.Event(name)
+	}
+}
+
 func (w *WindowComponent) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case w.id:

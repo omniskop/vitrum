@@ -67,6 +67,10 @@ func (r *Container) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (r *Container) Event(name string) (vit.Listenable, bool) {
+	return r.Item.Event(name)
+}
+
 func (r *Container) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case r.id:

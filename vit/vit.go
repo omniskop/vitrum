@@ -20,6 +20,7 @@ type Component interface {
 	MustProperty(name string) Value                   // same as Property but panics if the property doesn't exist
 	SetProperty(name string, value interface{}) error // sets the property with the given name to the given value
 	SetPropertyCode(name string, code Code) error     // sets the property with the given name to the given expression
+	Event(name string) (Listenable, bool)             // returns the event with the given name, and a boolean indicating whether the event exists
 	ResolveVariable(name string) (interface{}, bool)  // searches the scope for a variable with the given name. Returns either an expression or a component. The boolean indicates wether the variable was found.
 	AddChild(Component)                               // Adds the given component as a child and also set's their parent to this component
 	AddChildAfter(Component, Component)

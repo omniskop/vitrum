@@ -108,6 +108,13 @@ func (r *Rectangle) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (r *Rectangle) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	default:
+		return r.Item.Event(name)
+	}
+}
+
 func (r *Rectangle) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case r.id:

@@ -426,6 +426,26 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		).
 		Line()
 
+	// .Event(name string) (vit.Listenable, bool)
+	f.Func().
+		Params(jen.Id(receiverName).Op("*").Id(compName)).
+		Id("Event").
+		Params(jen.Id("name").String()).
+		Params(jen.Qual(vitPackage, "Listenable"), jen.Bool()).
+		Block(
+			jen.Switch(jen.Id("name")).BlockFunc(func(g *jen.Group) {
+				for _, ev := range comp.Events {
+					g.Case(jen.Lit(ev.Name)).Block(
+						jen.Return(jen.Op("&").Id(receiverName).Dot(ev.Name), jen.True()),
+					)
+				}
+				g.Default().Block(
+					jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("Event").Call(jen.Id("name"))),
+				)
+			}),
+		).
+		Line()
+
 	// .ResolveVariable(key string) (interface{}, bool)
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).

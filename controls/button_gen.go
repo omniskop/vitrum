@@ -56,7 +56,7 @@ func NewButton(id string, context *vit.FileContext) *Button {
 		clicked:   vit.NewMethodFromCode("clicked", vit.Code{FileCtx: context, Code: "function(e) {\n        onClicked.Fire(e)\n    }", Position: nil}),
 	}
 	// property assignments on embedded components
-	b.Item.SetPropertyCode("width", vit.Code{FileCtx: context, Code: "100", Position: nil})
+	b.Item.SetPropertyCode("width", vit.Code{FileCtx: context, Code: "150", Position: nil})
 	b.Item.SetPropertyCode("height", vit.Code{FileCtx: context, Code: "25", Position: nil})
 	// register listeners for when a property changes
 	// register event listeners
@@ -129,6 +129,15 @@ func (b *Button) SetPropertyCode(key string, code vit.Code) error {
 		return b.Item.SetPropertyCode(key, code)
 	}
 	return nil
+}
+
+func (b *Button) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	case "onClicked":
+		return &b.onClicked, true
+	default:
+		return b.Item.Event(name)
+	}
 }
 
 func (b *Button) ResolveVariable(key string) (interface{}, bool) {

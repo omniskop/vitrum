@@ -137,6 +137,13 @@ func (c *Column) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (c *Column) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	default:
+		return c.Item.Event(name)
+	}
+}
+
 func (c *Column) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case c.id:

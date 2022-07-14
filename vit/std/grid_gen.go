@@ -241,6 +241,13 @@ func (g *Grid) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (g *Grid) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	default:
+		return g.Item.Event(name)
+	}
+}
+
 func (g *Grid) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case g.id:

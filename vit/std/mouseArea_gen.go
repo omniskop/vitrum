@@ -165,6 +165,15 @@ func (m *MouseArea) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (m *MouseArea) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	case "onClicked":
+		return &m.onClicked, true
+	default:
+		return m.Item.Event(name)
+	}
+}
+
 func (m *MouseArea) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case m.id:

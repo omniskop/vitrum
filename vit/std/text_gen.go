@@ -212,6 +212,13 @@ func (t *Text) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (t *Text) Event(name string) (vit.Listenable, bool) {
+	switch name {
+	default:
+		return t.Item.Event(name)
+	}
+}
+
 func (t *Text) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case t.id:

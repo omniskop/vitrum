@@ -144,6 +144,10 @@ func (i *Item) SetPropertyCode(key string, code vit.Code) error {
 	return nil
 }
 
+func (i *Item) Event(name string) (vit.Listenable, bool) {
+	return i.Root.Event(name)
+}
+
 func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
 	case i.id:
