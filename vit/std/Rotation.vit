@@ -1,0 +1,18 @@
+
+Item {
+    embedded enum HorizontalPivot {
+        PivotLeft,
+        PivotHCenter,
+        PivotRight,
+    }
+
+    embedded enum VerticalPivot {
+        PivotTop,
+        PivotVCenter,
+        PivorBottom,
+    }
+
+    property HorizontalPivot horizontalPivot;
+    property VerticalPivot verticalPivot;
+    property float degrees;
+}
