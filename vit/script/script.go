@@ -132,13 +132,13 @@ func Exception(msg string) goja.Value {
 	return runtime.ToValue(msg)
 }
 
-type Variable struct {
-	Identifier []string
-	Value      interface{}
-}
-
 type VariableSource interface {
 	ResolveVariable(string) (interface{}, bool)
+}
+
+type Variable interface {
+	GetValue() interface{}
+	SetValue(interface{}) error
 }
 
 type VariableBridge struct {
@@ -146,6 +146,7 @@ type VariableBridge struct {
 }
 
 func (b *VariableBridge) Get(key string) goja.Value {
+	// fmt.Printf("[VariableBridge] get %q\n", key)
 	val, ok := b.Source.ResolveVariable(key)
 	if !ok {
 		// fmt.Printf("[VariableBridge] get %q: undefined\n", key)
@@ -163,13 +164,26 @@ func (b *VariableBridge) Get(key string) goja.Value {
 	case VariableSource:
 		// fmt.Printf("[VariableBridge] get %q: dynamic object\n", key)
 		return runtime.NewDynamicObject(&VariableBridge{actual})
+	case Variable:
+		return runtime.ToValue(actual.GetValue())
 	}
-	// fmt.Printf("[VariableBridge] get %q: (%T) %v\n", key, val, val)
 	return runtime.ToValue(val)
 }
 
 func (b *VariableBridge) Set(key string, value goja.Value) bool {
 	// fmt.Printf("[VariableBridge] set %q: %v (%T)\n", key, value, value)
+	val, ok := b.Source.ResolveVariable(key)
+	if !ok {
+		panic(Exception(fmt.Sprintf("undefined variable %q", key)))
+	}
+	variable, ok := val.(Variable)
+	if !ok {
+		panic(Exception(fmt.Sprintf("variable %q is not settable", key)))
+	}
+	err := variable.SetValue(value.Export())
+	if err != nil {
+		panic(runtime.NewTypeError(fmt.Sprintf("cannot assign %q to %q: %s", value.Export(), key, err)))
+	}
 	return true
 }
 

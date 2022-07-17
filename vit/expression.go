@@ -204,7 +204,7 @@ func (c *AccessCollector) ResolveVariable(key string) (interface{}, bool) {
 		return EventAdapter{c.context, actual}, true
 	case Value:
 		(*c.readValues)[actual] = true // mark as read
-		return actual.GetValue(), true
+		return actual, true
 	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, bool, string:
 		return actual, true
 	default:
