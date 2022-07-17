@@ -134,12 +134,6 @@ func (r *Root) ResolveVariable(key string) (interface{}, bool) {
 		return r.parent, true
 	}
 
-	// check components in scope
-	abs, ok := r.context.Get(key)
-	if ok {
-		return abs, true
-	}
-
 	for name, enum := range r.enumerations {
 		if name == key {
 			return enum, true

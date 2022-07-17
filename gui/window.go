@@ -3,6 +3,9 @@ package gui
 import (
 	"fmt"
 	"log"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"gioui.org/app"
 	"gioui.org/io/key"
@@ -19,12 +22,15 @@ import (
 )
 
 type componentHandler struct {
-	mouse map[*std.MouseArea]bool
+	mouse            map[*std.MouseArea]bool
+	key              map[*std.KeyArea]bool
+	focusedComponent vit.FocusableComponent
 }
 
-func newComponentHandler() componentHandler {
-	return componentHandler{
+func newComponentHandler() *componentHandler {
+	return &componentHandler{
 		mouse: make(map[*std.MouseArea]bool),
+		key:   make(map[*std.KeyArea]bool),
 	}
 }
 
@@ -32,6 +38,8 @@ func (h *componentHandler) RegisterComponent(id string, comp vit.Component) {
 	switch comp := comp.(type) {
 	case *std.MouseArea:
 		h.mouse[comp] = true
+	case *std.KeyArea:
+		h.key[comp] = true
 	}
 }
 
@@ -41,15 +49,35 @@ func (h *componentHandler) UnregisterComponent(id string, comp vit.Component) {
 		if _, ok := h.mouse[comp]; ok {
 			delete(h.mouse, comp)
 		}
+	case *std.KeyArea:
+		if _, ok := h.key[comp]; ok {
+			delete(h.key, comp)
+		}
 	}
 }
 
-func (h componentHandler) TriggerMouseEvent(e pointer.Event, metric unit.Metric) {
+func (h *componentHandler) resetFocus() {
+	if h.focusedComponent != nil {
+		h.focusedComponent.Blur()
+		h.focusedComponent = nil
+	}
+}
+
+func (h *componentHandler) RequestFocus(comp vit.FocusableComponent) {
+	if h.focusedComponent != nil {
+		h.focusedComponent.Blur()
+	}
+	h.focusedComponent = comp
+	comp.Focus()
+}
+
+func (h *componentHandler) TriggerMouseEvent(e pointer.Event, metric unit.Metric) {
 	mouseEvent := std.MouseEvent{
 		X: int(e.Position.X / metric.PxPerDp),
 		Y: int(e.Position.Y / metric.PxPerDp),
 	}
 	if e.Buttons&pointer.ButtonPrimary > 0 {
+		h.resetFocus()
 		mouseEvent.Buttons |= std.MouseArea_MouseButtons_leftButton
 	}
 	if e.Buttons&pointer.ButtonSecondary > 0 {
@@ -63,9 +91,15 @@ func (h componentHandler) TriggerMouseEvent(e pointer.Event, metric unit.Metric)
 	}
 }
 
+func (h *componentHandler) TriggerKeyEvent(e std.KeyEvent) {
+	for ka := range h.key {
+		ka.TriggerEvent(e)
+	}
+}
+
 type Window struct {
 	manager       *parse.Manager
-	handler       componentHandler
+	handler       *componentHandler
 	mainComponent vit.Component
 	gioWindow     *app.Window
 }
@@ -196,9 +230,41 @@ func (w *Window) run(log *log.Logger) error {
 				return c.Dimensions()
 			})
 
+			var keysOfInterest = allSpecialKeys
 			for _, ev := range e.Queue.Events(w) {
-				if x, ok := ev.(pointer.Event); ok {
-					w.handler.TriggerMouseEvent(x, gtx.Metric)
+				switch event := ev.(type) {
+				case pointer.Event:
+					w.handler.TriggerMouseEvent(event, gtx.Metric)
+				case key.Event:
+					code, ok := keyCodeMapping[event.Name]
+					if ok {
+						// special character
+						w.handler.TriggerKeyEvent(std.KeyEvent{
+							Pressed: event.State == key.Press,
+							Code:    string(code),
+						})
+					} else {
+						// regular letter
+						// here we are only interested in key releases as we have received the press as an edit event already
+						if event.State == key.Release {
+							r, _ := utf8.DecodeRuneInString(event.Name)
+							w.handler.TriggerKeyEvent(std.KeyEvent{
+								Pressed: false,
+								Letter:  r,
+							})
+						}
+					}
+				case key.EditEvent:
+					// a key was pressed
+					r, _ := utf8.DecodeRuneInString(event.Text)
+					// we wan't to be informed about changes to this specific key
+					keysOfInterest = append(keysOfInterest, string(unicode.ToUpper(r)))
+					w.handler.TriggerKeyEvent(std.KeyEvent{
+						Pressed: true,
+						Letter:  r,
+					})
+				default:
+					// fmt.Printf("unknown event: %T %v\n", ev, ev)
 				}
 			}
 
@@ -206,8 +272,13 @@ func (w *Window) run(log *log.Logger) error {
 				Tag:   w,
 				Types: pointer.Press | pointer.Release | pointer.Move | pointer.Drag | pointer.Scroll,
 			}.Add(gtx.Ops)
-			key.InputOp{
+			key.FocusOp{
 				Tag: w,
+			}.Add(gtx.Ops)
+			key.InputOp{ // this also enables EditEvents
+				Tag:  w,
+				Hint: key.HintAny,
+				Keys: key.Set(strings.Join(keysOfInterest, "|")),
 			}.Add(gtx.Ops)
 
 			e.Frame(gtx.Ops)

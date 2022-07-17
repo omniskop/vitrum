@@ -1,0 +1,8 @@
+
+Item {
+    #gen-onchange="enableDisable" property bool enabled: true
+    property bool pressed: false
+
+    event onKeyDown(#gen-type="KeyEvent" var event)
+    event onKeyUp(#gen-type="KeyEvent" var event)
+}

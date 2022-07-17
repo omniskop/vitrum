@@ -15,6 +15,7 @@ import (
 //go:generate ./gencmd -i Grid.vit -o grid_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i Text.vit -o text_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i MouseArea.vit -o mouseArea_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i KeyArea.vit -o keyArea_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate rm ./gencmd
 
 func init() {
@@ -25,7 +26,7 @@ type StdLib struct {
 }
 
 func (l StdLib) ComponentNames() []string {
-	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea"}
+	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea", "KeyArea"}
 }
 
 func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContext) (vit.Component, bool) {
@@ -52,6 +53,8 @@ func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContex
 		comp, err = newTextInGlobal(id, globalCtx)
 	case "MouseArea":
 		comp, err = newMouseAreaInGlobal(id, globalCtx)
+	case "KeyArea":
+		comp, err = newKeyAreaInGlobal(id, globalCtx)
 	default:
 		return nil, false
 	}
