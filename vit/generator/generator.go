@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -29,7 +30,10 @@ const (
 	initializerTag = "gen-initializer"
 	privateTag     = "gen-private"
 	optionalTag    = "gen-optional"
+	notifyTag      = "gen-notify"
 )
+
+var functionRegex = regexp.MustCompile(`([a-zA-Z]+)\((.+)\)`)
 
 // GenerateFromFileAndSave takes the path to a vit file and generates a go file at the destination path.
 // The package name defines to which package the go file should belong.
@@ -295,7 +299,15 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 				if prop.Identifier[0] == "Root" {
 					g.Id("event").Op(",").Id("_").Op("=").Id(receiverName).Dot("Root").Dot("Event").Call(jen.Lit(prop.Identifier[1]))
 					g.Id("listener").Op("=").Id("event").Dot("CreateListener").Call(generateCode(prop.Expression, *prop.ValuePos, "context"))
-					g.Id(receiverName).Dot("RootC").Call().Dot("AddListenerFunction").Call(jen.Id("listener"))
+					g.Id(receiverName).Dot("AddListenerFunction").Call(jen.Id("listener"))
+					if prop.HasTag(notifyTag) {
+						matches := functionRegex.FindStringSubmatch(prop.Tags[notifyTag])
+						funcName := matches[1]
+						argumentType := generateCustomType(matches[2])
+
+						// > event.(*vit.EventAttribute[struct{}]).AddListener(vit.ListenerCB[struct{}](t.wasCompleted))
+						g.Id("event").Assert(jen.Op("*").Qual(vitPackage, "EventAttribute").Types(argumentType)).Dot("AddListener").Call(jen.Qual(vitPackage, "ListenerCB").Types(jen.Struct()).Call(jen.Id(receiverName).Dot(funcName)))
+					}
 				} else {
 					fmt.Fprintf(os.Stderr, "setting a property like %q is not currently supported\r\n", strings.Join(prop.Identifier, "."))
 				}
