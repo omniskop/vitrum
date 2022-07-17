@@ -21,7 +21,7 @@ func (i *DocumentInstantiator) Instantiate(id string, globalCtx *vit.GlobalConte
 }
 
 // ResolveVariable tries to find static attributes of the document's component.
-// It implements the script.VariableResolver interface.
+// It implements the script.VariableSource interface.
 func (i *DocumentInstantiator) ResolveVariable(name string) (interface{}, bool) {
 	for _, prop := range i.doc.Components[0].Properties {
 		if prop.Static && len(prop.Identifier) == 1 && prop.Identifier[0] == name {

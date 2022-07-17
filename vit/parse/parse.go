@@ -224,8 +224,9 @@ scanAgain:
 func parseUnit(tokens *tokenBuffer) (unit, error) {
 	ignoreTokens(tokens, tokenNewline, tokenSemicolon)
 
+	var tags = make(map[string]string)
 	var lineIdentifier []token
-	var startingPosition vit.Position
+	var startingPosition vit.Position = tokens.peek().position.Start()
 
 	// scan identifier
 scanLineIdentifier:
@@ -233,6 +234,15 @@ scanLineIdentifier:
 	case tokenRightBrace:
 		return componentEndUnit(t.position.Start()), nil // end of component
 	case tokenIdentifier:
+		if len(lineIdentifier) == 0 && t.literal[0] == '#' {
+			// if we haven't read a line identifier yet and this starts with a '#' it's a tag.
+			key, value, err := readTag(tokens, t)
+			if err != nil {
+				return unit{}, err
+			}
+			tags[key] = value
+			goto scanLineIdentifier
+		}
 		// part of the line identifier
 		lineIdentifier = append(lineIdentifier, t)
 	case tokenEOF:
@@ -241,12 +251,10 @@ scanLineIdentifier:
 		return nilUnit(), unexpectedToken(t, tokenIdentifier)
 	}
 
-	// check if the scanned identifier is a keyword or a tag
+	// check if the scanned identifier is a keyword
 	if len(lineIdentifier) == 1 {
-		startingPosition = lineIdentifier[0].position.Start()
-		// if this starts with a '#' it is a tag and thus also marks the start of an attribute declaration
-		if _, ok := keywords[lineIdentifier[0].literal]; lineIdentifier[0].literal[0] == '#' || ok {
-			return parseAttributeDeclaration(lineIdentifier[0], tokens)
+		if _, ok := keywords[lineIdentifier[0].literal]; ok {
+			return parseAttributeDeclaration(tokens, lineIdentifier[0], tags, startingPosition)
 		}
 	}
 
@@ -286,6 +294,7 @@ scanAgain:
 			ValuePos:   &t.position,
 			Identifier: literalsToStrings(lineIdentifier),
 			Expression: t.literal,
+			Tags:       tags,
 		}
 		switch value.valueType {
 		case valueTypeExpression:
@@ -364,39 +373,38 @@ func parseComponent(identifier string, tokens *tokenBuffer) (*vit.ComponentDefin
 
 // parseAttributeDeclaration parses the declaration or a component attribute. That could for example be a property or an enumeration.
 // The provided token should be the first word that has already been read from the line. (Which has determined that this will be an attribute declaration)
-func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
+func parseAttributeDeclaration(tokens *tokenBuffer, t token, tags map[string]string, startingPosition vit.Position) (unit, error) {
 	// We will collect modifiers that are listed before the actual attribute type is specified
-	var modifiers [][]string
+	var modifiers []string
 	var err error
-	var startingPosition = t.position.Start()
 
 	// The switch comes before be read an actual token to handle the provided keyword that has been read before
 	for {
 		switch t.literal {
 		case "property":
 			// this attribute is a property
-			prop, err := parseProperty(tokens, modifiers, startingPosition)
+			prop, err := parseProperty(tokens, modifiers, tags, startingPosition)
 			if err != nil {
 				return nilUnit(), err
 			}
 			return propertyUnit(prop.Pos, prop), nil
 		case "enum":
 			// this attribute is an enumeration
-			en, err := parseEnum(tokens, modifiers, startingPosition)
+			en, err := parseEnum(tokens, modifiers, tags, startingPosition)
 			if err != nil {
 				return nilUnit(), err
 			}
 			return enumUnit(*en.Position, en), nil
 		case "event":
 			// this attribute is an event
-			ev, err := parseEvent(tokens, modifiers, startingPosition)
+			ev, err := parseEvent(tokens, modifiers, tags, startingPosition)
 			if err != nil {
 				return nilUnit(), err
 			}
 			return eventUnit(*ev.Position, ev), nil
 		case "method":
 			// this attribute is a method
-			meth, err := parseMethod(tokens, modifiers, startingPosition)
+			meth, err := parseMethod(tokens, modifiers, tags, startingPosition)
 			if err != nil {
 				return nilUnit(), err
 			}
@@ -410,31 +418,12 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 				return nilUnit(), parseErrorf(t.position, "duplicate modifier %q", t.literal)
 			}
 
+			modifiers = append(modifiers, modifierName)
+
 			// read the next token, which is either the next identifier or an assignment to this modifier
-			t, err = expectToken(tokens.next, tokenIdentifier, tokenAssignment)
+			t, err = expectToken(tokens.next, tokenIdentifier)
 			if err != nil {
 				return nilUnit(), err
-			}
-
-			if t.tokenType == tokenAssignment {
-				// it is an assignment to we read the following string
-				t, err = expectToken(tokens.next, tokenString)
-				if err != nil {
-					return nilUnit(), err
-				}
-
-				// add this formatted to the modifiers
-				modifiers = append(modifiers, []string{modifierName, t.literal})
-
-				// read the next token
-				t, err = expectToken(tokens.next, tokenIdentifier, tokenAssignment)
-				if err != nil {
-					return nilUnit(), err
-				}
-			} else {
-				// store this simple modifier
-				modifiers = append(modifiers, []string{modifierName})
-				// t now already contains the next token
 			}
 		}
 	}
@@ -442,7 +431,7 @@ func parseAttributeDeclaration(t token, tokens *tokenBuffer) (unit, error) {
 
 // parseProperty parses a property declaration/definition with the given modifiers.
 // Note: This will not be called for property assignments.
-func parseProperty(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.PropertyDefinition, error) {
+func parseProperty(tokens *tokenBuffer, modifiers []string, tags map[string]string, startingPosition vit.Position) (vit.PropertyDefinition, error) {
 	// read the type of the property
 	var listDimensions int
 start:
@@ -468,7 +457,7 @@ start:
 		return vit.PropertyDefinition{}, err
 	}
 
-	unknownModifiers, tags := dissectModifiers(modifiers)
+	unknownModifiers := unknownModifiers(modifiers)
 
 	for _, m := range unknownModifiers {
 		return vit.PropertyDefinition{}, genericErrorf(vit.NewRangeFromStartToEnd(startingPosition, identifier.position.End()), "unknown modifier %q", m)
@@ -525,7 +514,7 @@ start:
 }
 
 // parseEnum parses an enumeration declaration with the given modifiers
-func parseEnum(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.Enumeration, error) {
+func parseEnum(tokens *tokenBuffer, modifiers []string, tags map[string]string, startingPosition vit.Position) (vit.Enumeration, error) {
 	enum := vit.Enumeration{
 		Values:   make(map[string]int),
 		Embedded: modifiersContain(modifiers, "embedded"),
@@ -605,7 +594,7 @@ lineLoop:
 }
 
 // parse event definition
-func parseEvent(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.EventDefinition, error) {
+func parseEvent(tokens *tokenBuffer, modifiers []string, tags map[string]string, startingPosition vit.Position) (vit.EventDefinition, error) {
 	event := vit.EventDefinition{}
 
 	// name of the event
@@ -687,7 +676,7 @@ parameterLoop:
 }
 
 // parse method definition
-func parseMethod(tokens *tokenBuffer, modifiers [][]string, startingPosition vit.Position) (vit.Method, error) {
+func parseMethod(tokens *tokenBuffer, modifiers []string, tags map[string]string, startingPosition vit.Position) (vit.Method, error) {
 	// this will be called after the word 'method' has been read
 	// next we expect the name
 	t, err := expectToken(tokens.next, tokenIdentifier)
@@ -735,6 +724,27 @@ func ParseGroupDefinition(code string, position vit.Position) ([]vit.PropertyDef
 		return nil, parseErrorf(*comp.Enumerations[0].Position, "unexpected enumeration inside of group")
 	}
 	return comp.Properties, nil
+}
+
+// readTag parses a tag and returns the name and value of it.
+// It must be called with the token that contains the name of the tag (a literal starting with '#').
+// If the tag does not have a value the value will be an empty string.
+func readTag(tokens *tokenBuffer, t token) (string, string, error) {
+	if t.literal[0] != '#' {
+		return "", "", parseErrorf(t.position, "called readTag on literal that's not a tag: %q", t.literal)
+	}
+	key := t.literal[1:] // without the '#'
+	t = tokens.peek()
+	if t.tokenType != tokenAssignment {
+		return key, "", nil // we're done
+	}
+	t = tokens.next()
+	t, err := expectToken(tokens.next, tokenString)
+	if err != nil {
+		return "", "", err
+	}
+	value := t.literal
+	return key, value, nil
 }
 
 // ignoreTokens consumes all tokens of the given types.
@@ -801,27 +811,20 @@ func stringSliceContains(list []string, element string) bool {
 
 // modifiersContain checks if the list of modifiers contains the given element.
 // Every item in the list must at least have a length of 1
-func modifiersContain(list [][]string, element string) bool {
+func modifiersContain(list []string, element string) bool {
 	for _, e := range list {
-		if e[0] == element {
+		if e == element {
 			return true
 		}
 	}
 	return false
 }
 
-// dissectModifiers takes attribute modifiers and returns all tags and all unknown modifiers.
-func dissectModifiers(modifiers [][]string) (unknown []string, tags map[string]string) {
-	tags = make(map[string]string)
+// unknownModifiers takes attribute modifiers and returns all the ones that are unknown.
+func unknownModifiers(modifiers []string) (unknown []string) {
 	for _, m := range modifiers {
-		if m[0][0] == '#' { // this is a tag
-			if len(m) == 2 {
-				tags[m[0][1:]] = m[1] // with a value
-			} else {
-				tags[m[0][1:]] = "" // without a value
-			}
-		} else if _, ok := knownModifiers[m[0]]; !ok { // an unknown modifier
-			unknown = append(unknown, m[0])
+		if _, ok := knownModifiers[m]; !ok {
+			unknown = append(unknown, m)
 		}
 	}
 	return
