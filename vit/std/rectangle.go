@@ -17,6 +17,7 @@ func (r *Rectangle) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 		ctx.SetStrokeJoiner(canvas.MiterJoin)
 		ctx.SetStrokeColor(r.border.MustGet("color").(*vit.ColorValue).Color())
 		ctx.SetStrokeWidth(float64(r.border.MustGet("width").(*vit.IntValue).Int()))
+		defer ctx.SetStrokeWidth(0)
 		radius := math.Max(r.radius.Float64()-borderWidth/2, 0) // decrease radius. Make sure it can't get below 0
 		ctx.DrawPath(
 			rect.X1+borderWidth/2,
