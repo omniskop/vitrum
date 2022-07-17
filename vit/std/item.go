@@ -150,8 +150,6 @@ func (i *Item) Event(name string) (vit.Listenable, bool) {
 
 func (i *Item) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case i.id:
-		return i, true
 	case "width":
 		return &i.width, true
 	case "height":

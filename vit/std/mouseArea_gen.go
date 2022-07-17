@@ -48,7 +48,7 @@ func newMouseAreaInGlobal(id string, globalCtx *vit.GlobalContext) (*MouseArea, 
 }
 func NewMouseArea(id string, context *vit.FileContext) *MouseArea {
 	m := &MouseArea{
-		Item:            NewItem(id, context),
+		Item:            NewItem("", context),
 		id:              id,
 		acceptedButtons: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "MouseButtons.leftButton", Position: nil}),
 		containsMouse:   *vit.NewEmptyBoolValue(),
@@ -73,7 +73,7 @@ func NewMouseArea(id string, context *vit.FileContext) *MouseArea {
 	})
 	// add child components
 
-	context.RegisterComponent(m)
+	context.RegisterComponent("", m)
 
 	return m
 }
@@ -176,8 +176,6 @@ func (m *MouseArea) Event(name string) (vit.Listenable, bool) {
 
 func (m *MouseArea) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case m.id:
-		return m, true
 	case "acceptedButtons":
 		return &m.acceptedButtons, true
 	case "containsMouse":

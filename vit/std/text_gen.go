@@ -81,7 +81,7 @@ func newTextInGlobal(id string, globalCtx *vit.GlobalContext) (*Text, error) {
 }
 func NewText(id string, context *vit.FileContext) *Text {
 	t := &Text{
-		Item:                NewItem(id, context),
+		Item:                NewItem("", context),
 		id:                  id,
 		text:                *vit.NewEmptyStringValue(),
 		color:               *vit.NewColorValueFromCode(vit.Code{FileCtx: context, Code: "\"black\"", Position: nil}),
@@ -132,7 +132,7 @@ func NewText(id string, context *vit.FileContext) *Text {
 	})
 	// add child components
 
-	context.RegisterComponent(t)
+	context.RegisterComponent("", t)
 
 	return t
 }
@@ -221,8 +221,6 @@ func (t *Text) Event(name string) (vit.Listenable, bool) {
 
 func (t *Text) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case t.id:
-		return t, true
 	case "text":
 		return &t.text, true
 	case "color":

@@ -154,7 +154,7 @@ func InstantiateComponent(def *vit.ComponentDefinition, fileCtx *vit.FileContext
 		return instance, componentError{src, err}
 	}
 
-	fileCtx.RegisterComponent(instance)
+	fileCtx.RegisterComponent(def.ID, instance)
 	// TODO: figure out where the components will be unregistered again
 
 	return instance, nil

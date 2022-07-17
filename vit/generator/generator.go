@@ -187,7 +187,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	// All property instantiations
 	// we could use jen.Dict here but I wan't to preserve the property order
 	propertyInstantiations := []jen.Code{
-		jen.Line().Id(comp.BaseName).Op(":").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Id("id").Op(",").Id("context").Op(")"),
+		jen.Line().Id(comp.BaseName).Op(":").Qual(stdPackage, fmt.Sprintf("New%s", comp.BaseName)).Op("(").Lit(comp.ID).Op(",").Id("context").Op(")"),
 		jen.Line().Id("id").Op(":").Id("id"),
 	}
 
@@ -315,7 +315,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 				}
 			}
 			g.Line()
-			g.Id("context").Dot("RegisterComponent").Call(jen.Id(receiverName))
+			g.Id("context").Dot("RegisterComponent").Call(jen.Lit(comp.ID), jen.Id(receiverName))
 			g.Line()
 			g.Return(jen.Id(receiverName))
 		})
@@ -454,9 +454,6 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params(jen.Interface(), jen.Bool()).
 		Block(
 			jen.Switch(jen.Id("key")).BlockFunc(func(g *jen.Group) {
-				g.Case(jen.Id(receiverName).Dot("id")).Block(
-					jen.Return(jen.Id(receiverName), jen.True()),
-				)
 				for _, prop := range comp.Properties {
 					if isInternalProperty(prop) || !isReadable(prop) || !prop.IsNewDefinition() {
 						continue

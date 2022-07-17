@@ -347,3 +347,7 @@ func (r *Root) ApplyLayout(*Layout) {}
 func (r *Root) Bounds() Rect {
 	return Rect{}
 }
+
+func (r *Root) Context() *FileContext {
+	return r.context
+}

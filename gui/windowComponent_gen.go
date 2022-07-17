@@ -47,7 +47,7 @@ func newWindowComponentInGlobal(id string, globalCtx *vit.GlobalContext) (*Windo
 }
 func NewWindowComponent(id string, context *vit.FileContext) *WindowComponent {
 	w := &WindowComponent{
-		Item:      std.NewItem(id, context),
+		Item:      std.NewItem("", context),
 		id:        id,
 		title:     *vit.NewEmptyStringValue(),
 		maxWidth:  *vit.NewEmptyFloatValue(),
@@ -61,7 +61,7 @@ func NewWindowComponent(id string, context *vit.FileContext) *WindowComponent {
 	// register enumerations
 	// add child components
 
-	context.RegisterComponent(w)
+	context.RegisterComponent("", w)
 
 	return w
 }
@@ -144,8 +144,6 @@ func (w *WindowComponent) Event(name string) (vit.Listenable, bool) {
 
 func (w *WindowComponent) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case w.id:
-		return w, true
 	case "title":
 		return &w.title, true
 	case "maxWidth":

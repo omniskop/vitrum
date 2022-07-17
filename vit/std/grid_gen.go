@@ -65,7 +65,7 @@ func newGridInGlobal(id string, globalCtx *vit.GlobalContext) (*Grid, error) {
 }
 func NewGrid(id string, context *vit.FileContext) *Grid {
 	g := &Grid{
-		Item:                    NewItem(id, context),
+		Item:                    NewItem("", context),
 		id:                      id,
 		topPadding:              *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
 		rightPadding:            *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
@@ -119,7 +119,7 @@ func NewGrid(id string, context *vit.FileContext) *Grid {
 	})
 	// add child components
 
-	context.RegisterComponent(g)
+	context.RegisterComponent("", g)
 
 	return g
 }
@@ -250,8 +250,6 @@ func (g *Grid) Event(name string) (vit.Listenable, bool) {
 
 func (g *Grid) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case g.id:
-		return g, true
 	case "topPadding":
 		return &g.topPadding, true
 	case "rightPadding":

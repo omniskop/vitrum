@@ -32,7 +32,7 @@ func newRepeaterInGlobal(id string, globalCtx *vit.GlobalContext) (*Repeater, er
 }
 func NewRepeater(id string, context *vit.FileContext) *Repeater {
 	r := &Repeater{
-		Item:     NewItem(id, context),
+		Item:     NewItem("", context),
 		id:       id,
 		count:    *vit.NewEmptyIntValue(),
 		delegate: *vit.NewEmptyComponentDefValue(),
@@ -48,7 +48,7 @@ func NewRepeater(id string, context *vit.FileContext) *Repeater {
 	// register enumerations
 	// add child components
 
-	context.RegisterComponent(r)
+	context.RegisterComponent("", r)
 
 	return r
 }
@@ -119,8 +119,6 @@ func (r *Repeater) Event(name string) (vit.Listenable, bool) {
 
 func (r *Repeater) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case r.id:
-		return r, true
 	case "count":
 		return &r.count, true
 	case "delegate":

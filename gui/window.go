@@ -28,16 +28,18 @@ func newComponentHandler() componentHandler {
 	}
 }
 
-func (h componentHandler) RegisterComponent(comp vit.Component) {
-	if ma, ok := comp.(*std.MouseArea); ok {
-		h.mouse[ma] = true
+func (h *componentHandler) RegisterComponent(id string, comp vit.Component) {
+	switch comp := comp.(type) {
+	case *std.MouseArea:
+		h.mouse[comp] = true
 	}
 }
 
-func (h componentHandler) UnregisterComponent(comp vit.Component) {
-	if ma, ok := comp.(*std.MouseArea); ok {
-		if _, ok := h.mouse[ma]; ok {
-			delete(h.mouse, ma)
+func (h *componentHandler) UnregisterComponent(id string, comp vit.Component) {
+	switch comp := comp.(type) {
+	case *std.MouseArea:
+		if _, ok := h.mouse[comp]; ok {
+			delete(h.mouse, comp)
 		}
 	}
 }

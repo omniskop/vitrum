@@ -287,7 +287,7 @@ func TestParse(t *testing.T) {
 	buf := NewTokenBuffer(l.Lex)
 	doc, err := Parse(buf)
 	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 	options := []cmp.Option{
 		cmp.AllowUnexported(VitDocument{}, vit.ComponentDefinition{}, vit.PropertyDefinition{}, ImportStatement{}), // allow comparison of unexported fields in these structs

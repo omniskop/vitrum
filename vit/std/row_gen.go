@@ -35,7 +35,7 @@ func newRowInGlobal(id string, globalCtx *vit.GlobalContext) (*Row, error) {
 }
 func NewRow(id string, context *vit.FileContext) *Row {
 	r := &Row{
-		Item:          NewItem(id, context),
+		Item:          NewItem("", context),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
 		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
@@ -57,7 +57,7 @@ func NewRow(id string, context *vit.FileContext) *Row {
 	// register enumerations
 	// add child components
 
-	context.RegisterComponent(r)
+	context.RegisterComponent("", r)
 
 	return r
 }
@@ -146,8 +146,6 @@ func (r *Row) Event(name string) (vit.Listenable, bool) {
 
 func (r *Row) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case r.id:
-		return r, true
 	case "topPadding":
 		return &r.topPadding, true
 	case "rightPadding":

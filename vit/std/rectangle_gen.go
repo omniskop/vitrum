@@ -31,7 +31,7 @@ func newRectangleInGlobal(id string, globalCtx *vit.GlobalContext) (*Rectangle, 
 }
 func NewRectangle(id string, context *vit.FileContext) *Rectangle {
 	r := &Rectangle{
-		Item:   NewItem(id, context),
+		Item:   NewItem("", context),
 		id:     id,
 		color:  *vit.NewColorValueFromCode(vit.Code{FileCtx: context, Code: "Vit.rgb(0, 0, 0)", Position: nil}),
 		radius: *vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
@@ -46,7 +46,7 @@ func NewRectangle(id string, context *vit.FileContext) *Rectangle {
 	// register enumerations
 	// add child components
 
-	context.RegisterComponent(r)
+	context.RegisterComponent("", r)
 
 	return r
 }
@@ -117,8 +117,6 @@ func (r *Rectangle) Event(name string) (vit.Listenable, bool) {
 
 func (r *Rectangle) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case r.id:
-		return r, true
 	case "color":
 		return &r.color, true
 	case "radius":

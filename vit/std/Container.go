@@ -73,8 +73,6 @@ func (r *Container) Event(name string) (vit.Listenable, bool) {
 
 func (r *Container) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case r.id:
-		return r, true
 	case "content":
 		return r.content, true
 	default:

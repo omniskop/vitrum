@@ -155,16 +155,22 @@ func NewFileContext(global *GlobalContext) *FileContext {
 	}
 }
 
-func (ctx *FileContext) RegisterComponent(comp Component) {
-	ctx.IDs[comp.ID()] = comp
-	ctx.Global.Environment.RegisterComponent(comp)
+func (ctx *FileContext) RegisterComponent(id string, comp Component) {
+	if id != "" {
+		ctx.IDs[id] = comp
+	}
+	ctx.Global.Environment.RegisterComponent(id, comp)
 }
 
-func (ctx *FileContext) UnregisterComponent(comp Component) {
-	delete(ctx.IDs, comp.ID())
-	ctx.Global.Environment.UnregisterComponent(comp)
+func (ctx *FileContext) UnregisterComponent(id string, comp Component) {
+	if id != "" {
+		delete(ctx.IDs, id)
+	}
+	ctx.Global.Environment.UnregisterComponent(id, comp)
 }
 
+// Get returns the component with the given name.
+// The returned boolean indicates whether the component was found.
 func (ctx *FileContext) Get(name string) (AbstractComponent, bool) {
 	if comp, ok := ctx.KnownComponents.Get(name); ok {
 		return comp, true
@@ -186,9 +192,16 @@ func (ctx *FileContext) ResolveVariable(name string) (interface{}, bool) {
 	return nil, false
 }
 
+func (ctx *FileContext) GetComponentByID(id string) (Component, bool) {
+	if comp, ok := ctx.IDs[id]; ok {
+		return comp, true
+	}
+	return nil, false
+}
+
 type ExecutionEnvironment interface {
-	RegisterComponent(Component)
-	UnregisterComponent(Component)
+	RegisterComponent(string, Component)
+	UnregisterComponent(string, Component)
 }
 
 // ErrorGroup contains a list of multiple error and may be used whenever multiple errors may occur without the need to fail immediately.

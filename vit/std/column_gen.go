@@ -35,7 +35,7 @@ func newColumnInGlobal(id string, globalCtx *vit.GlobalContext) (*Column, error)
 }
 func NewColumn(id string, context *vit.FileContext) *Column {
 	c := &Column{
-		Item:          NewItem(id, context),
+		Item:          NewItem("", context),
 		id:            id,
 		topPadding:    *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
 		rightPadding:  *vit.NewOptionalValue(vit.NewFloatValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil})),
@@ -57,7 +57,7 @@ func NewColumn(id string, context *vit.FileContext) *Column {
 	// register enumerations
 	// add child components
 
-	context.RegisterComponent(c)
+	context.RegisterComponent("", c)
 
 	return c
 }
@@ -146,8 +146,6 @@ func (c *Column) Event(name string) (vit.Listenable, bool) {
 
 func (c *Column) ResolveVariable(key string) (interface{}, bool) {
 	switch key {
-	case c.id:
-		return c, true
 	case "topPadding":
 		return &c.topPadding, true
 	case "rightPadding":
