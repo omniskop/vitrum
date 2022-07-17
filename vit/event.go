@@ -57,6 +57,22 @@ func (f *EventListenerFunction[EventType]) ShouldEvaluate() bool {
 	return f.dirty
 }
 
+// ListenerCallback is an adapter that implements the Dependent interface
+// and simply calls the callback function when the dependency changes.
+type ListenerCallback[EventType any] struct {
+	Callback *func(*EventType)
+}
+
+func ListenerCB[EventType any](cb func(*EventType)) ListenerCallback[EventType] {
+	return ListenerCallback[EventType]{
+		Callback: &cb,
+	}
+}
+
+func (d ListenerCallback[EventType]) Notify(e *EventType) {
+	(*d.Callback)(e)
+}
+
 type JSListener[EventType any] struct {
 	function *AsyncFunction
 }
