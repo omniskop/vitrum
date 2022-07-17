@@ -39,6 +39,11 @@ type Component interface {
 	Finish() error // Finishes the component instantiation. Should only be called by components that embed this one.
 }
 
+type FocusableComponent interface {
+	Focus()
+	Blur()
+}
+
 func FinishComponent(comp Component) error {
 	return comp.Finish()
 }
@@ -202,6 +207,7 @@ func (ctx *FileContext) GetComponentByID(id string) (Component, bool) {
 type ExecutionEnvironment interface {
 	RegisterComponent(string, Component)
 	UnregisterComponent(string, Component)
+	RequestFocus(FocusableComponent)
 }
 
 // ErrorGroup contains a list of multiple error and may be used whenever multiple errors may occur without the need to fail immediately.

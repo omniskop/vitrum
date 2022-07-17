@@ -1,0 +1,57 @@
+import Vit 1.0
+
+Item {
+    id: textField
+    property string text
+    property bool focused: false
+    width: 300
+    height: 25
+
+    // method clicked: {
+    //     // console.log(textField);
+    //     console.log(textField.focused);
+    //     textField.focused = true;
+    // }
+
+    #gen-notify="wasCompleted(struct{})" Root.onCompleted: function() {
+        // keyArea.onKeyDown.addEventListener()
+        // mouseArea.onClicked.AddEventListener(clicked)
+        // textField.focused = true;
+    }
+
+    // #gen-notify="keyPressed(std.KeyEvent)" 
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        acceptedButtons: MouseArea.leftButton
+    }
+
+    KeyArea {
+        id: keyArea
+        anchors.fill: parent
+        enabled: parent.focused
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: Vit.rgb(230, 230, 230)
+        border.color: Vit.rgb(130, 130, 130)
+        border.width: parent.focused ? 2 : 0
+        radius: 5
+    }
+
+    Text {
+        id: text
+        anchors.fill: parent
+        anchors.leftMargin: 5
+        anchors.rightMargin: 5
+        text: parent.text
+        font.pointSize: 40
+        font.family: "Montserrat"
+        font.weight: Text.Medium
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignLeft
+        elide: Text.ElideLeft
+    }
+}

@@ -9,6 +9,7 @@ import (
 
 //go:generate go build -o gencmd github.com/omniskop/vitrum/vit/generator/gencmd
 //go:generate ./gencmd -i Button.vit -o button_gen.go -p github.com/omniskop/vitrum/controls
+//go:generate ./gencmd -i TextField.vit -o textField_gen.go -p github.com/omniskop/vitrum/controls
 //go:generate rm ./gencmd
 
 func init() {
@@ -19,7 +20,7 @@ type ControlsLib struct {
 }
 
 func (l ControlsLib) ComponentNames() []string {
-	return []string{"Button"}
+	return []string{"Button", "TextField"}
 }
 
 func (l ControlsLib) NewComponent(name string, id string, globalCtx *vit.GlobalContext) (vit.Component, bool) {
@@ -28,6 +29,8 @@ func (l ControlsLib) NewComponent(name string, id string, globalCtx *vit.GlobalC
 	switch name {
 	case "Button":
 		comp, err = newButtonInGlobal(id, globalCtx)
+	case "TextField":
+		comp, err = newTextFieldInGlobal(id, globalCtx)
 	default:
 		return nil, false
 	}
