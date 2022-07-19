@@ -20,6 +20,19 @@ const (
 	Text_HorizontalAlignment_AlignRight   Text_HorizontalAlignment = 2
 )
 
+func (enum Text_HorizontalAlignment) String() string {
+	switch enum {
+	case Text_HorizontalAlignment_AlignLeft:
+		return "AlignLeft"
+	case Text_HorizontalAlignment_AlignHCenter:
+		return "AlignHCenter"
+	case Text_HorizontalAlignment_AlignRight:
+		return "AlignRight"
+	default:
+		return "<unknownHorizontalAlignment>"
+	}
+}
+
 type Text_VerticalAlignment uint
 
 const (
@@ -27,6 +40,19 @@ const (
 	Text_VerticalAlignment_AlignVCenter Text_VerticalAlignment = 1
 	Text_VerticalAlignment_AlignBottom  Text_VerticalAlignment = 2
 )
+
+func (enum Text_VerticalAlignment) String() string {
+	switch enum {
+	case Text_VerticalAlignment_AlignTop:
+		return "AlignTop"
+	case Text_VerticalAlignment_AlignVCenter:
+		return "AlignVCenter"
+	case Text_VerticalAlignment_AlignBottom:
+		return "AlignBottom"
+	default:
+		return "<unknownVerticalAlignment>"
+	}
+}
 
 type Text_FontWeight uint
 
@@ -47,6 +73,36 @@ const (
 	Text_FontWeight_Heavy      Text_FontWeight = 900
 )
 
+func (enum Text_FontWeight) String() string {
+	switch enum {
+	case Text_FontWeight_Thin:
+		return "Thin"
+	case Text_FontWeight_ExtraLight:
+		return "ExtraLight"
+	// key UltraLight is omitted as it's the same as ExtraLight
+	case Text_FontWeight_Light:
+		return "Light"
+	case Text_FontWeight_Normal:
+		return "Normal"
+	// key Regular is omitted as it's the same as Normal
+	case Text_FontWeight_Medium:
+		return "Medium"
+	case Text_FontWeight_DemiBold:
+		return "DemiBold"
+	// key SemiBold is omitted as it's the same as DemiBold
+	case Text_FontWeight_Bold:
+		return "Bold"
+	case Text_FontWeight_ExtraBold:
+		return "ExtraBold"
+	// key UltraBold is omitted as it's the same as ExtraBold
+	case Text_FontWeight_Black:
+		return "Black"
+	// key Heavy is omitted as it's the same as Black
+	default:
+		return "<unknownFontWeight>"
+	}
+}
+
 type Text_Elide uint
 
 const (
@@ -55,6 +111,21 @@ const (
 	Text_Elide_ElideMiddle Text_Elide = 2
 	Text_Elide_ElideRight  Text_Elide = 3
 )
+
+func (enum Text_Elide) String() string {
+	switch enum {
+	case Text_Elide_ElideNone:
+		return "ElideNone"
+	case Text_Elide_ElideLeft:
+		return "ElideLeft"
+	case Text_Elide_ElideMiddle:
+		return "ElideMiddle"
+	case Text_Elide_ElideRight:
+		return "ElideRight"
+	default:
+		return "<unknownElide>"
+	}
+}
 
 type Text struct {
 	*Item

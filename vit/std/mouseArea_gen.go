@@ -21,6 +21,23 @@ const (
 	MouseArea_MouseButtons_allButtons   MouseArea_MouseButtons = 134217727
 )
 
+func (enum MouseArea_MouseButtons) String() string {
+	switch enum {
+	case MouseArea_MouseButtons_noButton:
+		return "noButton"
+	case MouseArea_MouseButtons_leftButton:
+		return "leftButton"
+	case MouseArea_MouseButtons_rightButton:
+		return "rightButton"
+	case MouseArea_MouseButtons_middleButton:
+		return "middleButton"
+	case MouseArea_MouseButtons_allButtons:
+		return "allButtons"
+	default:
+		return "<unknownMouseButtons>"
+	}
+}
+
 type MouseArea struct {
 	*Item
 	id string

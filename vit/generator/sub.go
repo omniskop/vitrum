@@ -23,6 +23,28 @@ func generateComponentEnums(compName string, comp *vit.ComponentDefinition) jen.
 				g.Id(fmt.Sprintf("%s_%s", typeName, value.name)).Id(typeName).Op("=").Lit(value.value)
 			}
 		}).Line()
+		// String method
+		code.Func().Params(jen.Id("enum").Id(typeName)).Id("String").Params().Params(jen.String()).Block(
+			jen.Switch(jen.Id("enum").BlockFunc(func(g *jen.Group) {
+				// We'll keep track of all set values to make sure we don't double them in the switch statement.
+				// Having two entries with the same value is permitted in an enum.
+				setValues := make(map[int]string)
+				for _, value := range orderEnumValues(enum.Values) {
+					if setKey, ok := setValues[value.value]; ok {
+						g.Comment(fmt.Sprintf("key %s is omitted as it's the same as %s", value.name, setKey))
+						continue // this value was set already
+					}
+					setValues[value.value] = value.name
+					g.Case(jen.Id(fmt.Sprintf("%s_%s", typeName, value.name))).Block(
+						jen.Return(jen.Lit(value.name)),
+					)
+				}
+				g.Default().Block(
+					jen.Return(jen.Lit(fmt.Sprintf("<unknown%s>", enum.Name))),
+				)
+			})),
+		).Line()
+
 	}
 	return code
 }

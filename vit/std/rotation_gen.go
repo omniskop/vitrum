@@ -19,6 +19,19 @@ const (
 	Rotation_HorizontalPivot_PivotRight   Rotation_HorizontalPivot = 2
 )
 
+func (enum Rotation_HorizontalPivot) String() string {
+	switch enum {
+	case Rotation_HorizontalPivot_PivotLeft:
+		return "PivotLeft"
+	case Rotation_HorizontalPivot_PivotHCenter:
+		return "PivotHCenter"
+	case Rotation_HorizontalPivot_PivotRight:
+		return "PivotRight"
+	default:
+		return "<unknownHorizontalPivot>"
+	}
+}
+
 type Rotation_VerticalPivot uint
 
 const (
@@ -26,6 +39,19 @@ const (
 	Rotation_VerticalPivot_PivotVCenter Rotation_VerticalPivot = 1
 	Rotation_VerticalPivot_PivorBottom  Rotation_VerticalPivot = 2
 )
+
+func (enum Rotation_VerticalPivot) String() string {
+	switch enum {
+	case Rotation_VerticalPivot_PivotTop:
+		return "PivotTop"
+	case Rotation_VerticalPivot_PivotVCenter:
+		return "PivotVCenter"
+	case Rotation_VerticalPivot_PivorBottom:
+		return "PivorBottom"
+	default:
+		return "<unknownVerticalPivot>"
+	}
+}
 
 type Rotation struct {
 	*Item

@@ -19,6 +19,19 @@ const (
 	Grid_HorizontalItemAlignment_AlignRight   Grid_HorizontalItemAlignment = 2
 )
 
+func (enum Grid_HorizontalItemAlignment) String() string {
+	switch enum {
+	case Grid_HorizontalItemAlignment_AlignLeft:
+		return "AlignLeft"
+	case Grid_HorizontalItemAlignment_AlignHCenter:
+		return "AlignHCenter"
+	case Grid_HorizontalItemAlignment_AlignRight:
+		return "AlignRight"
+	default:
+		return "<unknownHorizontalItemAlignment>"
+	}
+}
+
 type Grid_VerticalItemAlignment uint
 
 const (
@@ -27,12 +40,36 @@ const (
 	Grid_VerticalItemAlignment_AlignBottom  Grid_VerticalItemAlignment = 2
 )
 
+func (enum Grid_VerticalItemAlignment) String() string {
+	switch enum {
+	case Grid_VerticalItemAlignment_AlignTop:
+		return "AlignTop"
+	case Grid_VerticalItemAlignment_AlignVCenter:
+		return "AlignVCenter"
+	case Grid_VerticalItemAlignment_AlignBottom:
+		return "AlignBottom"
+	default:
+		return "<unknownVerticalItemAlignment>"
+	}
+}
+
 type Grid_Flow uint
 
 const (
 	Grid_Flow_LeftToRight Grid_Flow = 0
 	Grid_Flow_TopToBottom Grid_Flow = 1
 )
+
+func (enum Grid_Flow) String() string {
+	switch enum {
+	case Grid_Flow_LeftToRight:
+		return "LeftToRight"
+	case Grid_Flow_TopToBottom:
+		return "TopToBottom"
+	default:
+		return "<unknownFlow>"
+	}
+}
 
 type Grid struct {
 	*Item
