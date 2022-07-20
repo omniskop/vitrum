@@ -46,3 +46,9 @@ tasks:
     deps: [ generate ]
     cmds:
       - go build
+
+  run:
+    interactive: true # better live output
+    deps: [ build ]
+    cmds:
+      - ./vitrum
