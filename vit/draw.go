@@ -1,6 +1,8 @@
 package vit
 
 import (
+	"image"
+
 	"github.com/tdewolff/canvas"
 	"github.com/tdewolff/canvas/renderers"
 )
@@ -11,6 +13,15 @@ type Rect struct {
 
 func NewRect(x, y, w, h float64) Rect {
 	return Rect{x, y, x + w, y + h}
+}
+
+func ImageRect(r image.Rectangle) Rect {
+	return Rect{
+		float64(r.Min.X),
+		float64(r.Min.Y),
+		float64(r.Max.X),
+		float64(r.Max.Y),
+	}
 }
 
 func (r Rect) ToCanvas() canvas.Rect {
@@ -61,6 +72,16 @@ func (r Rect) Left() float64 {
 
 func (r Rect) Contains(X, Y float64) bool {
 	return r.X1 <= X && X <= r.X2 && r.Y1 <= Y && Y <= r.Y2
+}
+
+// CenteredIn returns a copy of the rectangle centered in the passed rectangle
+func (r Rect) CenteredIn(o Rect) Rect {
+	return Rect{
+		X1: o.X1 + (o.Width()-r.Width())/2,
+		Y1: o.Y1 + (o.Height()-r.Height())/2,
+		X2: o.X1 + (o.Width()+r.Width())/2,
+		Y2: o.Y1 + (o.Height()+r.Height())/2,
+	}
 }
 
 type DrawingContext struct {

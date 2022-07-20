@@ -17,6 +17,7 @@ import (
 //go:generate ./gencmd -i MouseArea.vit -o mouseArea_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i KeyArea.vit -o keyArea_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i Rotation.vit -o rotation_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i Image.vit -o image_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate rm ./gencmd
 
 func init() {
@@ -27,7 +28,7 @@ type StdLib struct {
 }
 
 func (l StdLib) ComponentNames() []string {
-	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea", "KeyArea", "Rotation"}
+	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea", "KeyArea", "Rotation", "Image"}
 }
 
 func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContext) (vit.Component, bool) {
@@ -58,6 +59,8 @@ func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContex
 		comp, err = newKeyAreaInGlobal(id, globalCtx)
 	case "Rotation":
 		comp, err = newRotationInGlobal(id, globalCtx)
+	case "Image":
+		comp, err = newImageInGlobal(id, globalCtx)
 	default:
 		return nil, false
 	}
@@ -78,6 +81,8 @@ func (l StdLib) StaticAttribute(componentName string, attributeName string) (int
 		return (*MouseArea)(nil).staticAttribute(attributeName)
 	case "Rotation":
 		return (*Rotation)(nil).staticAttribute(attributeName)
+	case "Image":
+		return (*Image)(nil).staticAttribute(attributeName)
 	}
 	return nil, false
 }

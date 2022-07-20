@@ -1,0 +1,13 @@
+
+Item {
+    embedded enum FillMode {
+        Fill, // Rescale the image to fill the entire space.
+        Fit, // Rescale the image to fill the most space while maintaining aspect ratio.
+        PreferUnchanged, // If the image is smaller than the available space it will not be scalled and drawn at the center. If it is larger is will be scalled up while preserving aspect ratio.
+    }
+
+    #gen-onchange="reloadImage" property string path
+    property FillMode fillMode: FillMode.Fit
+
+    #gen-internal #gen-type="*img" #gen-initializer="nil" #gen-private property any imageData
+}
