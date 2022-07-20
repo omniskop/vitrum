@@ -7,19 +7,7 @@ Item {
     width: 300
     height: 25
 
-    // method clicked: {
-    //     // console.log(textField);
-    //     console.log(textField.focused);
-    //     textField.focused = true;
-    // }
-
-    #gen-notify="wasCompleted(struct{})" Root.onCompleted: function() {
-        // keyArea.onKeyDown.addEventListener()
-        // mouseArea.onClicked.AddEventListener(clicked)
-        // textField.focused = true;
-    }
-
-    // #gen-notify="keyPressed(std.KeyEvent)" 
+    #gen-notify="wasCompleted(struct{})" Root.onCompleted: function() {}
 
     MouseArea {
         id: mouseArea
