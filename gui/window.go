@@ -25,12 +25,14 @@ type componentHandler struct {
 	mouse            map[*std.MouseArea]bool
 	key              map[*std.KeyArea]bool
 	focusedComponent vit.FocusableComponent
+	logger           *log.Logger
 }
 
-func newComponentHandler() *componentHandler {
+func newComponentHandler(log *log.Logger) *componentHandler {
 	return &componentHandler{
-		mouse: make(map[*std.MouseArea]bool),
-		key:   make(map[*std.KeyArea]bool),
+		mouse:  make(map[*std.MouseArea]bool),
+		key:    make(map[*std.KeyArea]bool),
+		logger: log,
 	}
 }
 
@@ -97,17 +99,23 @@ func (h *componentHandler) TriggerKeyEvent(e std.KeyEvent) {
 	}
 }
 
+func (h *componentHandler) Logger() *log.Logger {
+	return h.logger
+}
+
 type Window struct {
 	manager       *parse.Manager
 	handler       *componentHandler
 	mainComponent vit.Component
 	gioWindow     *app.Window
+	logger        *log.Logger
 }
 
-func NewWindow(source string) (*Window, error) {
+func NewWindow(source string, log *log.Logger) (*Window, error) {
 	w := &Window{
 		manager: parse.NewManager(),
-		handler: newComponentHandler(),
+		handler: newComponentHandler(log),
+		logger:  log,
 	}
 	err := w.manager.SetSource(source)
 	if err != nil {
@@ -187,7 +195,7 @@ func (w *Window) prepare() error {
 	return nil
 }
 
-func (w *Window) run(log *log.Logger) error {
+func (w *Window) run() error {
 	if w.mainComponent == nil {
 		return fmt.Errorf("window: main component is not set")
 	}
@@ -214,8 +222,8 @@ func (w *Window) run(log *log.Logger) error {
 				w.mainComponent.SetProperty("height", virtualWindowBounds.Height())
 				err := w.updateExpressions()
 				if err.Failed() {
-					log.Println(fmt.Errorf("window update:"))
-					log.Println(parse.FormatError(err))
+					w.logger.Println(fmt.Errorf("window update:"))
+					w.logger.Println(parse.FormatError(err))
 				}
 
 				// We give NewContain the virtual size of the window and it will calculate the necessary scaling factor

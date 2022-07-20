@@ -33,7 +33,7 @@ func (a *Application) SetLogger(log *log.Logger) {
 }
 
 func (a *Application) NewWindow(path string) (*Window, error) {
-	w, err := NewWindow(path)
+	w, err := NewWindow(path, a.log)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (a *Application) runWindow(w *Window) {
 		a.log.Println(str)
 		return
 	}
-	err = w.run(a.log)
+	err = w.run()
 	if err != nil {
 		a.log.Println(fmt.Errorf("window failed: %v", err))
 	}

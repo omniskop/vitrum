@@ -2,6 +2,7 @@ package vit
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/omniskop/vitrum/vit/script"
 )
@@ -208,6 +209,7 @@ type ExecutionEnvironment interface {
 	RegisterComponent(string, Component)
 	UnregisterComponent(string, Component)
 	RequestFocus(FocusableComponent)
+	Logger() *log.Logger
 }
 
 // ErrorGroup contains a list of multiple error and may be used whenever multiple errors may occur without the need to fail immediately.
