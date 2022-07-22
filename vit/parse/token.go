@@ -50,9 +50,9 @@ func (tt tokenType) String() string {
 		return "expression"
 
 	case tokenLeftParenthesis:
-		return "("
+		return "'('"
 	case tokenRightParenthesis:
-		return ")"
+		return "')'"
 	case tokenLeftBrace:
 		return "'{'"
 	case tokenRightBrace:
