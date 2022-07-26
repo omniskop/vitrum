@@ -120,8 +120,8 @@ func TestLex(t *testing.T) {
 		input:  "one: /*#*/ Item{",
 		output: []interface{}{token{tokenIdentifier, "one", vit.PositionRange{"", 1, 1, 1, 3}}, token{tokenColon, "", vit.PositionRange{"", 1, 4, 1, 4}}, token{tokenExpression, "/*#*/ Item{", vit.PositionRange{"", 1, 6, 1, 16}}},
 	}, {
-		input:  ": `${`${`${/*stuff*/'hi'}`}`}`",
-		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "`${`${`${/*stuff*/'hi'}`}`}`", vit.PositionRange{"", 1, 3, 1, 30}}},
+		input:  ": `${`\n${`${/*stuff*/'hi'}`}`}`",
+		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "`${`\n${`${/*stuff*/'hi'}`}`}`", vit.PositionRange{"", 1, 3, 2, 24}}},
 	}, {
 		input:  ": `${//stuff\n5}`",
 		output: []interface{}{token{tokenColon, "", vit.PositionRange{"", 1, 1, 1, 1}}, token{tokenExpression, "`${//stuff\n5}`", vit.PositionRange{"", 1, 3, 2, 3}}},
