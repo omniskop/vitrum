@@ -85,6 +85,56 @@ func newValueForType(vitType string, code Code) (Value, error) {
 	return nil, UnknownTypeError{vitType}
 }
 
+func newValueFromGo(value interface{}) (Value, error) {
+	switch value := value.(type) {
+	case int:
+		return NewIntValue(value), nil
+	case uint:
+		return NewIntValue(int(value)), nil
+	case int8:
+		return NewIntValue(int(value)), nil
+	case uint8:
+		return NewIntValue(int(value)), nil
+	case int16:
+		return NewIntValue(int(value)), nil
+	case uint16:
+		return NewIntValue(int(value)), nil
+	case int32:
+		return NewIntValue(int(value)), nil
+	case uint32:
+		return NewIntValue(int(value)), nil
+	case int64:
+		return NewIntValue(int(value)), nil
+	case uint64:
+		return NewIntValue(int(value)), nil
+	case float32:
+		return NewFloatValue(float64(value)), nil
+	case float64:
+		return NewFloatValue(value), nil
+	case string:
+		return NewStringValue(value), nil
+	case bool:
+		return NewBoolValue(value), nil
+	default:
+		return nil, fmt.Errorf("unable to create value from %T", value)
+	}
+}
+
+func vitTypeFromGo(value interface{}) (string, bool) {
+	switch value.(type) {
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64:
+		return "int", true
+	case float32, float64:
+		return "float", true
+	case string:
+		return "string", true
+	case bool:
+		return "bool", true
+	default:
+		return "", false
+	}
+}
+
 type typeError struct {
 	expectedType string
 	actualType   string

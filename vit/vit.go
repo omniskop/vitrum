@@ -138,11 +138,30 @@ type ComponentResolver interface {
 // GlobalContext holds information about a vitrum instance
 type GlobalContext struct {
 	KnownComponents ComponentContainer // globally known components
+	Variables       map[string]Value
 	Environment     ExecutionEnvironment
 }
 
 func (c *GlobalContext) Get(name string) (AbstractComponent, bool) {
 	return c.KnownComponents.Get(name)
+}
+
+func (c *GlobalContext) ResolveVariable(name string) (interface{}, bool) {
+	v, ok := c.Variables[name]
+	return v, ok
+}
+
+func (c *GlobalContext) SetVariable(name string, value interface{}) error {
+	if _, ok := c.Variables[name]; ok {
+		return c.Variables[name].SetValue(value)
+	}
+
+	v, err := newValueFromGo(value)
+	if err != nil {
+		return err
+	}
+	c.Variables[name] = v
+	return nil
 }
 
 // FileContext holds information about a file.
@@ -187,7 +206,7 @@ func (ctx *FileContext) Get(name string) (AbstractComponent, bool) {
 	return nil, false
 }
 
-// ResolveVariable returns defined components with the given name or existing components with the given id.
+// ResolveVariable returns defined components with the given name, existing components with the given id or globally defined values.
 func (ctx *FileContext) ResolveVariable(name string) (interface{}, bool) {
 	if comp, ok := ctx.Get(name); ok {
 		return comp, true
@@ -195,7 +214,7 @@ func (ctx *FileContext) ResolveVariable(name string) (interface{}, bool) {
 	if comp, ok := ctx.IDs[name]; ok {
 		return comp, true
 	}
-	return nil, false
+	return ctx.Global.ResolveVariable(name)
 }
 
 func (ctx *FileContext) GetComponentByID(id string) (Component, bool) {

@@ -293,3 +293,14 @@ func (w *Window) run() error {
 		}
 	}
 }
+
+func (w *Window) SetVariable(name string, value interface{}) error {
+	err := w.manager.SetVariable(name, value)
+	if err != nil {
+		return err
+	}
+	if w.gioWindow != nil {
+		w.gioWindow.Invalidate()
+	}
+	return nil
+}

@@ -22,11 +22,15 @@ type Manager struct {
 	importPaths       []string
 	mainComponentName string
 	mainComponent     vit.Component
+	globalCtx         vit.GlobalContext
 }
 
 func NewManager() *Manager {
 	return &Manager{
 		knownComponents: make(map[string]componentFile),
+		globalCtx: vit.GlobalContext{
+			Variables: make(map[string]vit.Value),
+		},
 	}
 }
 
@@ -88,12 +92,10 @@ func (m *Manager) Run(environment vit.ExecutionEnvironment) error {
 
 	documents = documents.ToGlobal()
 
-	globalCtx := vit.GlobalContext{
-		KnownComponents: documents,
-		Environment:     environment,
-	}
+	m.globalCtx.KnownComponents = documents
+	m.globalCtx.Environment = environment
 
-	components, err := interpret(main, "", &globalCtx)
+	components, err := interpret(main, "", &m.globalCtx)
 	if err != nil {
 		return err
 	}
@@ -116,6 +118,10 @@ evaluateExpressions:
 	}
 
 	return nil
+}
+
+func (m *Manager) SetVariable(name string, value interface{}) error {
+	return m.globalCtx.SetVariable(name, value)
 }
 
 // MainComponent returns the instantiated primary component
