@@ -131,10 +131,6 @@ func (c ComponentContainer) Get(names string) (AbstractComponent, bool) {
 	return src, ok
 }
 
-type ComponentResolver interface {
-	Get(name string) (AbstractComponent, bool)
-}
-
 // GlobalContext holds information about a vitrum instance
 type GlobalContext struct {
 	KnownComponents ComponentContainer // globally known components
