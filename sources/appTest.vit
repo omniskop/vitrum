@@ -1,5 +1,8 @@
 import Vit 1.0
 import GUI 1.0
+import Controls 1.0
+
+
 
 Window {
     title: "Vitrum Demo"
@@ -14,7 +17,15 @@ Window {
         id: container
         anchors.fill: parent
         anchors.margins: 10
-        color: mouseArea.pressed ? "green" : "red"
+        color: btn.pressed ? "green" : "red"
+
+        method handler: {
+            
+        }
+
+        Root.onCompleted: function() {
+            btn.onClicked.AddEventListener(handler)
+        }
 
         MouseArea {
             id: mouseArea
@@ -64,7 +75,7 @@ Window {
         }
 
         Rectangle {
-            id: affe
+            id: textBox
             anchors.left: parent.left
             anchors.leftMargin: 75
             anchors.right: parent.right
@@ -74,6 +85,7 @@ Window {
             color: Vit.rgba(0, 0, 0, 127)
 
             Text {
+                id: text
                 anchors.fill: parent
                 color: "white"
                 text: "Das ist ein langer Text um zu schauen was genau passieren wird."
@@ -86,7 +98,61 @@ Window {
             }
         }
 
-        
+
+        Button {
+            id: btn
+            anchors.left: textBox.left
+            anchors.top: textBox.bottom
+            anchors.topMargin: 100
+            text: "Klick mich!"
+        }
+
+        Text {
+            text: globalText
+            anchors.left: btn.right
+            anchors.leftMargin: 20
+            anchors.top: btn.top
+            anchors.bottom: btn.bottom
+            anchors.right: input.right
+            font.pointSize: 50
+            font.family: "Montserrat"
+            font.weight: Text.Medium
+            horizontalAlignment: Text.AlignLeft
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        TextField {
+            id: input
+            anchors.top: btn.bottom
+            anchors.topMargin: 20
+            anchors.left: btn.left
+        }
+
+        Image {
+            anchors.top: input.bottom
+            anchors.topMargin: 20
+            anchors.left: btn.left
+            width: 50
+            height: 50
+            fillMode: Image.PreferUnchanged
+            path: "sources/image.png"
+        }
+
+        Rotation {
+            horizontalPivot: Rotation.PivotHCenter
+            verticalPivot: Rotation.PivotVCenter
+            anchors.centerIn: parent
+            degrees: 45
+
+            Rectangle {
+                color: Vit.rgba(0, 127, 0, 255)
+                width: 50
+                height: 50
+                anchors.centerIn: parent
+            }
+        }
+
+
     }
 }
 
