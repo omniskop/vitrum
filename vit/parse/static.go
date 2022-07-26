@@ -60,7 +60,7 @@ func (r staticVariableResolver) ResolveVariable(name string) (interface{}, bool)
 
 	for _, enum := range r.component.Enumerations {
 		if enum.Name == name {
-			// enum fullfills the script.VariableSource interface and can be returned
+			// enum fulfills the script.VariableSource interface and can be returned
 			return enum, true
 		}
 	}
