@@ -394,7 +394,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			jen.Var().Id("err").Error(),
 			jen.Switch(jen.Id("key")).BlockFunc(func(g *jen.Group) {
 				for _, prop := range comp.Properties {
-					if isInternalProperty(prop) || !isWritable(prop) {
+					if isInternalProperty(prop) || !isWritable(prop) || !prop.IsNewDefinition() {
 						continue // don't add unwritable properties
 					}
 					g.Case(jen.Lit(prop.Identifier[0])).Block(
