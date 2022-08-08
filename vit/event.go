@@ -141,6 +141,7 @@ func (a *EventAttribute[EventType]) Fire(e *EventType) {
 // The event type has to implement the MaybeSetable interface.
 // If the value can't be converted the event will not be fired and an error will be returned.
 func (a *EventAttribute[EventType]) MaybeFire(v any) error {
+	// TODO: try to convert ordinary values via goja?
 	var event = new(EventType)
 	if setable, ok := any(event).(MaybeSetable); ok {
 		err := setable.MaybeSet(v)

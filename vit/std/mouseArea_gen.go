@@ -45,7 +45,6 @@ type MouseArea struct {
 	acceptedButtons vit.IntValue
 	containsMouse   vit.BoolValue
 	enabled         vit.BoolValue
-	hoverEnabled    vit.BoolValue
 	mouseX          vit.FloatValue
 	mouseY          vit.FloatValue
 	pressed         vit.BoolValue
@@ -70,7 +69,6 @@ func NewMouseArea(id string, context *vit.FileContext) *MouseArea {
 		acceptedButtons: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "MouseButtons.leftButton", Position: nil}),
 		containsMouse:   *vit.NewEmptyBoolValue(),
 		enabled:         *vit.NewBoolValueFromCode(vit.Code{FileCtx: context, Code: "true", Position: nil}),
-		hoverEnabled:    *vit.NewEmptyBoolValue(),
 		mouseX:          *vit.NewEmptyFloatValue(),
 		mouseY:          *vit.NewEmptyFloatValue(),
 		pressed:         *vit.NewEmptyBoolValue(),
@@ -107,8 +105,6 @@ func (m *MouseArea) Property(key string) (vit.Value, bool) {
 		return &m.containsMouse, true
 	case "enabled":
 		return &m.enabled, true
-	case "hoverEnabled":
-		return &m.hoverEnabled, true
 	case "mouseX":
 		return &m.mouseX, true
 	case "mouseY":
@@ -139,8 +135,6 @@ func (m *MouseArea) SetProperty(key string, value interface{}) error {
 		err = m.containsMouse.SetValue(value)
 	case "enabled":
 		err = m.enabled.SetValue(value)
-	case "hoverEnabled":
-		err = m.hoverEnabled.SetValue(value)
 	case "mouseX":
 		err = m.mouseX.SetValue(value)
 	case "mouseY":
@@ -166,8 +160,6 @@ func (m *MouseArea) SetPropertyCode(key string, code vit.Code) error {
 		m.containsMouse.SetCode(code)
 	case "enabled":
 		m.enabled.SetCode(code)
-	case "hoverEnabled":
-		m.hoverEnabled.SetCode(code)
 	case "mouseX":
 		m.mouseX.SetCode(code)
 	case "mouseY":
@@ -199,8 +191,6 @@ func (m *MouseArea) ResolveVariable(key string) (interface{}, bool) {
 		return &m.containsMouse, true
 	case "enabled":
 		return &m.enabled, true
-	case "hoverEnabled":
-		return &m.hoverEnabled, true
 	case "mouseX":
 		return &m.mouseX, true
 	case "mouseY":
@@ -255,12 +245,6 @@ func (m *MouseArea) UpdateExpressions() (int, vit.ErrorGroup) {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "enabled", m.id, err))
-		}
-	}
-	if changed, err := m.hoverEnabled.Update(m); changed || err != nil {
-		sum++
-		if err != nil {
-			errs.Add(vit.NewPropertyError("MouseArea", "hoverEnabled", m.id, err))
 		}
 	}
 	if changed, err := m.mouseX.Update(m); changed || err != nil {

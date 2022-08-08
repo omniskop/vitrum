@@ -25,7 +25,7 @@ Item {
     //     property float threshold
     // }
     #gen-onchange="enableDisable" property bool enabled: true
-    property bool hoverEnabled
+    // property bool hoverEnabled
     property float mouseX
     property float mouseY
     // property int pressAndHoldInterval

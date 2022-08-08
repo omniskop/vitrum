@@ -341,6 +341,7 @@ func (i *Item) layouting() {
 			i.layout.AckPositionChange()
 			updateValues = true
 		}
+		// we are still doing these even if they didn't change to set the flags correctly
 		if x, ok := i.layout.GetX(); ok {
 			if updateValues {
 				i.left.SetAbsolute(x)

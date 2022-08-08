@@ -220,10 +220,10 @@ func (w *Window) run() error {
 
 				w.mainComponent.SetProperty("width", virtualWindowBounds.Width())
 				w.mainComponent.SetProperty("height", virtualWindowBounds.Height())
-				err := w.updateExpressions()
-				if err.Failed() {
+				errs := w.updateExpressions()
+				if errs.Failed() {
 					w.logger.Println(fmt.Errorf("window update:"))
-					w.logger.Println(parse.FormatError(err))
+					w.logger.Println(parse.FormatError(errs))
 				}
 
 				// We give NewContain the virtual size of the window and it will calculate the necessary scaling factor
@@ -231,13 +231,17 @@ func (w *Window) run() error {
 				c := gioRenderer.NewContain(gtx, virtualWindowBounds.Width(), virtualWindowBounds.Height())
 				ctx := canvas.NewContext(c)
 				ctx.SetCoordSystem(canvas.CartesianIV) // move origin of the context to the top left corner
-				w.mainComponent.Draw(
+				err := w.mainComponent.Draw(
 					vit.DrawingContext{ctx},
 					virtualWindowBounds,
 				)
+				if err != nil {
+					w.logger.Println(fmt.Errorf("window draw: %v", err))
+				}
 				return c.Dimensions()
 			})
 
+			// TODO: shouldn't the events be run before the components are updated an rendered
 			var keysOfInterest = allSpecialKeys
 			for _, ev := range e.Queue.Events(w) {
 				switch event := ev.(type) {

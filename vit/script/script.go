@@ -159,6 +159,7 @@ func (b *VariableBridge) Get(key string) goja.Value {
 	}
 	switch actual := val.(type) {
 	case VariableBridge:
+		// TODO: is this case still needed? Can this still happen?
 		// fmt.Printf("[VariableBridge] get %q: (abstract) component\n", key)
 		return runtime.NewDynamicObject(&actual)
 	case VariableSource:

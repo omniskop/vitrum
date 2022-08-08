@@ -392,20 +392,19 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		Params(jen.Error()).
 		Block(
 			jen.Var().Id("err").Error(),
-			jen.Switch(jen.Id("key")).Block(
-				append(mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
-					if !isWritable(prop) {
-						return nil // don't add unwritable properties
+			jen.Switch(jen.Id("key")).BlockFunc(func(g *jen.Group) {
+				for _, prop := range comp.Properties {
+					if isInternalProperty(prop) || !isWritable(prop) {
+						continue // don't add unwritable properties
 					}
-					return jen.Case(jen.Lit(propId)).Block(
-						jen.Id("err").Op("=").Id(receiverName).Dot(propId).Op(".").Id("SetValue").Call(jen.Id("value")),
+					g.Case(jen.Lit(prop.Identifier[0])).Block(
+						jen.Id("err").Op("=").Id(receiverName).Dot(prop.Identifier[0]).Op(".").Id("SetValue").Call(jen.Id("value")),
 					)
-				}),
-					jen.Default().Block(
-						jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("SetProperty").Call(jen.Id("key"), jen.Id("value"))),
-					),
-				)...,
-			),
+				}
+				g.Default().Block(
+					jen.Return(jen.Id(receiverName).Dot(comp.BaseName).Dot("SetProperty").Call(jen.Id("key"), jen.Id("value"))),
+				)
+			}),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
 				jen.Return().Qual(vitPackage, "NewPropertyError").Call(jen.Lit(compName), jen.Id("key"), jen.Id(receiverName).Dot("id"), jen.Id("err")),
 			),
