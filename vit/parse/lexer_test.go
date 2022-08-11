@@ -257,6 +257,7 @@ func TestScanNumber(t *testing.T) {
 			})
 		}
 	}
+	t.Fail()
 }
 
 // checkLexResult takes a the token and error that was returned from the lexer and checks if it matches the expected result.
@@ -291,7 +292,7 @@ func checkLexResult(tok token, err error, expected interface{}) (bool, string) {
 		if err == nil {
 			return false, fmt.Sprintf("got %q token but error %q was expected", tok.tokenType, expected.Error())
 		}
-		if !errors.As(err, &expected) {
+		if !errors.Is(err, expected) {
 			// check if the error can be converted into the expected one
 			return false, fmt.Sprintf("got error %q but error %q was expected", err.Error(), expected.Error())
 		}
