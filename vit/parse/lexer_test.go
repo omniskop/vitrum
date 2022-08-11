@@ -257,7 +257,6 @@ func TestScanNumber(t *testing.T) {
 			})
 		}
 	}
-	t.Fail()
 }
 
 // checkLexResult takes a the token and error that was returned from the lexer and checks if it matches the expected result.
