@@ -212,36 +212,7 @@ func (w *Window) run() error {
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 
-			layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-				physicalPixelWidth := float64(gtx.Constraints.Max.X) - float64(gtx.Constraints.Min.X)
-				physicalPixelHeight := float64(gtx.Constraints.Max.Y) - float64(gtx.Constraints.Min.Y)
-				// bounds of the window before scaling to the actual physical pixel size
-				virtualWindowBounds := vit.NewRect(0, 0, physicalPixelWidth/float64(gtx.Metric.PxPerDp), physicalPixelHeight/float64(gtx.Metric.PxPerDp))
-
-				w.mainComponent.SetProperty("width", virtualWindowBounds.Width())
-				w.mainComponent.SetProperty("height", virtualWindowBounds.Height())
-				errs := w.updateExpressions()
-				if errs.Failed() {
-					w.logger.Println(fmt.Errorf("window update:"))
-					w.logger.Println(parse.FormatError(errs))
-				}
-
-				// We give NewContain the virtual size of the window and it will calculate the necessary scaling factor
-				// to fit the physical pixel size of the window.
-				c := gioRenderer.NewContain(gtx, virtualWindowBounds.Width(), virtualWindowBounds.Height())
-				ctx := canvas.NewContext(c)
-				ctx.SetCoordSystem(canvas.CartesianIV) // move origin of the context to the top left corner
-				err := w.mainComponent.Draw(
-					vit.DrawingContext{ctx},
-					virtualWindowBounds,
-				)
-				if err != nil {
-					w.logger.Println(fmt.Errorf("window draw: %v", err))
-				}
-				return c.Dimensions()
-			})
-
-			// TODO: shouldn't the events be run before the components are updated an rendered
+			// handle user interaction
 			var keysOfInterest = allSpecialKeys
 			for _, ev := range e.Queue.Events(w) {
 				switch event := ev.(type) {
@@ -280,6 +251,40 @@ func (w *Window) run() error {
 				}
 			}
 
+			// render new frame
+			layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				// calculate window bounds
+				physicalPixelWidth := float64(gtx.Constraints.Max.X) - float64(gtx.Constraints.Min.X)
+				physicalPixelHeight := float64(gtx.Constraints.Max.Y) - float64(gtx.Constraints.Min.Y)
+				// bounds of the window before scaling to the actual physical pixel size
+				virtualWindowBounds := vit.NewRect(0, 0, physicalPixelWidth/float64(gtx.Metric.PxPerDp), physicalPixelHeight/float64(gtx.Metric.PxPerDp))
+
+				// update dimensions of main component to reflect window size
+				w.mainComponent.SetProperty("width", virtualWindowBounds.Width())
+				w.mainComponent.SetProperty("height", virtualWindowBounds.Height())
+				// update all expressions
+				errs := w.updateExpressions()
+				if errs.Failed() {
+					w.logger.Println(fmt.Errorf("window update:"))
+					w.logger.Println(parse.FormatError(errs))
+				}
+
+				// We give NewContain the virtual size of the window and it will calculate the necessary scaling factor
+				// to fit the physical pixel size of the window.
+				c := gioRenderer.NewContain(gtx, virtualWindowBounds.Width(), virtualWindowBounds.Height())
+				ctx := canvas.NewContext(c)
+				ctx.SetCoordSystem(canvas.CartesianIV) // move origin of the context to the top left corner
+				err := w.mainComponent.Draw(
+					vit.DrawingContext{ctx},
+					virtualWindowBounds,
+				)
+				if err != nil {
+					w.logger.Println(fmt.Errorf("window draw: %v", err))
+				}
+				return c.Dimensions()
+			})
+
+			// register input operations for the next frame
 			pointer.InputOp{
 				Tag:   w,
 				Types: pointer.Press | pointer.Release | pointer.Move | pointer.Drag | pointer.Scroll,
