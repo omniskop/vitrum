@@ -105,6 +105,9 @@ Window {
             anchors.top: textBox.bottom
             anchors.topMargin: 100
             text: "Klick mich!"
+            onClicked: {
+                console.log(globalCallback(1))
+            }
         }
 
         Text {

@@ -2,6 +2,7 @@ package vit
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -14,7 +15,7 @@ type Value interface {
 	GetValue() interface{}      // returns the current value in it's natural type
 	AddDependent(Dependent)     // adds a dependent that should be notified about changes to this value
 	RemoveDependent(Dependent)  // removes a dependent
-	SetValue(interface{}) error // changes this value to a new one. The returned boolean indicates weather a correct type was supplied. If the type is incorrect the value will not be changed.
+	SetValue(interface{}) error // changes this value to a new one. Might return an error if the type is incorrect
 	SetCode(Code)               // changes this value to the result of an expression
 	Update(context Component) (bool, error)
 }
@@ -116,6 +117,9 @@ func newValueFromGo(value interface{}) (Value, error) {
 	case bool:
 		return NewBoolValue(value), nil
 	default:
+		if reflect.ValueOf(value).Kind() == reflect.Func {
+			return NewFunctionValue(value)
+		}
 		return nil, fmt.Errorf("unable to create value from %T", value)
 	}
 }
@@ -1312,4 +1316,58 @@ func (v *GroupValue) SetCodeOf(key string, code Code) error {
 		return nil
 	}
 	return fmt.Errorf("unknown group key %q", key)
+}
+
+// ======================================= Function Value ==========================================
+
+// FunctionValue represents a function that is defined in go. JavaScript can only call it and not set or depend on it.
+// Can be set from Go through the SetValue method.
+type FunctionValue struct {
+	fun interface{}
+}
+
+// NewFunctionValue returns a new function value containing the given function. If the parameter is not a function it returns with a TypeError.
+func NewFunctionValue(value interface{}) (*FunctionValue, error) {
+	// make sure this is actually a function
+	if reflect.TypeOf(value).Kind() != reflect.Func {
+		return nil, newTypeError("function", value)
+	}
+	return &FunctionValue{fun: value}, nil
+}
+
+// MustNewFunctionValue returns a new function value containing the given function. If the parameter is not a function it panics.
+func MustNewFunctionValue(value interface{}) *FunctionValue {
+	v, err := NewFunctionValue(value)
+	if err != nil {
+		panic(fmt.Errorf("called MustNewFunctionValue: %v", err))
+	}
+	return v
+}
+
+// NewEmptyFunctionValue returns a new function value that doesn't contain a function.
+func NewEmptyFunctionValue() *FunctionValue {
+	return &FunctionValue{}
+}
+
+func (v *FunctionValue) GetValue() interface{} {
+	return v.fun
+}
+
+func (v *FunctionValue) AddDependent(Dependent) {}
+
+func (v *FunctionValue) RemoveDependent(Dependent) {}
+
+func (v *FunctionValue) SetValue(newValue interface{}) error {
+	// make sure this is actually a function
+	if reflect.TypeOf(newValue).Kind() != reflect.Func {
+		return newTypeError("function", newValue)
+	}
+	v.fun = newValue
+	return nil
+}
+
+func (v *FunctionValue) SetCode(Code) {}
+
+func (v *FunctionValue) Update(context Component) (bool, error) {
+	return false, nil
 }

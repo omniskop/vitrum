@@ -186,6 +186,15 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, fil
 			var err error
 			if len(prop.Components) == 0 {
 				err = instance.SetPropertyCode(prop.Identifier[0], vit.Code{Code: prop.Expression, Position: &prop.Pos, FileCtx: fileCtx})
+				if err != nil {
+					// if this property doesn't exist, check if it's an event
+					if ev, ok := instance.Event(prop.Identifier[0]); ok {
+						// register event listener
+						l := ev.CreateListener(vit.Code{Code: prop.Expression, Position: &prop.Pos, FileCtx: fileCtx})
+						instance.RootC().AddListenerFunction(l)
+						err = nil
+					}
+				}
 			} else if len(prop.Components) == 1 {
 				err = instance.SetProperty(prop.Identifier[0], prop.Components[0])
 			} else {

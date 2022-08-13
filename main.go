@@ -29,6 +29,11 @@ func main() {
 		}
 	}()
 
+	window.SetVariable("globalCallback", func(v int) int {
+		fmt.Println("callback here!")
+		return v + 1
+	})
+
 	err = app.Run()
 	if err != nil {
 		fmt.Println(err)
