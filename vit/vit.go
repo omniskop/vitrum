@@ -143,6 +143,9 @@ func (c *GlobalContext) Get(name string) (AbstractComponent, bool) {
 }
 
 func (c *GlobalContext) ResolveVariable(name string) (interface{}, bool) {
+	if comp, ok := c.KnownComponents.Get(name); ok {
+		return comp, true
+	}
 	v, ok := c.Variables[name]
 	return v, ok
 }
@@ -204,7 +207,7 @@ func (ctx *FileContext) Get(name string) (AbstractComponent, bool) {
 
 // ResolveVariable returns defined components with the given name, existing components with the given id or globally defined values.
 func (ctx *FileContext) ResolveVariable(name string) (interface{}, bool) {
-	if comp, ok := ctx.Get(name); ok {
+	if comp, ok := ctx.KnownComponents.Get(name); ok {
 		return comp, true
 	}
 	if comp, ok := ctx.IDs[name]; ok {
