@@ -1,8 +1,0 @@
-import Vit 1.0
-
-Item {
-    property int boundsBehavior
-    property int clip
-    property int delegate
-    property int model
-}
