@@ -20,66 +20,34 @@ type Listener[EventType any] interface {
 	Notify(*EventType) // Notify the listener that the event has been triggered.
 }
 
-// EventListenerFunction is a function that takes a single specific argument.
-type EventListenerFunction[EventType any] struct {
-	Function
-	event *EventType
-	dirty bool
-}
-
-// Creates a new EventListenerFunction using the specific code.
-func NewEventListenerFunction[EventType any](code Code) *EventListenerFunction[EventType] {
-	return &EventListenerFunction[EventType]{
-		Function: *NewFunctionFromCode(code),
-		event:    nil,
-		dirty:    false, // async functions start clean
-	}
-}
-
-// Notify the function that the event it is listening to has been triggered.
-// It satisfies the Listener interface for the specific EventType.
-func (f *EventListenerFunction[EventType]) Notify(event *EventType) {
-	f.dirty = true
-	f.event = event
-}
-
-// Evaluate the function.
-// Satisfies the Evaluater interface.
-func (f *EventListenerFunction[EventType]) Evaluate(context Component) (interface{}, error) {
-	f.dirty = false
-	return f.Call(context, f.event)
-}
-
-// ShouldEvaluate returns true if the event this function is listening to has been trigged since the last
-// time the function was executed.
-// Satisfies the Evaluater interface.
-func (f *EventListenerFunction[EventType]) ShouldEvaluate() bool {
-	return f.dirty
-}
-
 // ListenerCallback is an adapter that implements the Dependent interface
 // and simply calls the callback function when the dependency changes.
 type ListenerCallback[EventType any] struct {
-	Callback *func(*EventType)
+	callback *func(*EventType)
 }
 
 func ListenerCB[EventType any](cb func(*EventType)) ListenerCallback[EventType] {
 	return ListenerCallback[EventType]{
-		Callback: &cb,
+		callback: &cb,
 	}
 }
 
 func (d ListenerCallback[EventType]) Notify(e *EventType) {
-	(*d.Callback)(e)
+	(*d.callback)(e)
 }
 
 type JSListener[EventType any] struct {
-	function *AsyncFunction
+	*AsyncFunction
+}
+
+func NewJSListener[EventType any](code Code) *JSListener[EventType] {
+	return &JSListener[EventType]{
+		AsyncFunction: NewAsyncFunctionFromCode(code),
+	}
 }
 
 func (l *JSListener[EventType]) Notify(event *EventType) {
-	l.function.dirty = true
-	l.function.arguments = []interface{}{event}
+	l.AsyncFunction.Notify(event)
 }
 
 // Listenable provides a universal interface for all events that can be listened for, no matter the EventType.
@@ -103,36 +71,36 @@ type EventSource interface {
 
 // an EventAttribute that is defined on a component.
 type EventAttribute[EventType any] struct {
-	Listeners map[Listener[EventType]]bool
+	listeners map[Listener[EventType]]bool
 }
 
 func NewEventAttribute[EventType any]() *EventAttribute[EventType] {
 	return &EventAttribute[EventType]{
-		Listeners: make(map[Listener[EventType]]bool),
+		listeners: make(map[Listener[EventType]]bool),
 	}
 }
 
 func (a *EventAttribute[EventType]) AddListener(l Listener[EventType]) {
-	a.Listeners[l] = true
+	a.listeners[l] = true
 }
 
 func (a *EventAttribute[EventType]) CreateListener(code Code) Evaluater {
-	l := NewEventListenerFunction[EventType](code)
-	a.Listeners[l] = true
+	l := NewJSListener[EventType](code)
+	a.listeners[l] = true
 	return l
 }
 
 func (a *EventAttribute[EventType]) AddListenerFunction(f *AsyncFunction) {
 	l := &JSListener[EventType]{f}
-	a.Listeners[l] = true
+	a.listeners[l] = true
 }
 
 func (a *EventAttribute[EventType]) RemoveListener(l Listener[EventType]) {
-	delete(a.Listeners, l)
+	delete(a.listeners, l)
 }
 
 func (a *EventAttribute[EventType]) Fire(e *EventType) {
-	for l := range a.Listeners {
+	for l := range a.listeners {
 		l.Notify(e)
 	}
 }
