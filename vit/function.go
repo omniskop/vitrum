@@ -83,6 +83,10 @@ func NewAsyncFunction(code string, position *PositionRange, fileCtx *FileContext
 	}
 }
 
+func NewAsyncFunctionFromCode(code Code) *AsyncFunction {
+	return NewAsyncFunction(code.Code, code.Position, code.FileCtx)
+}
+
 func (f *AsyncFunction) Notify(args ...interface{}) {
 	f.dirty = true
 	f.arguments = args
