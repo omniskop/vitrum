@@ -104,11 +104,28 @@ func (w Weight) searchableName() string {
 	}
 }
 
+type LoadedFont struct {
+	font   *canvas.FontFamily
+	styles map[Style]bool // what styles are contained in the font
+}
+
+var cachedFonts = make(map[string]LoadedFont)
+
 func LoadFontFace(familyName string, style Style) (*canvas.FontFace, error) {
-	fontData := canvas.NewFontFamily(familyName)
-	err := fontData.LoadLocalFont(familyName+" "+style.searchableName(), style.canvasStyle())
-	if err != nil {
-		return nil, err
+	loadedFont, ok := cachedFonts[familyName]
+	if !ok {
+		loadedFont.font = canvas.NewFontFamily(familyName)
+		loadedFont.styles = make(map[Style]bool)
+	}
+
+	if !loadedFont.styles[style] {
+		err := loadedFont.font.LoadLocalFont(familyName+" "+style.searchableName(), style.canvasStyle())
+		if err != nil {
+			return nil, err
+		}
+		loadedFont.styles[style] = true
+		cachedFonts[familyName] = loadedFont
+		// TODO: clean the cache somehow
 	}
 
 	var decorators []canvas.FontDecorator
@@ -123,7 +140,7 @@ func LoadFontFace(familyName string, style Style) (*canvas.FontFace, error) {
 		style.PointSize = PixelsToPoints(style.PixelSize)
 	}
 
-	return fontData.Face(
+	return loadedFont.font.Face(
 		style.PointSize,
 		style.Color,
 		style.canvasStyle(),
