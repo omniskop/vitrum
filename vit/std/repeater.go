@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	vit "github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/parse"
 )
 
 type RepeaterItem struct {
@@ -40,7 +41,7 @@ func (r *Repeater) evaluateInternals() {
 	// create items
 	r.items = r.items[:]
 	for _, m := range model {
-		instance, err := r.InstantiateInScope(compDef)
+		instance, err := parse.InstantiateComponent(compDef, r.delegate.Context())
 		if err != nil {
 			// TODO: handle error
 			return
@@ -57,6 +58,7 @@ func (r *Repeater) evaluateInternals() {
 			// TODO: the components should be inserted immediately after the repeater itself
 			r.Parent().AddChildAfter(r, instance)
 		}
+		// TODO: We are ignoring errors here. Should we even perform this update here?
 		instance.UpdateExpressions()
 	}
 

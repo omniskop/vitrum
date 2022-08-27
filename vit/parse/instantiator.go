@@ -196,9 +196,9 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, fil
 					}
 				}
 			} else if len(prop.Components) == 1 {
-				err = instance.SetProperty(prop.Identifier[0], prop.Components[0])
+				err = instance.SetProperty(prop.Identifier[0], vit.ComponentDefinitionInContext{prop.Components[0], fileCtx})
 			} else {
-				err = instance.SetProperty(prop.Identifier[0], prop.Components)
+				err = instance.SetProperty(prop.Identifier[0], vit.ComponentDefinitionListInContext{prop.Components, fileCtx})
 			}
 			if err != nil {
 				return genericError{prop.Pos, err}

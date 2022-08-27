@@ -72,6 +72,16 @@ func (d *ComponentDefinition) GetEnum(name string) (*Enumeration, bool) {
 	return nil, false
 }
 
+type ComponentDefinitionInContext struct {
+	*ComponentDefinition
+	Context *FileContext
+}
+
+type ComponentDefinitionListInContext struct {
+	Components []*ComponentDefinition
+	Context    *FileContext
+}
+
 // PropertyDefinition contains everything about a defined or declared PropertyDefinition
 type PropertyDefinition struct {
 	Pos        PositionRange          // position of the property declaration

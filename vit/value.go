@@ -869,14 +869,16 @@ func (v *AnyValue) Update(context Component) (bool, error) {
 type ComponentDefValue struct {
 	baseValue
 	value   *ComponentDefinition
+	context *FileContext
 	changed bool
 	err     error
 }
 
-func NewComponentDefValue(component *ComponentDefinition) *ComponentDefValue {
+func NewComponentDefValue(component *ComponentDefinition, context *FileContext) *ComponentDefValue {
 	return &ComponentDefValue{
 		baseValue: newBaseValue(),
 		value:     component,
+		context:   context,
 		changed:   true,
 	}
 }
@@ -897,19 +899,33 @@ func (v *ComponentDefValue) ComponentDefinition() *ComponentDefinition {
 	return v.value
 }
 
+func (v *ComponentDefValue) Context() *FileContext {
+	return v.context
+}
+
 func (v *ComponentDefValue) SetValue(newValue interface{}) error {
-	if compDef, ok := newValue.(*ComponentDefinition); ok {
-		v.value = compDef
+	switch compDef := newValue.(type) {
+	case ComponentDefinitionInContext:
+		v.value = compDef.ComponentDefinition
+		v.context = compDef.Context
 		v.changed = true
 		v.err = nil
 		v.notifyDependents(nil)
-		return nil
+	case *ComponentDefinition:
+		v.value = compDef
+		v.context = nil
+		v.changed = true
+		v.err = nil
+		v.notifyDependents(nil)
+	default:
+		return newTypeError("component definition", newValue)
 	}
-	return newTypeError("component definition", newValue)
+	return nil
 }
 
-func (v *ComponentDefValue) SetComponentDefinition(component *ComponentDefinition) {
+func (v *ComponentDefValue) SetComponentDefinition(component *ComponentDefinition, context *FileContext) {
 	v.value = component
+	v.context = context
 	v.changed = true
 	v.err = nil
 	v.notifyDependents(nil)

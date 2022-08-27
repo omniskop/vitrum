@@ -41,7 +41,7 @@ func (r *Root) DefineProperty(propDef PropertyDefinition) error {
 		if propDef.ListDimensions > 0 {
 			r.properties[name] = NewComponentDefListValue(propDef.Components, &propDef.Pos)
 		} else {
-			r.properties[name] = NewComponentDefValue(propDef.Components[0])
+			r.properties[name] = NewComponentDefValue(propDef.Components[0], nil)
 		}
 	} else {
 		value, err := newValueForType(propDef.VitType, Code{Code: propDef.Expression, Position: &propDef.Pos})
