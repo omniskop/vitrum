@@ -451,7 +451,7 @@ func (v *AnchorLineValue) SetOffset(offset float64) {
 		v.offset = offset
 		v.changed = true
 	}
-	v.notifyDependents([]Dependent{v})
+	v.notifyDependents([]Dependent{v}) // Why did I put this outside of the if statement? There must be a reason but I can't remember.
 }
 
 func (v *AnchorLineValue) SetAbsolute(value float64) {
@@ -472,18 +472,25 @@ func (v *AnchorLineValue) SetCode(code Code) {
 }
 
 func (v *AnchorLineValue) AssignTo(comp Component, lineType AnchorLine) {
-	if v.source != nil {
-		v.source.RemoveDependent(v)
-		v.source = nil
-		v.changed = true
-	}
 	if comp == nil {
-		return
+		if v.source != nil {
+			v.source.RemoveDependent(v)
+			v.source = nil
+			v.changed = true
+		}
 	}
 	sourceValue, ok := comp.Property(lineType.PropertyName())
 	if !ok {
 		fmt.Println("tried to assign anchor line to component without anchors")
 		return
+	}
+	if v.source == sourceValue.(*AnchorLineValue) {
+		return // nothing changed
+	}
+	if v.source != nil {
+		v.source.RemoveDependent(v)
+		v.source = nil
+		v.changed = true
 	}
 	v.source = sourceValue.(*AnchorLineValue)
 	v.source.AddDependent(v)

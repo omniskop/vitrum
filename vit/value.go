@@ -243,6 +243,7 @@ func (v *ListValue[ElementType]) Update(context Component) (bool, error) {
 	if !ok {
 		return false, newTypeError(fmt.Sprintf("list of type %T", *new(ElementType)), val)
 	}
+	// TODO: check if the list actually changed?
 	v.value = castVal
 	v.notifyDependents(nil)
 	return true, nil
@@ -325,8 +326,10 @@ func (v *IntValue) Update(context Component) (bool, error) {
 	if !ok {
 		return false, newTypeError("number", val)
 	}
-	v.value = int(castVal)
-	v.notifyDependents(nil)
+	if v.value != castVal {
+		v.value = castVal
+		v.notifyDependents(nil)
+	}
 	return true, nil
 }
 
@@ -438,8 +441,10 @@ func (v *FloatValue) Update(context Component) (bool, error) {
 	if !ok {
 		return false, newTypeError("number", val)
 	}
-	v.value = float64(castVal)
-	v.notifyDependents(nil)
+	if v.value != castVal {
+		v.value = castVal
+		v.notifyDependents(nil)
+	}
 	return true, nil
 }
 
@@ -551,8 +556,10 @@ func (v *StringValue) Update(context Component) (bool, error) {
 	if !ok {
 		return false, newTypeError("string", val)
 	}
-	v.value = strVal
-	v.notifyDependents([]Dependent{v.expression})
+	if v.value != strVal {
+		v.value = strVal
+		v.notifyDependents([]Dependent{v.expression})
+	}
 	return true, nil
 }
 
@@ -647,7 +654,10 @@ func (v *BoolValue) Update(context Component) (bool, error) {
 	if !ok {
 		return false, newTypeError("boolean", val)
 	}
-	v.value = boolVal
+	if v.value != boolVal {
+		v.value = boolVal
+		v.notifyDependents(nil)
+	}
 	return true, nil
 }
 
@@ -859,8 +869,10 @@ func (v *AnyValue) Update(context Component) (bool, error) {
 		}
 		return false, err
 	}
-	v.value = val
-	v.notifyDependents(nil)
+	if v.value != val {
+		v.value = val
+		v.notifyDependents(nil)
+	}
 	return true, nil
 }
 
@@ -1063,7 +1075,9 @@ func (v *OptionalValue[T]) Update(context Component) (bool, error) {
 	// we keep track if the value was changed ourself because we wouldn't know otherwise if the value was unset
 	changed := v.changed
 	v.changed = false
-	v.notifyDependents(nil)
+	if changed {
+		v.notifyDependents(nil)
+	}
 	return changed, nil
 }
 
@@ -1155,8 +1169,10 @@ func (v *ComponentRefValue) Update(context Component) (bool, error) {
 		return false, newTypeError("component", val)
 	}
 
-	v.value = collector.context
-	v.notifyDependents(nil)
+	if v.value != collector.context {
+		v.value = collector.context
+		v.notifyDependents(nil)
+	}
 	return true, nil
 }
 
