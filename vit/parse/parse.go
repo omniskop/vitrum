@@ -307,7 +307,7 @@ scanAgain:
 		return propertyUnit(property.Pos, property), nil
 
 	default:
-		return nilUnit(), unexpectedToken(t, tokenPeriod, tokenLeftBrace, tokenColon, tokenIdentifier, tokenNewline)
+		return nilUnit(), unexpectedToken(t, tokenPeriod, tokenLeftBrace, tokenColon, tokenNewline)
 	}
 
 	return nilUnit(), nil
