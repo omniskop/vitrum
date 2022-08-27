@@ -14,7 +14,7 @@ var InstantiateComponent func(*ComponentDefinition, *FileContext) (Component, er
 
 // Component describes a generic vit component
 type Component interface {
-	DefineProperty(PropertyDefinition) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
+	DefineProperty(PropertyDefinition, *FileContext) error // Creates a new property. On failure it returns either a RedeclarationError or UnknownTypeError.
 	DefineEnum(Enumeration) bool
 	DefineMethod(Method) bool
 	Property(name string) (Value, bool)               // returns the property with the given name, and a boolean indicating whether the property exists

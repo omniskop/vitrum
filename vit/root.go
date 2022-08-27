@@ -35,16 +35,16 @@ func (r *Root) String() string {
 
 // DefineProperty creates a new property on the component.
 // TODO: currently properties can be redefined. Make a decision on that behaviour and update the documentation accordingly (including the Component interface).
-func (r *Root) DefineProperty(propDef PropertyDefinition) error {
+func (r *Root) DefineProperty(propDef PropertyDefinition, fileCtx *FileContext) error {
 	name := propDef.Identifier[0]
 	if propDef.VitType == "componentdef" {
 		if propDef.ListDimensions > 0 {
 			r.properties[name] = NewComponentDefListValue(propDef.Components, &propDef.Pos)
 		} else {
-			r.properties[name] = NewComponentDefValue(propDef.Components[0], nil)
+			r.properties[name] = NewComponentDefValue(propDef.Components[0], fileCtx)
 		}
 	} else {
-		value, err := newValueForType(propDef.VitType, Code{Code: propDef.Expression, Position: &propDef.Pos})
+		value, err := newValueForType(propDef.VitType, Code{Code: propDef.Expression, Position: &propDef.Pos, FileCtx: fileCtx})
 		if err != nil {
 			// TODO: add more info?
 			return err

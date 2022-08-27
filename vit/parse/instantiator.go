@@ -177,7 +177,7 @@ func populateComponent(instance vit.Component, def *vit.ComponentDefinition, fil
 	for _, prop := range def.Properties {
 		if prop.VitType != "" {
 			// this defines a new property
-			if err := instance.DefineProperty(prop); err != nil {
+			if err := instance.DefineProperty(prop, fileCtx); err != nil {
 				return err
 			}
 			// instance.SetProperty(prop.identifier[0], prop.expression)
