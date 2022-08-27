@@ -132,11 +132,11 @@ func (e *Expression) ChangeCode(code string, position *PositionRange) {
 	}
 	e.position = position
 	e.code = code
-	e.ClearDependencies()
+	e.clearDependencies()
 	e.dirty = true
 }
 
-func (e *Expression) ClearDependencies() {
+func (e *Expression) clearDependencies() {
 	for exp := range e.dependencies {
 		exp.RemoveDependent(e)
 	}
@@ -145,10 +145,6 @@ func (e *Expression) ClearDependencies() {
 
 func (e *Expression) IsConstant() bool {
 	return len(e.dependencies) == 0
-}
-
-func (e *Expression) GetExpression() *Expression {
-	return e
 }
 
 func (e *Expression) Err() error {
