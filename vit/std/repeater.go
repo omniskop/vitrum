@@ -59,7 +59,10 @@ func (r *Repeater) evaluateInternals() {
 			r.Parent().AddChildAfter(r, instance)
 		}
 		// TODO: We are ignoring errors here. Should we even perform this update here?
-		instance.UpdateExpressions()
+		_, errs := instance.UpdateExpressions(nil)
+		if errs.Failed() {
+			fmt.Println(parse.FormatError(errs))
+		}
 	}
 
 	return
