@@ -223,7 +223,7 @@ func valuesEqual(a, b interface{}) bool {
 
 func updateAllExpressions(comp vit.Component) error {
 evaluateExpressions:
-	n, errs := comp.UpdateExpressions()
+	n, errs := comp.UpdateExpressions(nil)
 	if errs.Failed() {
 		return errs
 	}
