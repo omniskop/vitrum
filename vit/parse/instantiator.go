@@ -139,7 +139,7 @@ func instantiateCustomComponent(def *vit.ComponentDefinition, id string, name st
 
 // InstantiateComponent creates a component described by a componentDefinition.
 func InstantiateComponent(def *vit.ComponentDefinition, fileCtx *vit.FileContext) (vit.Component, error) {
-	src, ok := fileCtx.KnownComponents.Get(def.BaseName)
+	src, ok := fileCtx.Get(def.BaseName)
 	if !ok {
 		// TODO: improve context for error; either here or upstream
 		return nil, unknownComponentError{def.BaseName}
