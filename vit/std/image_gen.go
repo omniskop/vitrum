@@ -163,18 +163,21 @@ func (i *Image) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
 	i.AddChild(addThis)
 }
 
-func (i *Image) UpdateExpressions() (int, vit.ErrorGroup) {
+func (i *Image) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = i
+	}
 	// properties
-	if changed, err := i.path.Update(i); changed || err != nil {
+	if changed, err := i.path.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Image", "path", i.id, err))
 		}
 	}
-	if changed, err := i.fillMode.Update(i); changed || err != nil {
+	if changed, err := i.fillMode.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Image", "fillMode", i.id, err))
@@ -183,11 +186,7 @@ func (i *Image) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := i.UpdatePropertiesInContext(i)
-	sum += n
-	errs.AddGroup(err)
-	n, err = i.Item.UpdateExpressions()
+	n, err := i.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

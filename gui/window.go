@@ -130,7 +130,7 @@ func (w *Window) AddImportPath(filePath string) error {
 
 func (w *Window) updateExpressions() vit.ErrorGroup {
 evaluateExpressions:
-	n, errs := w.mainComponent.UpdateExpressions()
+	n, errs := w.mainComponent.UpdateExpressions(nil)
 	if errs.Failed() {
 		return errs
 	}

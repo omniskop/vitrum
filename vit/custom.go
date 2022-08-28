@@ -29,12 +29,12 @@ func (c *custom) AddChild(child Component) {
 	c.RootComponent.children = append(c.RootComponent.children, child)
 }
 
-func (c *custom) UpdateExpressions() (int, ErrorGroup) {
+func (c *custom) UpdateExpressions(context Component) (int, ErrorGroup) {
 	var errs ErrorGroup
 	var sum int
 	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
 	for name, prop := range c.RootComponent.properties {
-		if changed, err := prop.Update(c); changed || err != nil {
+		if changed, err := prop.Update(context); changed || err != nil {
 			sum++
 			if err != nil {
 				errs.Add(NewPropertyError(c.name, name, c.id, err))
@@ -42,7 +42,7 @@ func (c *custom) UpdateExpressions() (int, ErrorGroup) {
 		}
 	}
 
-	s, e := c.Component.UpdateExpressions()
+	s, e := c.Component.UpdateExpressions(context)
 	sum += s
 	errs.AddGroup(e)
 

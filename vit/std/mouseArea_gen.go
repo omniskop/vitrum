@@ -224,48 +224,51 @@ func (m *MouseArea) AddChildAfter(afterThis vit.Component, addThis vit.Component
 	m.AddChild(addThis)
 }
 
-func (m *MouseArea) UpdateExpressions() (int, vit.ErrorGroup) {
+func (m *MouseArea) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = m
+	}
 	// properties
-	if changed, err := m.acceptedButtons.Update(m); changed || err != nil {
+	if changed, err := m.acceptedButtons.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "acceptedButtons", m.id, err))
 		}
 	}
-	if changed, err := m.containsMouse.Update(m); changed || err != nil {
+	if changed, err := m.containsMouse.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "containsMouse", m.id, err))
 		}
 	}
-	if changed, err := m.enabled.Update(m); changed || err != nil {
+	if changed, err := m.enabled.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "enabled", m.id, err))
 		}
 	}
-	if changed, err := m.mouseX.Update(m); changed || err != nil {
+	if changed, err := m.mouseX.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "mouseX", m.id, err))
 		}
 	}
-	if changed, err := m.mouseY.Update(m); changed || err != nil {
+	if changed, err := m.mouseY.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "mouseY", m.id, err))
 		}
 	}
-	if changed, err := m.pressed.Update(m); changed || err != nil {
+	if changed, err := m.pressed.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "pressed", m.id, err))
 		}
 	}
-	if changed, err := m.pressedButtons.Update(m); changed || err != nil {
+	if changed, err := m.pressedButtons.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("MouseArea", "pressedButtons", m.id, err))
@@ -274,11 +277,7 @@ func (m *MouseArea) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := m.UpdatePropertiesInContext(m)
-	sum += n
-	errs.AddGroup(err)
-	n, err = m.Item.UpdateExpressions()
+	n, err := m.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

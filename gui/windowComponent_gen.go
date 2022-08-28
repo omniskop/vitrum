@@ -177,36 +177,39 @@ func (w *WindowComponent) AddChildAfter(afterThis vit.Component, addThis vit.Com
 	w.AddChild(addThis)
 }
 
-func (w *WindowComponent) UpdateExpressions() (int, vit.ErrorGroup) {
+func (w *WindowComponent) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = w
+	}
 	// properties
-	if changed, err := w.title.Update(w); changed || err != nil {
+	if changed, err := w.title.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("WindowComponent", "title", w.id, err))
 		}
 	}
-	if changed, err := w.maxWidth.Update(w); changed || err != nil {
+	if changed, err := w.maxWidth.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("WindowComponent", "maxWidth", w.id, err))
 		}
 	}
-	if changed, err := w.maxHeight.Update(w); changed || err != nil {
+	if changed, err := w.maxHeight.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("WindowComponent", "maxHeight", w.id, err))
 		}
 	}
-	if changed, err := w.minWidth.Update(w); changed || err != nil {
+	if changed, err := w.minWidth.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("WindowComponent", "minWidth", w.id, err))
 		}
 	}
-	if changed, err := w.minHeight.Update(w); changed || err != nil {
+	if changed, err := w.minHeight.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("WindowComponent", "minHeight", w.id, err))
@@ -215,11 +218,7 @@ func (w *WindowComponent) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := w.UpdatePropertiesInContext(w)
-	sum += n
-	errs.AddGroup(err)
-	n, err = w.Item.UpdateExpressions()
+	n, err := w.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

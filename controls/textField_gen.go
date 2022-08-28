@@ -164,18 +164,21 @@ func (t *TextField) AddChildAfter(afterThis vit.Component, addThis vit.Component
 	t.AddChild(addThis)
 }
 
-func (t *TextField) UpdateExpressions() (int, vit.ErrorGroup) {
+func (t *TextField) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = t
+	}
 	// properties
-	if changed, err := t.text.Update(t); changed || err != nil {
+	if changed, err := t.text.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("TextField", "text", t.id, err))
 		}
 	}
-	if changed, err := t.focused.Update(t); changed || err != nil {
+	if changed, err := t.focused.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("TextField", "focused", t.id, err))
@@ -184,11 +187,7 @@ func (t *TextField) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := t.UpdatePropertiesInContext(t)
-	sum += n
-	errs.AddGroup(err)
-	n, err = t.Item.UpdateExpressions()
+	n, err := t.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

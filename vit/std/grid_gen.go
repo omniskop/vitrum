@@ -338,84 +338,87 @@ func (g *Grid) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
 	g.AddChild(addThis)
 }
 
-func (g *Grid) UpdateExpressions() (int, vit.ErrorGroup) {
+func (g *Grid) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = g
+	}
 	// properties
-	if changed, err := g.topPadding.Update(g); changed || err != nil {
+	if changed, err := g.topPadding.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "topPadding", g.id, err))
 		}
 	}
-	if changed, err := g.rightPadding.Update(g); changed || err != nil {
+	if changed, err := g.rightPadding.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "rightPadding", g.id, err))
 		}
 	}
-	if changed, err := g.bottomPadding.Update(g); changed || err != nil {
+	if changed, err := g.bottomPadding.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "bottomPadding", g.id, err))
 		}
 	}
-	if changed, err := g.leftPadding.Update(g); changed || err != nil {
+	if changed, err := g.leftPadding.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "leftPadding", g.id, err))
 		}
 	}
-	if changed, err := g.padding.Update(g); changed || err != nil {
+	if changed, err := g.padding.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "padding", g.id, err))
 		}
 	}
-	if changed, err := g.spacing.Update(g); changed || err != nil {
+	if changed, err := g.spacing.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "spacing", g.id, err))
 		}
 	}
-	if changed, err := g.columnSpacing.Update(g); changed || err != nil {
+	if changed, err := g.columnSpacing.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "columnSpacing", g.id, err))
 		}
 	}
-	if changed, err := g.rowSpacing.Update(g); changed || err != nil {
+	if changed, err := g.rowSpacing.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "rowSpacing", g.id, err))
 		}
 	}
-	if changed, err := g.columns.Update(g); changed || err != nil {
+	if changed, err := g.columns.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "columns", g.id, err))
 		}
 	}
-	if changed, err := g.rows.Update(g); changed || err != nil {
+	if changed, err := g.rows.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "rows", g.id, err))
 		}
 	}
-	if changed, err := g.horizontalItemAlignment.Update(g); changed || err != nil {
+	if changed, err := g.horizontalItemAlignment.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "horizontalItemAlignment", g.id, err))
 		}
 	}
-	if changed, err := g.verticalItemAlignment.Update(g); changed || err != nil {
+	if changed, err := g.verticalItemAlignment.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "verticalItemAlignment", g.id, err))
 		}
 	}
-	if changed, err := g.flow.Update(g); changed || err != nil {
+	if changed, err := g.flow.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Grid", "flow", g.id, err))
@@ -424,11 +427,7 @@ func (g *Grid) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := g.UpdatePropertiesInContext(g)
-	sum += n
-	errs.AddGroup(err)
-	n, err = g.Item.UpdateExpressions()
+	n, err := g.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

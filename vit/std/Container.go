@@ -89,11 +89,14 @@ func (r *Container) Children() []vit.Component {
 	return r.Item.Children()
 }
 
-func (r *Container) UpdateExpressions() (int, vit.ErrorGroup) {
+func (r *Container) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
+	if context == nil {
+		context = r
+	}
 
-	if changed, _ := r.content.Update(r); changed {
+	if changed, _ := r.content.Update(context); changed {
 		sum++
 		for _, child := range r.children {
 			r.RootC().RemoveChild(child)
@@ -110,11 +113,7 @@ func (r *Container) UpdateExpressions() (int, vit.ErrorGroup) {
 		}
 	}
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := r.UpdatePropertiesInContext(r)
-	sum += n
-	errs.AddGroup(err)
-	n, err = r.Item.UpdateExpressions()
+	n, err := r.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

@@ -197,24 +197,27 @@ func (r *Rotation) AddChildAfter(afterThis vit.Component, addThis vit.Component)
 	r.AddChild(addThis)
 }
 
-func (r *Rotation) UpdateExpressions() (int, vit.ErrorGroup) {
+func (r *Rotation) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = r
+	}
 	// properties
-	if changed, err := r.horizontalPivot.Update(r); changed || err != nil {
+	if changed, err := r.horizontalPivot.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rotation", "horizontalPivot", r.id, err))
 		}
 	}
-	if changed, err := r.verticalPivot.Update(r); changed || err != nil {
+	if changed, err := r.verticalPivot.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rotation", "verticalPivot", r.id, err))
 		}
 	}
-	if changed, err := r.degrees.Update(r); changed || err != nil {
+	if changed, err := r.degrees.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rotation", "degrees", r.id, err))
@@ -223,11 +226,7 @@ func (r *Rotation) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := r.UpdatePropertiesInContext(r)
-	sum += n
-	errs.AddGroup(err)
-	n, err = r.Item.UpdateExpressions()
+	n, err := r.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

@@ -327,42 +327,45 @@ func (t *Text) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
 	t.AddChild(addThis)
 }
 
-func (t *Text) UpdateExpressions() (int, vit.ErrorGroup) {
+func (t *Text) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = t
+	}
 	// properties
-	if changed, err := t.text.Update(t); changed || err != nil {
+	if changed, err := t.text.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "text", t.id, err))
 		}
 	}
-	if changed, err := t.color.Update(t); changed || err != nil {
+	if changed, err := t.color.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "color", t.id, err))
 		}
 	}
-	if changed, err := t.horizontalAlignment.Update(t); changed || err != nil {
+	if changed, err := t.horizontalAlignment.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "horizontalAlignment", t.id, err))
 		}
 	}
-	if changed, err := t.verticalAlignment.Update(t); changed || err != nil {
+	if changed, err := t.verticalAlignment.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "verticalAlignment", t.id, err))
 		}
 	}
-	if changed, err := t.font.Update(t); changed || err != nil {
+	if changed, err := t.font.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "font", t.id, err))
 		}
 	}
-	if changed, err := t.elide.Update(t); changed || err != nil {
+	if changed, err := t.elide.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Text", "elide", t.id, err))
@@ -371,11 +374,7 @@ func (t *Text) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := t.UpdatePropertiesInContext(t)
-	sum += n
-	errs.AddGroup(err)
-	n, err = t.Item.UpdateExpressions()
+	n, err := t.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

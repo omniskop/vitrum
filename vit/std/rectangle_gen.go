@@ -146,24 +146,27 @@ func (r *Rectangle) AddChildAfter(afterThis vit.Component, addThis vit.Component
 	r.AddChild(addThis)
 }
 
-func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
+func (r *Rectangle) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = r
+	}
 	// properties
-	if changed, err := r.color.Update(r); changed || err != nil {
+	if changed, err := r.color.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rectangle", "color", r.id, err))
 		}
 	}
-	if changed, err := r.radius.Update(r); changed || err != nil {
+	if changed, err := r.radius.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rectangle", "radius", r.id, err))
 		}
 	}
-	if changed, err := r.border.Update(r); changed || err != nil {
+	if changed, err := r.border.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rectangle", "border", r.id, err))
@@ -172,11 +175,7 @@ func (r *Rectangle) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := r.UpdatePropertiesInContext(r)
-	sum += n
-	errs.AddGroup(err)
-	n, err = r.Item.UpdateExpressions()
+	n, err := r.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

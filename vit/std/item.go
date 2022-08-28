@@ -197,70 +197,73 @@ func (i *Item) AddChildAfter(afterThis, addThis vit.Component) {
 	i.AddChild(addThis)
 }
 
-func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
+func (i *Item) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var errs vit.ErrorGroup
 	var sum int
-	if changed, err := i.width.Update(i); changed || err != nil {
+	if context == nil {
+		context = i
+	}
+	if changed, err := i.width.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "width", i.id, err))
 		}
 	}
-	if changed, err := i.height.Update(i); changed || err != nil {
+	if changed, err := i.height.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "height", i.id, err))
 		}
 	}
-	if changed, err := i.x.Update(i); changed || err != nil {
+	if changed, err := i.x.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "x", i.id, err))
 		}
 	}
-	if changed, err := i.y.Update(i); changed || err != nil {
+	if changed, err := i.y.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "y", i.id, err))
 		}
 	}
-	if changed, err := i.z.Update(i); changed || err != nil {
+	if changed, err := i.z.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "z", i.id, err))
 		}
 	}
-	if changed, err := i.left.Update(i); changed || err != nil {
+	if changed, err := i.left.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "left", i.id, err))
 		}
 	}
-	if changed, err := i.horizontalCenter.Update(i); changed || err != nil {
+	if changed, err := i.horizontalCenter.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "horizontalCenter", i.id, err))
 		}
 	}
-	if changed, err := i.right.Update(i); changed || err != nil {
+	if changed, err := i.right.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "right", i.id, err))
 		}
 	}
-	if changed, err := i.top.Update(i); changed || err != nil {
+	if changed, err := i.top.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "top", i.id, err))
 		}
 	}
-	if changed, err := i.verticalCenter.Update(i); changed || err != nil {
+	if changed, err := i.verticalCenter.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "verticalCenter", i.id, err))
 		}
 	}
-	if changed, err := i.bottom.Update(i); changed || err != nil {
+	if changed, err := i.bottom.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Item", "bottom", i.id, err))
@@ -283,11 +286,7 @@ func (i *Item) UpdateExpressions() (int, vit.ErrorGroup) {
 	sum += n
 	errs.AddGroup(err)
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err = i.UpdatePropertiesInContext(i)
-	sum += n
-	errs.AddGroup(err)
-	n, err = i.Root.UpdateExpressions()
+	n, err = i.Root.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

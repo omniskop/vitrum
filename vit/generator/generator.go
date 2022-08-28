@@ -522,17 +522,20 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 		).
 		Line()
 
-	// .UpdateExpressions() (int, ErrorGroup)
+	// .UpdateExpressions(context Component) (int, ErrorGroup)
 	f.Func().
 		Params(jen.Id(receiverName).Op("*").Id(compName)).
 		Id("UpdateExpressions").
-		Params().
+		Params(jen.Id("context").Qual(vitPackage, "Component")).
 		Params(jen.Int(), jen.Qual(vitPackage, "ErrorGroup")).
 		BlockFunc(func(g *jen.Group) {
 			// initialize 'sum' and 'errs' variables
 			g.Var().Id("sum").Int()
 			g.Var().Id("errs").Qual(vitPackage, "ErrorGroup")
 			g.Line()
+			g.If(jen.Id("context").Op("==").Nil()).Block(
+				jen.Id("context").Op("=").Id(receiverName),
+			)
 			// now handle changes for all necessary properties
 			g.Comment("properties")
 			addMultiple(g, mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propID string) jen.Code {
@@ -540,7 +543,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 					// We will not handle changes for properties with custom types.
 					return nil
 				}
-				return jen.If(jen.List(jen.Id("changed"), jen.Id("err")).Op(":=").Id(receiverName).Dot(propID).Dot("Update").Call(jen.Id(receiverName)).Op(";").Id("changed").Op("||").Id("err").Op("!=").Nil()).Block(
+				return jen.If(jen.List(jen.Id("changed"), jen.Id("err")).Op(":=").Id(receiverName).Dot(propID).Dot("Update").Call(jen.Id("context")).Op(";").Id("changed").Op("||").Id("err").Op("!=").Nil()).Block(
 					jen.Id("sum").Op("++"),
 					jen.If(jen.Id("err").Op("!=").Nil()).Block(
 						jen.Id("errs").Dot("Add").Call(jen.Qual(vitPackage, "NewPropertyError").Call(
@@ -569,14 +572,10 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 				)
 			}
 			g.Line()
-			g.Comment("this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables")
-			g.Id("n").Op(",").Id("err").Op(":=").Id(receiverName).Dot("UpdatePropertiesInContext").Call(jen.Id(receiverName)) // n, err := receiver.UpdatePropertiesInContext(receiver) // just approximate code, names will vary
-			g.Id("sum").Op("+=").Id("n")                                                                                      // sum += n
-			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                                  // errs.AddGroup(err)
-			g.Id("n").Op(",").Id("err").Op("=").Id(receiverName).Dot(comp.BaseName).Dot("UpdateExpressions").Call()           // n, err = receiver.BaseComponent.UpdateExpressions()
-			g.Id("sum").Op("+=").Id("n")                                                                                      // sum += n
-			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                                  // errs.AddGroup(err)
-			g.Return(jen.Id("sum"), jen.Id("errs"))                                                                           // return sum, errs
+			g.Id("n").Op(",").Id("err").Op(":=").Id(receiverName).Dot(comp.BaseName).Dot("UpdateExpressions").Call(jen.Id("context")) // n, err = receiver.BaseComponent.UpdateExpressions()
+			g.Id("sum").Op("+=").Id("n")                                                                                              // sum += n
+			g.Id("errs").Dot("AddGroup").Call(jen.Id("err"))                                                                          // errs.AddGroup(err)
+			g.Return(jen.Id("sum"), jen.Id("errs"))                                                                                   // return sum, errs
 		}).
 		Line()
 

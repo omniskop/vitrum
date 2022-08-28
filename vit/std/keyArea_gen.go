@@ -147,18 +147,21 @@ func (k *KeyArea) AddChildAfter(afterThis vit.Component, addThis vit.Component) 
 	k.AddChild(addThis)
 }
 
-func (k *KeyArea) UpdateExpressions() (int, vit.ErrorGroup) {
+func (k *KeyArea) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = k
+	}
 	// properties
-	if changed, err := k.enabled.Update(k); changed || err != nil {
+	if changed, err := k.enabled.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("KeyArea", "enabled", k.id, err))
 		}
 	}
-	if changed, err := k.pressed.Update(k); changed || err != nil {
+	if changed, err := k.pressed.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("KeyArea", "pressed", k.id, err))
@@ -167,11 +170,7 @@ func (k *KeyArea) UpdateExpressions() (int, vit.ErrorGroup) {
 
 	// methods
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := k.UpdatePropertiesInContext(k)
-	sum += n
-	errs.AddGroup(err)
-	n, err = k.Item.UpdateExpressions()
+	n, err := k.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs

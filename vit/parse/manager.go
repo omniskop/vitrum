@@ -131,7 +131,7 @@ func (m *Manager) MainComponent() vit.Component {
 
 // Update reevaluates all expressions whose dependencies have changed since the last update.
 func (m *Manager) Update() (int, vit.ErrorGroup) {
-	return m.mainComponent.UpdateExpressions()
+	return m.mainComponent.UpdateExpressions(nil)
 }
 
 // FormatError takes an error that has been returned and formats it nicely for printing

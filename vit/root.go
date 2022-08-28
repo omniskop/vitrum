@@ -207,11 +207,19 @@ func (r *Root) Children() []Component {
 	return r.children
 }
 
-func (r *Root) UpdateExpressions() (int, ErrorGroup) {
+func (r *Root) UpdateExpressions(context Component) (int, ErrorGroup) {
 	var sum int
 	var errors ErrorGroup
+	if context == nil {
+		context = r
+	}
+
+	n, err := r.UpdatePropertiesInContext(context)
+	sum += n
+	errors.AddGroup(err)
+
 	for _, child := range r.children {
-		n, err := child.UpdateExpressions()
+		n, err := child.UpdateExpressions(nil)
 		sum += n
 		errors.AddGroup(err)
 	}
@@ -224,7 +232,7 @@ func (r *Root) UpdatePropertiesInContext(context Component) (int, ErrorGroup) {
 	var sum int
 	var errs ErrorGroup
 	for name, prop := range r.properties {
-		if changed, err := prop.Update(r); changed || err != nil {
+		if changed, err := prop.Update(context); changed || err != nil {
 			sum++
 			if err != nil {
 				errs.Add(NewPropertyError("", name, r.id, err))

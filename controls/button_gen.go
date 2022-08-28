@@ -173,18 +173,21 @@ func (b *Button) AddChildAfter(afterThis vit.Component, addThis vit.Component) {
 	b.AddChild(addThis)
 }
 
-func (b *Button) UpdateExpressions() (int, vit.ErrorGroup) {
+func (b *Button) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) {
 	var sum int
 	var errs vit.ErrorGroup
 
+	if context == nil {
+		context = b
+	}
 	// properties
-	if changed, err := b.text.Update(b); changed || err != nil {
+	if changed, err := b.text.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Button", "text", b.id, err))
 		}
 	}
-	if changed, err := b.pressed.Update(b); changed || err != nil {
+	if changed, err := b.pressed.Update(context); changed || err != nil {
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Button", "pressed", b.id, err))
@@ -200,11 +203,7 @@ func (b *Button) UpdateExpressions() (int, vit.ErrorGroup) {
 		}
 	}
 
-	// this needs to be done in every component and not just in root to give the expression the highest level component for resolving variables
-	n, err := b.UpdatePropertiesInContext(b)
-	sum += n
-	errs.AddGroup(err)
-	n, err = b.Item.UpdateExpressions()
+	n, err := b.Item.UpdateExpressions(context)
 	sum += n
 	errs.AddGroup(err)
 	return sum, errs
