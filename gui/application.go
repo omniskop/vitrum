@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"sync"
 
 	"gioui.org/app"
@@ -64,6 +65,10 @@ func (a *Application) RemoveWindow(w *Window) {
 			a.windows = append(a.windows[:i], a.windows[i+1:]...)
 			break
 		}
+	}
+	if len(a.windows) == 0 {
+		// On windows the program will otherwise crash due to a deadlock
+		os.Exit(0)
 	}
 	a.windowsMux.Unlock()
 }
