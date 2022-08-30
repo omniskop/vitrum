@@ -29,8 +29,9 @@ type Button struct {
 	*std.Item
 	id string
 
-	text    vit.StringValue
-	pressed vit.AliasValue
+	text          vit.StringValue
+	pressed       vit.AliasValue
+	fontPointSize vit.IntValue
 
 	onClicked vit.EventAttribute[std.MouseEvent]
 
@@ -48,12 +49,13 @@ func newButtonInGlobal(id string, globalCtx *vit.GlobalContext) (*Button, error)
 }
 func NewButton(id string, context *vit.FileContext) *Button {
 	b := &Button{
-		Item:      std.NewItem("", context),
-		id:        id,
-		text:      *vit.NewEmptyStringValue(),
-		pressed:   *vit.NewAliasValueFromCode(vit.Code{FileCtx: context, Code: "mouseArea.pressed", Position: nil}),
-		onClicked: *vit.NewEventAttribute[std.MouseEvent](),
-		clicked:   vit.NewMethodFromCode("clicked", vit.Code{FileCtx: context, Code: "function(e) {\n        onClicked.Fire(e)\n    }", Position: nil}),
+		Item:          std.NewItem("", context),
+		id:            id,
+		text:          *vit.NewEmptyStringValue(),
+		pressed:       *vit.NewAliasValueFromCode(vit.Code{FileCtx: context, Code: "mouseArea.pressed", Position: nil}),
+		fontPointSize: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "40", Position: nil}),
+		onClicked:     *vit.NewEventAttribute[std.MouseEvent](),
+		clicked:       vit.NewMethodFromCode("clicked", vit.Code{FileCtx: context, Code: "function(e) {\n        onClicked.Fire(e)\n    }", Position: nil}),
 	}
 	// property assignments on embedded components
 	b.Item.SetPropertyCode("width", vit.Code{FileCtx: context, Code: "150", Position: nil})
@@ -68,11 +70,11 @@ func NewButton(id string, context *vit.FileContext) *Button {
 	// register enumerations
 	// add child components
 	var child vit.Component
-	child, _ = parse.InstantiateComponent(&vit.ComponentDefinition{BaseName: "MouseArea", ID: "mouseArea", Properties: []vit.PropertyDefinition{vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 28}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 21, StartColumn: 23, EndLine: 21, EndColumn: 28}, Identifier: []string{"anchors", "fill"}, Expression: "parent", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 45}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 22, StartColumn: 26, EndLine: 22, EndColumn: 45}, Identifier: []string{"acceptedButtons"}, Expression: "MouseArea.leftButton", Tags: map[string]string{}}}}, context)
+	child, _ = parse.InstantiateComponent(&vit.ComponentDefinition{BaseName: "MouseArea", ID: "mouseArea", Properties: []vit.PropertyDefinition{vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 28}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 22, StartColumn: 23, EndLine: 22, EndColumn: 28}, Identifier: []string{"anchors", "fill"}, Expression: "parent", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 23, StartColumn: 9, EndLine: 23, EndColumn: 45}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 23, StartColumn: 26, EndLine: 23, EndColumn: 45}, Identifier: []string{"acceptedButtons"}, Expression: "MouseArea.leftButton", Tags: map[string]string{}}}}, context)
 	b.AddChild(child)
-	child, _ = parse.InstantiateComponent(&vit.ComponentDefinition{BaseName: "Rectangle", Properties: []vit.PropertyDefinition{vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 26, StartColumn: 9, EndLine: 26, EndColumn: 28}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 26, StartColumn: 23, EndLine: 26, EndColumn: 28}, Identifier: []string{"anchors", "fill"}, Expression: "parent", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 27, StartColumn: 9, EndLine: 27, EndColumn: 37}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 27, StartColumn: 16, EndLine: 27, EndColumn: 37}, Identifier: []string{"color"}, Expression: "Vit.rgb(200, 200, 200)", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 28, StartColumn: 9, EndLine: 28, EndColumn: 17}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 28, StartColumn: 17, EndLine: 28, EndColumn: 17}, Identifier: []string{"radius"}, Expression: "5", Tags: map[string]string{}}}}, context)
+	child, _ = parse.InstantiateComponent(&vit.ComponentDefinition{BaseName: "Rectangle", Properties: []vit.PropertyDefinition{vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 27, StartColumn: 9, EndLine: 27, EndColumn: 28}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 27, StartColumn: 23, EndLine: 27, EndColumn: 28}, Identifier: []string{"anchors", "fill"}, Expression: "parent", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 28, StartColumn: 9, EndLine: 28, EndColumn: 82}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 28, StartColumn: 16, EndLine: 28, EndColumn: 82}, Identifier: []string{"color"}, Expression: "mouseArea.pressed ? Vit.rgb(180, 180, 180) : Vit.rgb(200, 200, 200)", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 29, StartColumn: 9, EndLine: 29, EndColumn: 17}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 29, StartColumn: 17, EndLine: 29, EndColumn: 17}, Identifier: []string{"radius"}, Expression: "5", Tags: map[string]string{}}}}, context)
 	b.AddChild(child)
-	child, _ = parse.InstantiateComponent(&vit.ComponentDefinition{BaseName: "Text", ID: "text", Properties: []vit.PropertyDefinition{vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 33, StartColumn: 9, EndLine: 33, EndColumn: 28}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 33, StartColumn: 23, EndLine: 33, EndColumn: 28}, Identifier: []string{"anchors", "fill"}, Expression: "parent", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 34, StartColumn: 9, EndLine: 34, EndColumn: 25}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 34, StartColumn: 15, EndLine: 34, EndColumn: 25}, Identifier: []string{"text"}, Expression: "parent.text", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 35, StartColumn: 9, EndLine: 35, EndColumn: 26}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 35, StartColumn: 25, EndLine: 35, EndColumn: 26}, Identifier: []string{"font", "pointSize"}, Expression: "40", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 36, StartColumn: 9, EndLine: 36, EndColumn: 33}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 36, StartColumn: 22, EndLine: 36, EndColumn: 33}, Identifier: []string{"font", "family"}, Expression: "\"Montserrat\"", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 37, StartColumn: 9, EndLine: 37, EndColumn: 32}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 37, StartColumn: 22, EndLine: 37, EndColumn: 32}, Identifier: []string{"font", "weight"}, Expression: "Text.Medium", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 38, StartColumn: 9, EndLine: 38, EndColumn: 44}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 38, StartColumn: 28, EndLine: 38, EndColumn: 44}, Identifier: []string{"verticalAlignment"}, Expression: "Text.AlignVCenter", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 39, StartColumn: 9, EndLine: 39, EndColumn: 46}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 39, StartColumn: 30, EndLine: 39, EndColumn: 46}, Identifier: []string{"horizontalAlignment"}, Expression: "Text.AlignHCenter", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 40, StartColumn: 9, EndLine: 40, EndColumn: 31}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 40, StartColumn: 16, EndLine: 40, EndColumn: 31}, Identifier: []string{"elide"}, Expression: "Text.ElideMiddle", Tags: map[string]string{}}}}, context)
+	child, _ = parse.InstantiateComponent(&vit.ComponentDefinition{BaseName: "Text", ID: "text", Properties: []vit.PropertyDefinition{vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 34, StartColumn: 9, EndLine: 34, EndColumn: 28}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 34, StartColumn: 23, EndLine: 34, EndColumn: 28}, Identifier: []string{"anchors", "fill"}, Expression: "parent", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 35, StartColumn: 9, EndLine: 35, EndColumn: 25}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 35, StartColumn: 15, EndLine: 35, EndColumn: 25}, Identifier: []string{"text"}, Expression: "parent.text", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 36, StartColumn: 9, EndLine: 36, EndColumn: 44}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 36, StartColumn: 25, EndLine: 36, EndColumn: 44}, Identifier: []string{"font", "pointSize"}, Expression: "parent.fontPointSize", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 37, StartColumn: 9, EndLine: 37, EndColumn: 33}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 37, StartColumn: 22, EndLine: 37, EndColumn: 33}, Identifier: []string{"font", "family"}, Expression: "\"Montserrat\"", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 38, StartColumn: 9, EndLine: 38, EndColumn: 32}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 38, StartColumn: 22, EndLine: 38, EndColumn: 32}, Identifier: []string{"font", "weight"}, Expression: "Text.Medium", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 39, StartColumn: 9, EndLine: 39, EndColumn: 44}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 39, StartColumn: 28, EndLine: 39, EndColumn: 44}, Identifier: []string{"verticalAlignment"}, Expression: "Text.AlignVCenter", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 40, StartColumn: 9, EndLine: 40, EndColumn: 46}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 40, StartColumn: 30, EndLine: 40, EndColumn: 46}, Identifier: []string{"horizontalAlignment"}, Expression: "Text.AlignHCenter", Tags: map[string]string{}}, vit.PropertyDefinition{Pos: vit.PositionRange{FilePath: "Button.vit", StartLine: 41, StartColumn: 9, EndLine: 41, EndColumn: 31}, ValuePos: &vit.PositionRange{FilePath: "Button.vit", StartLine: 41, StartColumn: 16, EndLine: 41, EndColumn: 31}, Identifier: []string{"elide"}, Expression: "Text.ElideMiddle", Tags: map[string]string{}}}}, context)
 	b.AddChild(child)
 
 	context.RegisterComponent("", b)
@@ -90,6 +92,8 @@ func (b *Button) Property(key string) (vit.Value, bool) {
 		return &b.text, true
 	case "pressed":
 		return &b.pressed, true
+	case "fontPointSize":
+		return &b.fontPointSize, true
 	default:
 		return b.Item.Property(key)
 	}
@@ -110,6 +114,8 @@ func (b *Button) SetProperty(key string, value interface{}) error {
 		err = b.text.SetValue(value)
 	case "pressed":
 		err = b.pressed.SetValue(value)
+	case "fontPointSize":
+		err = b.fontPointSize.SetValue(value)
 	default:
 		return b.Item.SetProperty(key, value)
 	}
@@ -125,6 +131,8 @@ func (b *Button) SetPropertyCode(key string, code vit.Code) error {
 		b.text.SetCode(code)
 	case "pressed":
 		b.pressed.SetCode(code)
+	case "fontPointSize":
+		b.fontPointSize.SetCode(code)
 	default:
 		return b.Item.SetPropertyCode(key, code)
 	}
@@ -146,6 +154,8 @@ func (b *Button) ResolveVariable(key string) (interface{}, bool) {
 		return &b.text, true
 	case "pressed":
 		return &b.pressed, true
+	case "fontPointSize":
+		return &b.fontPointSize, true
 	case "clicked":
 		return &b.clicked, true
 	case "onClicked":
@@ -191,6 +201,12 @@ func (b *Button) UpdateExpressions(context vit.Component) (int, vit.ErrorGroup) 
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Button", "pressed", b.id, err))
+		}
+	}
+	if changed, err := b.fontPointSize.Update(context); changed || err != nil {
+		sum++
+		if err != nil {
+			errs.Add(vit.NewPropertyError("Button", "fontPointSize", b.id, err))
 		}
 	}
 
