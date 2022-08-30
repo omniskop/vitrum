@@ -36,7 +36,7 @@ func (g *Grid) getLeftPadding() float64 {
 
 // Recalculate Layout of all child components.
 func (g *Grid) recalculateLayout() {
-	// First of this could probably be done more efficiently but it works for now.
+	// This could probably be done more efficiently but it works for now.
 	// We are trying to place each child in the grid according to the flow and alignment.
 
 	// First we will create a list of all children that are actually visible. All others will be ignored.
