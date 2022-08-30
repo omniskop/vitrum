@@ -2,6 +2,8 @@ module github.com/omniskop/vitrum
 
 go 1.18
 
+replace github.com/tdewolff/canvas => github.com/omniskop/canvas v0.0.0-20220830212127-1ddab32d0e41
+
 require (
 	gioui.org v0.0.0-20220615093012-72669e19bc29
 	github.com/dave/jennifer v1.5.0
