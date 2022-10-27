@@ -34,7 +34,8 @@ type Expression struct {
 func NewExpression(code string, fileCtx *FileContext, position *PositionRange) *Expression {
 	// The parenthesis around the code are needed to make sure we get the correct value from all expressions.
 	// For example objects (e.g. {one: 1}) would return the number '1' instead of a map.
-	prog, err := script.NewScript("expression", fmt.Sprintf("(%s)", code))
+	// The line break is there in case the expression ends with a line comment which would remove the added closing bracket.
+	prog, err := script.NewScript("expression", fmt.Sprintf("(%s\n)", code))
 	if err != nil {
 		err = NewExpressionError(code, position, err)
 	}
