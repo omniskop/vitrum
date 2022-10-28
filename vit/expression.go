@@ -289,15 +289,22 @@ type ExpressionError struct {
 }
 
 var compilerErrorRegex = regexp.MustCompile(`Line (\d+):(\d+) (.*)`)
+var exceptionRegex = regexp.MustCompile(`\tat function:(\d+):(\d+)\(\d+\)`)
 
 func NewExpressionError(code string, pos *PositionRange, wrappedErr error) ExpressionError {
+	if pos != nil {
+		// create a copy of the position to make sure that all changes are local
+		p := *pos
+		pos = &p
+	}
 	// check if we can get some more information from the error
 	var cErr *goja.CompilerSyntaxError
+	var exception *goja.Exception
 	if errors.As(wrappedErr, &cErr) {
 		// example:
 		// "expression: Line 3:13 Unexpected identifier (and 5 more errors)"
 		matches := compilerErrorRegex.FindStringSubmatch(cErr.CompilerError.Message)
-		if len(matches) > 0 {
+		if len(matches) == 4 {
 			line, err := strconv.Atoi(matches[1])
 			column, err2 := strconv.Atoi(matches[2])
 			if err == nil && err2 == nil {
@@ -311,6 +318,20 @@ func NewExpressionError(code string, pos *PositionRange, wrappedErr error) Expre
 					pos.SetEnd(pos.Start())
 				}
 				wrappedErr = errors.New(matches[3])
+			}
+		}
+	} else if errors.As(wrappedErr, &exception) {
+		matches := exceptionRegex.FindStringSubmatch(exception.String())
+		if len(matches) == 3 {
+			line, err := strconv.Atoi(matches[1])
+			column, err2 := strconv.Atoi(matches[2])
+			if err == nil && err2 == nil {
+				if pos != nil {
+					pos.StartLine += line - 1
+					pos.StartColumn = column
+					pos.SetEnd(pos.Start())
+				}
+				wrappedErr = errors.New(exception.Value().String())
 			}
 		}
 	}
