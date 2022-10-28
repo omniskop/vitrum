@@ -344,7 +344,7 @@ func NewExpressionError(code string, pos *PositionRange, wrappedErr error) Expre
 }
 
 func (e ExpressionError) Error() string {
-	return fmt.Sprintf("expression %q: %v", e.Code, e.err)
+	return fmt.Sprintf("error in expression: %v", e.err)
 }
 
 func (e ExpressionError) Is(target error) bool {

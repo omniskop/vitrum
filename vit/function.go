@@ -22,7 +22,7 @@ func NewFunction(code string, position *PositionRange, fileCtx *FileContext) *Fu
 		code = fmt.Sprintf("function()%s", code)
 		if position != nil {
 			// adjust position in a way to hide the fact that we added code here
-			p := position.StartColumnShifted(-11)
+			p := position.StartColumnShifted(-10)
 			position = &p
 		}
 	}
