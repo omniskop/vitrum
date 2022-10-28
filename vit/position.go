@@ -164,12 +164,12 @@ func (p PositionRange) StartColumnShifted(amount int) PositionRange {
 	pos := PositionRange{
 		FilePath:    p.FilePath,
 		StartLine:   p.StartLine,
-		StartColumn: p.StartColumn - 10,
+		StartColumn: p.StartColumn + amount,
 		EndLine:     p.EndLine,
-		EndColumn:   p.EndColumn + 10,
+		EndColumn:   p.EndColumn,
 	}
 	if pos.EndLine == pos.StartLine {
-		pos.EndColumn -= 10
+		pos.EndColumn += amount
 	}
 	return pos
 }
