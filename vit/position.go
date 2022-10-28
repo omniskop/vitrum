@@ -129,7 +129,21 @@ func (p PositionRange) Report() string {
 		out.WriteString(strings.Repeat(" ", len(lineNumberPrefix)-trimmedCharacters+p.StartColumn-1)) // leading spaces to get the right offset
 		out.WriteString(strings.Repeat("^", p.EndColumn-p.StartColumn+1))                             // now print the markers
 	} else {
-		out.WriteString("report for multiline range is not implemnted yet\r\n")
+		out.WriteString(fmt.Sprintf("%s:%d:%d - %d:%d\r\n", p.FilePath, p.StartLine, p.StartColumn, p.EndLine, p.EndColumn))
+		lineContent := []string{}
+		trimmedCharacters := 1000
+		for i := p.StartLine - 1; i <= p.EndLine-1; i++ {
+			if i < 0 || i >= len(lines) {
+				continue
+			}
+			if countLeading(lines[i], " \t") < trimmedCharacters {
+				trimmedCharacters = countLeading(lines[i], " \t")
+			}
+			lineContent = append(lineContent, lines[i])
+		}
+		for i, line := range lineContent {
+			out.WriteString(fmt.Sprintf("%s | %s\r\n", formatLineNumber(p.StartLine-2+i, p.EndLine), line[trimmedCharacters:]))
+		}
 	}
 
 	return out.String()
@@ -188,4 +202,9 @@ func digits(n int) int {
 		return 1
 	}
 	return int(math.Log10(float64(n))) + 1
+}
+
+// countLeading returns the amount of all leading Unicode code points contained in cutset of string s.
+func countLeading(s string, cutset string) int {
+	return len(s) - len(strings.TrimLeft(s, cutset))
 }
