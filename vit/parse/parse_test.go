@@ -10,13 +10,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 func TestParseError(t *testing.T) {
 	wrapped := errors.New("test error")
 	err := ParseError{
 		pos: vit.PositionRange{
-			FilePath:    "test.vit",
+			FilePath:    vpath.Virtual("test.vit"),
 			StartLine:   1,
 			StartColumn: 2,
 			EndLine:     3,
@@ -66,7 +67,7 @@ func TestUnexpectedToken(t *testing.T) {
 	tok := token{
 		tokenType: tokenIdentifier,
 		literal:   "value",
-		position:  vit.PositionRange{"test", 0, 0, 0, 0},
+		position:  vit.PositionRange{vpath.Virtual("test"), 0, 0, 0, 0},
 	}
 	err := unexpectedToken(tok, tokenInteger)
 	if err.pos != tok.position {
@@ -200,18 +201,18 @@ Item {
 
 var validDocument = &VitDocument{
 	Imports: []ImportStatement{
-		{Namespace: []string{"One"}, Version: "1.23", Position: vit.PositionRange{FilePath: "test", StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
-		{Namespace: []string{"Two", "Three"}, Version: "4.56", Position: vit.PositionRange{FilePath: "test", StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
+		{Namespace: []string{"One"}, Version: "1.23", Position: vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 3, StartColumn: 1, EndLine: 3, EndColumn: 15}},
+		{Namespace: []string{"Two", "Three"}, Version: "4.56", Position: vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 5, StartColumn: 1, EndLine: 5, EndColumn: 21}},
 	},
 	Components: []*vit.ComponentDefinition{
 		{
-			Pos:      vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
+			Pos:      vit.PositionRange{},
 			BaseName: "Item",
 			ID:       "rect",
 			Properties: []vit.PropertyDefinition{
 				{
-					Pos:         vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
-					ValuePos:    &vit.PositionRange{FilePath: "test", StartLine: 13, StartColumn: 19, EndLine: 13, EndColumn: 34},
+					Pos:         vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 13, StartColumn: 5, EndLine: 13, EndColumn: 34},
+					ValuePos:    &vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 13, StartColumn: 19, EndLine: 13, EndColumn: 34},
 					Identifier:  []string{"anchors", "left"},
 					Expression:  "parent.left + 10",
 					Components:  nil,
@@ -221,18 +222,18 @@ var validDocument = &VitDocument{
 					Tags:        nil,
 				},
 				{
-					Pos:        vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 5, EndLine: 16, EndColumn: 5},
-					ValuePos:   &vit.PositionRange{FilePath: "test", StartLine: 14, StartColumn: 11, EndLine: 16, EndColumn: 5},
+					Pos:        vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 14, StartColumn: 5, EndLine: 16, EndColumn: 5},
+					ValuePos:   &vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 14, StartColumn: 11, EndLine: 16, EndColumn: 5},
 					Identifier: []string{"affe"},
 					Expression: "/*#invalid stuff#*/ Item {\n        one: 1\n    }",
 					Components: []*vit.ComponentDefinition{{
-						Pos:      vit.PositionRange{FilePath: "", StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0},
+						Pos:      vit.PositionRange{},
 						BaseName: "Item",
 						ID:       "",
 						Properties: []vit.PropertyDefinition{
 							{
-								Pos:        vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
-								ValuePos:   &vit.PositionRange{FilePath: "test", StartLine: 15, StartColumn: 14, EndLine: 15, EndColumn: 14},
+								Pos:        vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 15, StartColumn: 9, EndLine: 15, EndColumn: 14},
+								ValuePos:   &vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 15, StartColumn: 14, EndLine: 15, EndColumn: 14},
 								Identifier: []string{"one"},
 								VitType:    "", Expression: "1", Components: nil,
 								ReadOnly:    false,
@@ -250,8 +251,8 @@ var validDocument = &VitDocument{
 					Tags:        nil,
 				},
 				{
-					Pos:         vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 55},
-					ValuePos:    &vit.PositionRange{FilePath: "test", StartLine: 18, StartColumn: 52, EndLine: 18, EndColumn: 55},
+					Pos:         vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 18, StartColumn: 2, EndLine: 18, EndColumn: 55},
+					ValuePos:    &vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 18, StartColumn: 52, EndLine: 18, EndColumn: 55},
 					Identifier:  []string{"local"},
 					VitType:     "bool",
 					Expression:  "true",
@@ -267,12 +268,12 @@ var validDocument = &VitDocument{
 					BaseName: "Label",
 					Properties: []vit.PropertyDefinition{
 						{Identifier: []string{"wrapMode"}, Expression: "Text.WordWrap",
-							Pos:      vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31},
-							ValuePos: &vit.PositionRange{FilePath: "test", StartLine: 21, StartColumn: 19, EndLine: 21, EndColumn: 31},
+							Pos:      vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 21, StartColumn: 9, EndLine: 21, EndColumn: 31},
+							ValuePos: &vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 21, StartColumn: 19, EndLine: 21, EndColumn: 31},
 						},
 						{Identifier: []string{"text"}, Expression: `"What a wonderful world"`,
-							Pos:      vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38},
-							ValuePos: &vit.PositionRange{FilePath: "test", StartLine: 22, StartColumn: 15, EndLine: 22, EndColumn: 38},
+							Pos:      vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 22, StartColumn: 9, EndLine: 22, EndColumn: 38},
+							ValuePos: &vit.PositionRange{FilePath: vpath.Virtual("test"), StartLine: 22, StartColumn: 15, EndLine: 22, EndColumn: 38},
 						},
 					},
 				},
@@ -283,7 +284,7 @@ var validDocument = &VitDocument{
 
 func TestParse(t *testing.T) {
 	// we lex an example file in here but we only really care about parser and not the lexer
-	l := NewLexer(strings.NewReader(validFile), "test")
+	l := NewLexer(strings.NewReader(validFile), vpath.Virtual("test"))
 	buf := NewTokenBuffer(l.Lex)
 	doc, err := Parse(buf)
 	if err != nil {
