@@ -3,10 +3,10 @@ package parse
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 type componentError struct {
@@ -74,14 +74,14 @@ func init() {
 }
 
 // parseFile parsed a given file into a document with the given component name.
-func parseFile(fileName string, componentName string) (*VitDocument, error) {
-	file, err := os.Open(fileName)
+func parseFile(filePath vpath.Path, componentName string) (*VitDocument, error) {
+	file, err := filePath.OpenFile()
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	lexer := NewLexer(file, fileName)
+	lexer := NewLexer(file, filePath)
 
 	doc, err := Parse(NewTokenBuffer(lexer.Lex))
 	if err != nil {

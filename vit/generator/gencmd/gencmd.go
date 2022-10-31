@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/omniskop/vitrum/vit/generator"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 var (
@@ -27,14 +28,14 @@ func main() {
 	}
 
 	if outputPath == "" {
-		err := generator.GenerateFromFile(inputPath, packageName, os.Stdout)
+		err := generator.GenerateFromFile(vpath.Local(inputPath), packageName, os.Stdout)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 			return
 		}
 	} else {
-		err := generator.GenerateFromFileAndSave(inputPath, packageName, outputPath)
+		err := generator.GenerateFromFileAndSave(vpath.Local(inputPath), packageName, outputPath)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)

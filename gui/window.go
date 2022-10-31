@@ -17,6 +17,7 @@ import (
 	"github.com/omniskop/vitrum/vit"
 	"github.com/omniskop/vitrum/vit/parse"
 	"github.com/omniskop/vitrum/vit/std"
+	"github.com/omniskop/vitrum/vit/vpath"
 	"github.com/tdewolff/canvas"
 	gioRenderer "github.com/tdewolff/canvas/renderers/gio"
 )
@@ -111,7 +112,7 @@ type Window struct {
 	logger        *log.Logger
 }
 
-func NewWindow(source string, log *log.Logger) (*Window, error) {
+func NewWindow(source vpath.Path, log *log.Logger) (*Window, error) {
 	w := &Window{
 		manager: parse.NewManager(),
 		handler: newComponentHandler(log),
@@ -124,7 +125,7 @@ func NewWindow(source string, log *log.Logger) (*Window, error) {
 	return w, nil
 }
 
-func (w *Window) AddImportPath(filePath string) error {
+func (w *Window) AddImportPath(filePath vpath.Path) error {
 	return w.manager.AddImportPath(filePath)
 }
 

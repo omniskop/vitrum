@@ -6,6 +6,7 @@ import (
 
 	"github.com/dave/jennifer/jen"
 	"github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 // This file contains functions that generate code describing specific data structures. (Sub-Generators)
@@ -58,7 +59,7 @@ func generatePositionRange(pos vit.PositionRange) *jen.Statement {
 		return jen.Nil()
 	}
 	return jen.Op("&").Qual(vitPackage, "PositionRange").Values(jen.Dict{
-		jen.Id("FilePath"):    jen.Lit(pos.FilePath),
+		jen.Id("FilePath"):    generateVirtualPath(pos.FilePath),
 		jen.Id("StartLine"):   jen.Lit(pos.StartLine),
 		jen.Id("StartColumn"): jen.Lit(pos.StartColumn),
 		jen.Id("EndLine"):     jen.Lit(pos.EndLine),
@@ -101,6 +102,12 @@ func generateEnumeration(enum vit.Enumeration) *jen.Statement {
 		jen.Id("Values"):   valueMap,
 		jen.Id("Position"): generatePositionRange(*enum.Position),
 	})
+}
+
+// ============================================ Path ===============================================
+
+func generateVirtualPath(path vpath.Path) *jen.Statement {
+	return jen.Qual(vpathPackage, "Virtual").Call(jen.Lit(path.Path()))
 }
 
 // =================================== Generic Type Generation =====================================
@@ -147,6 +154,8 @@ func generateFromValue(value reflect.Value) *jen.Statement {
 		value := f.Elem()
 		if !value.IsValid() {
 			return jen.Nil()
+		} else if path, ok := value.Interface().(vpath.Path); ok {
+			return generateVirtualPath(path)
 		} else {
 			return jen.Add(generateFromValue(value))
 		}

@@ -563,6 +563,18 @@ func (v *StringValue) Update(context Component) (bool, error) {
 	return true, nil
 }
 
+// Position returns the PositionRange that this value was defined at.
+// The boolean indicates wether a position is set.
+func (v *StringValue) Position() (*PositionRange, bool) {
+	if v.expression == nil {
+		return nil, false
+	}
+	if v.expression.position == nil {
+		return nil, false
+	}
+	return v.expression.position, true
+}
+
 func castString(value interface{}) (string, bool) {
 	switch actual := value.(type) {
 	case string:

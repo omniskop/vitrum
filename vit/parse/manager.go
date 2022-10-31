@@ -3,23 +3,24 @@ package parse
 import (
 	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path"
 	"strings"
 
 	"github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 // bundles basic information about a vit file
 type componentFile struct {
-	name     string // name of the file without extension
-	filePath string // full file path
+	name string     // name of the file without extension
+	path vpath.Path // full file path
 }
 
 // The Manager handles everything about loading files and instantiating them into a working component tree
 type Manager struct {
 	knownComponents   map[string]componentFile
-	importPaths       []string
+	importPaths       []fs.ReadDirFS
 	mainComponentName string
 	mainComponent     vit.Component
 	globalCtx         vit.GlobalContext
@@ -35,12 +36,12 @@ func NewManager() *Manager {
 }
 
 // AddImportPath adds a folder to the list of folders to search for components
-func (m *Manager) AddImportPath(filePath string) error {
-	entries, err := os.ReadDir(filePath)
+func (m *Manager) AddImportPath(dir fs.ReadDirFS) error {
+	entries, err := dir.ReadDir(".")
 	if err != nil {
 		return err
 	}
-	m.importPaths = append(m.importPaths, filePath)
+	m.importPaths = append(m.importPaths, dir)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -50,8 +51,8 @@ func (m *Manager) AddImportPath(filePath string) error {
 			name := strings.TrimSuffix(entry.Name(), ".vit")
 			// TODO: check for collisions, either here or in Run
 			m.knownComponents[name] = componentFile{
-				name:     name,
-				filePath: path.Join(filePath, entry.Name()),
+				name: name,
+				path: vpath.FS(dir, entry.Name()),
 			}
 		}
 	}
@@ -59,18 +60,18 @@ func (m *Manager) AddImportPath(filePath string) error {
 }
 
 // SetSource sets the primary component that should be instantiated
-func (m *Manager) SetSource(filePath string) error {
+func (m *Manager) SetSource(filePath vpath.Path) error {
 	if m.mainComponentName != "" {
 		return fmt.Errorf("main component already set")
 	}
-	if !strings.HasSuffix(filePath, ".vit") {
+	if !strings.HasSuffix(filePath.Path(), ".vit") {
 		return fmt.Errorf("not a vit file")
 	}
-	err := m.AddImportPath(path.Dir(filePath))
+	err := m.AddImportPath(filePath.Dir())
 	if err != nil {
 		return err
 	}
-	m.mainComponentName = strings.TrimSuffix(path.Base(filePath), ".vit")
+	m.mainComponentName = strings.TrimSuffix(path.Base(filePath.Path()), ".vit")
 	return nil
 }
 
@@ -80,7 +81,7 @@ func (m *Manager) Run(environment vit.ExecutionEnvironment) error {
 	var main VitDocument
 	for _, cFile := range m.knownComponents {
 		// TODO: maybe change ParseFile to operate on a componentFile?
-		doc, err := parseFile(cFile.filePath, cFile.name)
+		doc, err := parseFile(cFile.path, cFile.name)
 		if err != nil {
 			return err
 		}

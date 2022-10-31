@@ -1,22 +1,28 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
-	_ "github.com/omniskop/vitrum/controls"
 	"github.com/omniskop/vitrum/gui"
+	"github.com/omniskop/vitrum/vit/vpath"
+
+	_ "github.com/omniskop/vitrum/controls"
 	_ "github.com/omniskop/vitrum/vit/std"
 )
+
+//go:embed sources
+var sources embed.FS
 
 func main() {
 	app := gui.NewApplication()
 	app.SetLogger(log.New(os.Stdout, "app: ", 0))
-	app.AddImportPath("sources")
+	app.AddImportPath(vpath.FS(sources, "sources"))
 
-	window, err := app.NewWindow("sources/appTest.vit")
+	window, err := app.NewWindow(vpath.FS(sources, "sources/appTest.vit"))
 	if err != nil {
 		fmt.Println(err)
 		return

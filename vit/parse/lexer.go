@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/omniskop/vitrum/vit"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 // LexError contains additional information about the error that occurred
@@ -51,7 +52,7 @@ func (e ReadError) Unwrap() error {
 	return e.err
 }
 
-func LexAll(input io.Reader, filePath string) ([]token, error) {
+func LexAll(input io.Reader, filePath vpath.Path) ([]token, error) {
 	l := NewLexer(input, filePath)
 	allTokens := make([]token, 0, 100) // we will just start with some capacity
 	for {
@@ -69,13 +70,13 @@ func LexAll(input io.Reader, filePath string) ([]token, error) {
 
 type lexer struct {
 	source              *bufio.Reader
-	filePath            string
+	filePath            vpath.Path
 	pos                 vit.Position // position of the rune that will be read next
 	previousPosition    vit.Position
 	expressionFollowing bool // weather the next scanned part should be an expression
 }
 
-func NewLexer(input io.Reader, filePath string) *lexer {
+func NewLexer(input io.Reader, filePath vpath.Path) *lexer {
 	return &lexer{
 		source:   bufio.NewReader(input),
 		filePath: filePath,

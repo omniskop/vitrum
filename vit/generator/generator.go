@@ -13,11 +13,13 @@ import (
 	"github.com/dave/jennifer/jen"
 	"github.com/omniskop/vitrum/vit"
 	"github.com/omniskop/vitrum/vit/parse"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 const vitPackage = "github.com/omniskop/vitrum/vit"
 const parsePackage = "github.com/omniskop/vitrum/vit/parse"
 const stdPackage = "github.com/omniskop/vitrum/vit/std"
+const vpathPackage = "github.com/omniskop/vitrum/vit/vpath"
 
 // Indicates that file locations in the source file should not be brought into the generated code
 const hideSourceFiles = true
@@ -37,7 +39,7 @@ var functionRegex = regexp.MustCompile(`([a-zA-Z]+)\((.+)\)`)
 
 // GenerateFromFileAndSave takes the path to a vit file and generates a go file at the destination path.
 // The package name defines to which package the go file should belong.
-func GenerateFromFileAndSave(srcPath string, packageName string, dstPath string) error {
+func GenerateFromFileAndSave(srcPath vpath.Path, packageName string, dstPath string) error {
 	doc, err := parseVit(srcPath)
 	if err != nil {
 		return fmt.Errorf("unable to parse: %v", err)
@@ -67,7 +69,7 @@ func GenerateFromFileAndSave(srcPath string, packageName string, dstPath string)
 // Generate takes a reader for a vit file and outputs generated go code into the destination writer.
 // It uses the source path to extract the component name and to provide useful error messages.
 // The package name defines to which package the go file should belong.
-func Generate(src io.Reader, srcPath string, packageName string, dst io.Writer) error {
+func Generate(src io.Reader, srcPath vpath.Path, packageName string, dst io.Writer) error {
 	lexer := parse.NewLexer(src, srcPath)
 
 	doc, err := parse.Parse(parse.NewTokenBuffer(lexer.Lex))
@@ -81,7 +83,7 @@ func Generate(src io.Reader, srcPath string, packageName string, dst io.Writer) 
 
 // GenerateFromFile takes the path of a vit file and outputs generated go code into the destination writer.
 // The package name defines to which package the go file should belong.
-func GenerateFromFile(srcFile string, packageName string, dst io.Writer) error {
+func GenerateFromFile(srcFile vpath.Path, packageName string, dst io.Writer) error {
 	doc, err := parseVit(srcFile)
 	if err != nil {
 		return err
@@ -91,8 +93,8 @@ func GenerateFromFile(srcFile string, packageName string, dst io.Writer) error {
 }
 
 // parseVit takes the path to a vit file. It reads, lexes and parses the file.
-func parseVit(srcFile string) (*parse.VitDocument, error) {
-	file, err := os.Open(srcFile)
+func parseVit(srcFile vpath.Path) (*parse.VitDocument, error) {
+	file, err := srcFile.OpenFile()
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +131,8 @@ func GenerateFromDocument(doc *parse.VitDocument, packageName string, dst io.Wri
 
 // getComponentName takes the path of a vit file and extracts the appropriate component name from it.
 // For example: "path/to/file.vit" will result in the component name "File".
-func getComponentName(fileName string) string {
-	fileName = filepath.Base(fileName)
+func getComponentName(filePath vpath.Path) string {
+	fileName := filepath.Base(filePath.Path())
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }
 

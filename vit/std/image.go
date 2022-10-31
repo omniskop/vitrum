@@ -1,7 +1,6 @@
 package std
 
 import (
-	"os"
 	"path/filepath"
 
 	vit "github.com/omniskop/vitrum/vit"
@@ -16,8 +15,13 @@ func (i *Image) reloadImage() {
 		i.imageData = nil
 		return
 	}
+	pos, ok := i.path.Position()
+	if !ok {
+		i.Context().Global.Environment.Logger().Printf("failed to open image file: path string has no position\r\n")
+		return
+	}
 
-	file, err := os.Open(path)
+	file, err := pos.FilePath.Dir().Open(path)
 	if err != nil {
 		i.Context().Global.Environment.Logger().Printf("failed to open image file: %s\r\n", err)
 		return

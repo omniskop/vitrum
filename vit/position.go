@@ -2,14 +2,16 @@ package vit
 
 import (
 	"fmt"
+	"io"
 	"math"
-	"os"
 	"strings"
+
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 // position describes a specific position in a file
 type Position struct {
-	FilePath string
+	FilePath vpath.Path
 	Line     int // line inside the file starting at 1
 	Column   int // column inside the line starting at 1 (this is pointing to the rune, not the byte)
 }
@@ -26,7 +28,7 @@ func (p Position) IsEqual(o Position) bool {
 
 // positionRange describes a range of runes in a file
 type PositionRange struct {
-	FilePath string
+	FilePath vpath.Path
 	// start points to the first rune of the range
 	StartLine   int // line inside the file starting at 1
 	StartColumn int // column inside the line starting at 1 (this is pointing to the rune, not the byte)
@@ -103,12 +105,18 @@ func (p PositionRange) String() string {
 }
 
 func (p PositionRange) Report() string {
-	f, err := os.ReadFile(p.FilePath)
+	f, err := p.FilePath.OpenFile()
 	if err != nil {
 		fmt.Printf("(unable to generate detailed position string: %v)\r\n", err)
 		return p.String()
 	}
-	lines := strings.Split(string(f), "\n")
+	defer f.Close()
+	fData, err := io.ReadAll(f)
+	if err != nil {
+		fmt.Printf("(unable to generate detailed position string: %v)\r\n", err)
+		return p.String()
+	}
+	lines := strings.Split(string(fData), "\n")
 	var out strings.Builder
 
 	if p.StartLine == p.EndLine {

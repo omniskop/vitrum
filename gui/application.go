@@ -10,10 +10,11 @@ import (
 	"gioui.org/app"
 	"github.com/omniskop/vitrum/vit"
 	"github.com/omniskop/vitrum/vit/parse"
+	"github.com/omniskop/vitrum/vit/vpath"
 )
 
 type Application struct {
-	importPaths []string
+	importPaths []vpath.Path
 	windowsMux  sync.RWMutex
 	windows     []*Window
 	log         *log.Logger
@@ -25,7 +26,7 @@ func NewApplication() *Application {
 	}
 }
 
-func (a *Application) AddImportPath(path string) {
+func (a *Application) AddImportPath(path vpath.Path) {
 	a.importPaths = append(a.importPaths, path)
 }
 
@@ -33,7 +34,7 @@ func (a *Application) SetLogger(log *log.Logger) {
 	a.log = log
 }
 
-func (a *Application) NewWindow(path string) (*Window, error) {
+func (a *Application) NewWindow(path vpath.Path) (*Window, error) {
 	w, err := NewWindow(path, a.log)
 	if err != nil {
 		return nil, err
