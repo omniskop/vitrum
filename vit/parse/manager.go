@@ -75,8 +75,8 @@ func (m *Manager) SetSource(filePath vpath.Path) error {
 	return nil
 }
 
-// Run instantiates the primary component and reports any errors in doing so
-func (m *Manager) Run(environment vit.ExecutionEnvironment) error {
+// Initialize instantiates the primary component and reports any errors in doing so
+func (m *Manager) Initialize(environment vit.ExecutionEnvironment) error {
 	var documents = vit.NewComponentContainer()
 	var main VitDocument
 	for _, cFile := range m.knownComponents {
@@ -109,15 +109,6 @@ func (m *Manager) Run(environment vit.ExecutionEnvironment) error {
 	}
 	evaluateStaticExpressions(documents)
 
-evaluateExpressions:
-	n, errs := m.Update()
-	if errs.Failed() {
-		return errs
-	}
-	if n > 0 {
-		goto evaluateExpressions
-	}
-
 	return nil
 }
 
@@ -130,9 +121,22 @@ func (m *Manager) MainComponent() vit.Component {
 	return m.mainComponent
 }
 
-// Update reevaluates all expressions whose dependencies have changed since the last update.
-func (m *Manager) Update() (int, vit.ErrorGroup) {
+// UpdateOnce reevaluates all expressions whose dependencies have changed since the last update.
+func (m *Manager) UpdateOnce() (int, vit.ErrorGroup) {
 	return m.mainComponent.UpdateExpressions(nil)
+}
+
+// UpdateFully reevaluates all expressions whose dependencies have changed since the last update in a loop until no outstanding changes are left.
+func (m *Manager) UpdateFully() vit.ErrorGroup {
+evaluateExpressions:
+	n, errs := m.mainComponent.UpdateExpressions(nil)
+	if errs.Failed() {
+		return errs
+	}
+	if n > 0 {
+		goto evaluateExpressions
+	}
+	return errs
 }
 
 // FormatError takes an error that has been returned and formats it nicely for printing

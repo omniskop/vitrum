@@ -129,23 +129,18 @@ func (w *Window) AddImportPath(filePath vpath.Path) error {
 	return w.manager.AddImportPath(filePath)
 }
 
-func (w *Window) updateExpressions() vit.ErrorGroup {
-evaluateExpressions:
-	n, errs := w.mainComponent.UpdateExpressions(nil)
-	if errs.Failed() {
-		return errs
-	}
-	if n > 0 {
-		goto evaluateExpressions
-	}
-	return vit.ErrorGroup{}
-}
-
 func (w *Window) prepare() error {
-	err := w.manager.Run(w.handler)
+	err := w.manager.Initialize(w.handler)
 	if err != nil {
 		return err
 	}
+
+	errs := w.manager.UpdateFully()
+	if errs.Failed() {
+		w.logger.Println(fmt.Errorf("window update:"))
+		w.logger.Println(parse.FormatError(errs))
+	}
+
 	w.mainComponent = w.manager.MainComponent()
 
 	w.gioWindow = app.NewWindow(func(m unit.Metric, cfg *app.Config) {
@@ -264,7 +259,7 @@ func (w *Window) run() error {
 				w.mainComponent.SetProperty("width", virtualWindowBounds.Width())
 				w.mainComponent.SetProperty("height", virtualWindowBounds.Height())
 				// update all expressions
-				errs := w.updateExpressions()
+				errs := w.manager.UpdateFully()
 				if errs.Failed() {
 					w.logger.Println(fmt.Errorf("window update:"))
 					w.logger.Println(parse.FormatError(errs))
