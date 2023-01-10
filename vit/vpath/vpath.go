@@ -74,7 +74,7 @@ type virtualPath string
 
 // Virtual returns a new path that does not actually exist.
 // It is used in generated code to refer to source files that are no longer present during execution.
-// Most operations on an internal path will fail with fs.ErrNotExist.
+// Most operations on a virtual path will fail with fs.ErrNotExist.
 func Virtual(p string) Path {
 	return virtualPath(p)
 }
