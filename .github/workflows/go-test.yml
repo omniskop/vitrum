@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Update mirrors
+        run: sudo apt update
+        
       - name: Install gio dependencies
         run: sudo apt install gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
         # TODO: figure out wich are actually needed or if we somehow can get rid of them
