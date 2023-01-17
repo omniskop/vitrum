@@ -36,11 +36,12 @@ type TextField struct {
 
 // newTextFieldInGlobal creates an appropriate file context for the component and then returns a new TextField instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newTextFieldInGlobal(id string, globalCtx *vit.GlobalContext) (*TextField, error) {
+func newTextFieldInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*TextField, error) {
 	fileCtx, err := newFileContextForTextField(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewTextField(id, fileCtx), nil
 }
 func NewTextField(id string, context *vit.FileContext) *TextField {

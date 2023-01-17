@@ -26,7 +26,7 @@ func (l GUILib) NewComponent(name string, id string, globalCtx *vit.GlobalContex
 	var err error
 	switch name {
 	case "Window":
-		comp, err = newWindowComponentInGlobal(id, globalCtx)
+		comp, err = newWindowComponentInGlobal(id, globalCtx, l)
 	default:
 		return nil, false
 	}

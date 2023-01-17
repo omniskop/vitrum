@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForRectangle(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -22,11 +23,12 @@ type Rectangle struct {
 
 // newRectangleInGlobal creates an appropriate file context for the component and then returns a new Rectangle instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newRectangleInGlobal(id string, globalCtx *vit.GlobalContext) (*Rectangle, error) {
+func newRectangleInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Rectangle, error) {
 	fileCtx, err := newFileContextForRectangle(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewRectangle(id, fileCtx), nil
 }
 func NewRectangle(id string, context *vit.FileContext) *Rectangle {

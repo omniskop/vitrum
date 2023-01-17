@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForImage(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -43,11 +44,12 @@ type Image struct {
 
 // newImageInGlobal creates an appropriate file context for the component and then returns a new Image instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newImageInGlobal(id string, globalCtx *vit.GlobalContext) (*Image, error) {
+func newImageInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Image, error) {
 	fileCtx, err := newFileContextForImage(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewImage(id, fileCtx), nil
 }
 func NewImage(id string, context *vit.FileContext) *Image {

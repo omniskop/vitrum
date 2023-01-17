@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForColumn(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -26,11 +27,12 @@ type Column struct {
 
 // newColumnInGlobal creates an appropriate file context for the component and then returns a new Column instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newColumnInGlobal(id string, globalCtx *vit.GlobalContext) (*Column, error) {
+func newColumnInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Column, error) {
 	fileCtx, err := newFileContextForColumn(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewColumn(id, fileCtx), nil
 }
 func NewColumn(id string, context *vit.FileContext) *Column {

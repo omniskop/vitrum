@@ -38,11 +38,12 @@ type WindowComponent struct {
 
 // newWindowComponentInGlobal creates an appropriate file context for the component and then returns a new WindowComponent instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newWindowComponentInGlobal(id string, globalCtx *vit.GlobalContext) (*WindowComponent, error) {
+func newWindowComponentInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*WindowComponent, error) {
 	fileCtx, err := newFileContextForWindowComponent(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewWindowComponent(id, fileCtx), nil
 }
 func NewWindowComponent(id string, context *vit.FileContext) *WindowComponent {

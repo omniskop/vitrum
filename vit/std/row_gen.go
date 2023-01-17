@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForRow(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -26,11 +27,12 @@ type Row struct {
 
 // newRowInGlobal creates an appropriate file context for the component and then returns a new Row instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newRowInGlobal(id string, globalCtx *vit.GlobalContext) (*Row, error) {
+func newRowInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Row, error) {
 	fileCtx, err := newFileContextForRow(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewRow(id, fileCtx), nil
 }
 func NewRow(id string, context *vit.FileContext) *Row {

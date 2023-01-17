@@ -39,28 +39,28 @@ func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContex
 		var fileCtx = vit.NewFileContext(globalCtx)
 		return NewItem(id, fileCtx), true
 	case "Rectangle":
-		comp, err = newRectangleInGlobal(id, globalCtx)
+		comp, err = newRectangleInGlobal(id, globalCtx, l)
 	case "Repeater":
-		comp, err = newRepeaterInGlobal(id, globalCtx)
+		comp, err = newRepeaterInGlobal(id, globalCtx, l)
 	case "Container":
 		var fileCtx = vit.NewFileContext(globalCtx)
 		return NewContainer(id, fileCtx), true
 	case "Row":
-		comp, err = newRowInGlobal(id, globalCtx)
+		comp, err = newRowInGlobal(id, globalCtx, l)
 	case "Column":
-		comp, err = newColumnInGlobal(id, globalCtx)
+		comp, err = newColumnInGlobal(id, globalCtx, l)
 	case "Grid":
-		comp, err = newGridInGlobal(id, globalCtx)
+		comp, err = newGridInGlobal(id, globalCtx, l)
 	case "Text":
-		comp, err = newTextInGlobal(id, globalCtx)
+		comp, err = newTextInGlobal(id, globalCtx, l)
 	case "MouseArea":
-		comp, err = newMouseAreaInGlobal(id, globalCtx)
+		comp, err = newMouseAreaInGlobal(id, globalCtx, l)
 	case "KeyArea":
-		comp, err = newKeyAreaInGlobal(id, globalCtx)
+		comp, err = newKeyAreaInGlobal(id, globalCtx, l)
 	case "Rotation":
-		comp, err = newRotationInGlobal(id, globalCtx)
+		comp, err = newRotationInGlobal(id, globalCtx, l)
 	case "Image":
-		comp, err = newImageInGlobal(id, globalCtx)
+		comp, err = newImageInGlobal(id, globalCtx, l)
 	default:
 		return nil, false
 	}

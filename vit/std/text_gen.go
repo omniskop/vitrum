@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 	canvas "github.com/tdewolff/canvas"
 )
 
@@ -143,11 +144,12 @@ type Text struct {
 
 // newTextInGlobal creates an appropriate file context for the component and then returns a new Text instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newTextInGlobal(id string, globalCtx *vit.GlobalContext) (*Text, error) {
+func newTextInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Text, error) {
 	fileCtx, err := newFileContextForText(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewText(id, fileCtx), nil
 }
 func NewText(id string, context *vit.FileContext) *Text {

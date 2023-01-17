@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForGrid(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -93,11 +94,12 @@ type Grid struct {
 
 // newGridInGlobal creates an appropriate file context for the component and then returns a new Grid instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newGridInGlobal(id string, globalCtx *vit.GlobalContext) (*Grid, error) {
+func newGridInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Grid, error) {
 	fileCtx, err := newFileContextForGrid(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewGrid(id, fileCtx), nil
 }
 func NewGrid(id string, context *vit.FileContext) *Grid {

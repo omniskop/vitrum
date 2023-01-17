@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForMouseArea(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -55,11 +56,12 @@ type MouseArea struct {
 
 // newMouseAreaInGlobal creates an appropriate file context for the component and then returns a new MouseArea instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newMouseAreaInGlobal(id string, globalCtx *vit.GlobalContext) (*MouseArea, error) {
+func newMouseAreaInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*MouseArea, error) {
 	fileCtx, err := newFileContextForMouseArea(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewMouseArea(id, fileCtx), nil
 }
 func NewMouseArea(id string, context *vit.FileContext) *MouseArea {

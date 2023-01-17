@@ -252,13 +252,14 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	f.Comment("The returned error will only be set if a library import that is required by the component fails.")
 	f.Func().
 		Id(fmt.Sprintf("new%sInGlobal", compName)).
-		Params(jen.Id("id").String(), jen.Id("globalCtx").Op("*").Qual(vitPackage, "GlobalContext")).
+		Params(jen.Id("id").String(), jen.Id("globalCtx").Op("*").Qual(vitPackage, "GlobalContext"), jen.Id("thisLibrary").Qual(parsePackage, "Library")).
 		Params(jen.Op("*").Id(compName), jen.Error()).
 		Block(
 			jen.List(jen.Id("fileCtx"), jen.Err()).Op(":=").Id("newFileContextFor"+compName).Call(jen.Id("globalCtx")),
 			jen.If(jen.Err().Op("!=").Nil()).Block(
 				jen.Return(jen.Nil(), jen.Err()),
 			),
+			jen.Qual(parsePackage, "AddLibraryToContainer").Call(jen.Id("thisLibrary"), jen.Op("&").Id("fileCtx").Dot("KnownComponents")),
 			jen.Return(jen.Id("New"+compName).Call(jen.Id("id"), jen.Id("fileCtx")), jen.Nil()),
 		)
 

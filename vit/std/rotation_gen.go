@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForRotation(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -64,11 +65,12 @@ type Rotation struct {
 
 // newRotationInGlobal creates an appropriate file context for the component and then returns a new Rotation instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newRotationInGlobal(id string, globalCtx *vit.GlobalContext) (*Rotation, error) {
+func newRotationInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Rotation, error) {
 	fileCtx, err := newFileContextForRotation(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewRotation(id, fileCtx), nil
 }
 func NewRotation(id string, context *vit.FileContext) *Rotation {

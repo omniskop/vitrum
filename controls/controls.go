@@ -28,9 +28,9 @@ func (l ControlsLib) NewComponent(name string, id string, globalCtx *vit.GlobalC
 	var err error
 	switch name {
 	case "Button":
-		comp, err = newButtonInGlobal(id, globalCtx)
+		comp, err = newButtonInGlobal(id, globalCtx, l)
 	case "TextField":
-		comp, err = newTextFieldInGlobal(id, globalCtx)
+		comp, err = newTextFieldInGlobal(id, globalCtx, l)
 	default:
 		return nil, false
 	}

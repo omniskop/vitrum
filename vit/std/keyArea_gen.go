@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForKeyArea(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -24,11 +25,12 @@ type KeyArea struct {
 
 // newKeyAreaInGlobal creates an appropriate file context for the component and then returns a new KeyArea instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newKeyAreaInGlobal(id string, globalCtx *vit.GlobalContext) (*KeyArea, error) {
+func newKeyAreaInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*KeyArea, error) {
 	fileCtx, err := newFileContextForKeyArea(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewKeyArea(id, fileCtx), nil
 }
 func NewKeyArea(id string, context *vit.FileContext) *KeyArea {

@@ -5,6 +5,7 @@ package std
 import (
 	"fmt"
 	vit "github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 )
 
 func newFileContextForRepeater(globalCtx *vit.GlobalContext) (*vit.FileContext, error) {
@@ -23,11 +24,12 @@ type Repeater struct {
 
 // newRepeaterInGlobal creates an appropriate file context for the component and then returns a new Repeater instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newRepeaterInGlobal(id string, globalCtx *vit.GlobalContext) (*Repeater, error) {
+func newRepeaterInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Repeater, error) {
 	fileCtx, err := newFileContextForRepeater(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewRepeater(id, fileCtx), nil
 }
 func NewRepeater(id string, context *vit.FileContext) *Repeater {

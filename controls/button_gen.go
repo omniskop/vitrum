@@ -41,11 +41,12 @@ type Button struct {
 
 // newButtonInGlobal creates an appropriate file context for the component and then returns a new Button instance.
 // The returned error will only be set if a library import that is required by the component fails.
-func newButtonInGlobal(id string, globalCtx *vit.GlobalContext) (*Button, error) {
+func newButtonInGlobal(id string, globalCtx *vit.GlobalContext, thisLibrary parse.Library) (*Button, error) {
 	fileCtx, err := newFileContextForButton(globalCtx)
 	if err != nil {
 		return nil, err
 	}
+	parse.AddLibraryToContainer(thisLibrary, &fileCtx.KnownComponents)
 	return NewButton(id, fileCtx), nil
 }
 func NewButton(id string, context *vit.FileContext) *Button {
