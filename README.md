@@ -2,7 +2,7 @@
     <img src=".github/logo.png" width="50%" alt="vitrum logo">
 </p>
 
-gui [![gui Reference](https://pkg.go.dev/badge/github.com/omniskop/vitrum.svg)](https://pkg.go.dev/github.com/omniskop/vitrum)
+gui [![gui Reference](https://pkg.go.dev/badge/github.com/omniskop/vitrum/gui.svg)](https://pkg.go.dev/github.com/omniskop/vitrum/gui)
 vit [![vit Reference](https://pkg.go.dev/badge/github.com/omniskop/vitrum/vit.svg)](https://pkg.go.dev/github.com/omniskop/vitrum/vit)
 
 
