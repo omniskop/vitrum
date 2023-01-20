@@ -78,7 +78,7 @@ func (m *Manager) SetSource(filePath vpath.Path) error {
 // Initialize instantiates the primary component and reports any errors in doing so
 func (m *Manager) Initialize(environment vit.ExecutionEnvironment) error {
 	var documents = vit.NewComponentContainer()
-	var main VitDocument
+	var main *VitDocument
 	for _, cFile := range m.knownComponents {
 		// TODO: maybe change ParseFile to operate on a componentFile?
 		doc, err := parseFile(cFile.path, cFile.name)
@@ -87,8 +87,12 @@ func (m *Manager) Initialize(environment vit.ExecutionEnvironment) error {
 		}
 		documents.Set(cFile.name, &DocumentInstantiator{*doc})
 		if cFile.name == m.mainComponentName {
-			main = *doc
+			main = doc
 		}
+	}
+
+	if main == nil {
+		return fmt.Errorf("main component %q not found. Is the source file missing?", m.mainComponentName)
 	}
 
 	documents = documents.ToGlobal()
@@ -96,7 +100,7 @@ func (m *Manager) Initialize(environment vit.ExecutionEnvironment) error {
 	m.globalCtx.KnownComponents = documents
 	m.globalCtx.Environment = environment
 
-	components, err := interpret(main, "", &m.globalCtx)
+	components, err := interpret(*main, "", &m.globalCtx)
 	if err != nil {
 		return err
 	}
