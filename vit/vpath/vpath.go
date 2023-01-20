@@ -1,6 +1,7 @@
 package vpath
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -43,6 +44,10 @@ func (p fsPath) Dir() Path {
 	return FS(p.fs, path.Dir(p.path))
 }
 
+func (p fsPath) String() string {
+	return fmt.Sprintf("FS://%s", p.path)
+}
+
 type localPath string
 
 // Local returns a new path that is contained in the local filesystem.
@@ -68,6 +73,10 @@ func (p localPath) ReadDir(name string) ([]fs.DirEntry, error) {
 
 func (p localPath) Dir() Path {
 	return Local(path.Dir(string(p)))
+}
+
+func (p localPath) String() string {
+	return string(p)
 }
 
 type virtualPath string
@@ -97,4 +106,8 @@ func (p virtualPath) ReadDir(name string) ([]fs.DirEntry, error) {
 
 func (p virtualPath) Dir() Path {
 	return Virtual(path.Dir(string(p)))
+}
+
+func (p virtualPath) String() string {
+	return fmt.Sprintf("VRT://%s", string(p))
 }

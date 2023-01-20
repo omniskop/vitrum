@@ -25,7 +25,7 @@ func TestParseError(t *testing.T) {
 		},
 		err: wrapped,
 	}
-	if err.Error() != `test.vit:1:2: test error` {
+	if err.Error() != `VRT://test.vit:1:2: test error` {
 		t.Errorf(`Expected error to be 'test.vit:1:2: test error', got '%s'`, err.Error())
 	}
 	if !err.Is(err) {
