@@ -100,41 +100,41 @@ func NewAnchors() *AnchorsValue {
 func (a *AnchorsValue) Property(key string) (interface{}, bool) {
 	switch key {
 	case "alignWhenCentered":
-		return a.AlignWhenCentered, true
+		return &a.AlignWhenCentered, true
 	case "baseline":
-		return a.Baseline, true
+		return &a.Baseline, true
 	case "baselineOffset":
-		return a.BaselineOffset, true
+		return &a.BaselineOffset, true
 	case "bottom":
-		return a.Bottom, true
+		return &a.Bottom, true
 	case "bottomMargin":
-		return a.BottomMargin, true
+		return &a.BottomMargin, true
 	case "centerIn":
-		return a.CenterIn, true
+		return &a.CenterIn, true
 	case "fill":
-		return a.Fill, true
+		return &a.Fill, true
 	case "horizontalCenter":
-		return a.HorizontalCenter, true
+		return &a.HorizontalCenter, true
 	case "horizontalCenterOffset":
-		return a.HorizontalCenterOffset, true
+		return &a.HorizontalCenterOffset, true
 	case "left":
-		return a.Left, true
+		return &a.Left, true
 	case "leftMargin":
-		return a.LeftMargin, true
+		return &a.LeftMargin, true
 	case "margins":
-		return a.Margins, true
+		return &a.Margins, true
 	case "right":
-		return a.Right, true
+		return &a.Right, true
 	case "rightMargin":
-		return a.RightMargin, true
+		return &a.RightMargin, true
 	case "top":
-		return a.Top, true
+		return &a.Top, true
 	case "topMargin":
-		return a.TopMargin, true
+		return &a.TopMargin, true
 	case "verticalCenter":
-		return a.VerticalCenter, true
+		return &a.VerticalCenter, true
 	case "verticalCenterOffset":
-		return a.VerticalCenterOffset, true
+		return &a.VerticalCenterOffset, true
 	}
 	return nil, false
 }
@@ -227,6 +227,10 @@ func (a *AnchorsValue) SetPropertyCode(key string, code Code) bool {
 		return false
 	}
 	return true
+}
+
+func (v *AnchorsValue) ResolveVariable(name string) (interface{}, bool) {
+	return v.Property(name)
 }
 
 func (v *AnchorsValue) UpdateExpressions(context Component) (int, ErrorGroup) {

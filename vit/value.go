@@ -1180,9 +1180,13 @@ func (v *ComponentRefValue) Update(context Component) (bool, error) {
 	if !ok {
 		return false, newTypeError("component", val)
 	}
+	component, ok := collector.context.(Component)
+	if !ok {
+		return false, newTypeError("component", val)
+	}
 
-	if v.value != collector.context {
-		v.value = collector.context
+	if v.value != component {
+		v.value = component
 		v.notifyDependents(nil)
 	}
 	return true, nil
