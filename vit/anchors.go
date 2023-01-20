@@ -454,8 +454,8 @@ func (v *AnchorLineValue) SetOffset(offset float64) {
 	if v.offset != offset {
 		v.offset = offset
 		v.changed = true
+		v.notifyDependents([]Dependent{v})
 	}
-	v.notifyDependents([]Dependent{v}) // Why did I put this outside of the if statement? There must be a reason but I can't remember.
 }
 
 func (v *AnchorLineValue) SetAbsolute(value float64) {
@@ -468,7 +468,9 @@ func (v *AnchorLineValue) SetAbsolute(value float64) {
 		v.offset = value
 		v.changed = true
 	}
-	v.notifyDependents([]Dependent{v})
+	if v.changed {
+		v.notifyDependents([]Dependent{v})
+	}
 }
 
 func (v *AnchorLineValue) SetCode(code Code) {

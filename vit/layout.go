@@ -101,21 +101,30 @@ func (l *Layout) SetTargetSize(width, height *float64) {
 	if l == nil {
 		return
 	}
+
 	if width == nil {
-		l.targetWidth = nil
+		if l.targetWidth != nil {
+			l.targetWidth = nil
+			l.targetSizeChanged = true
+		}
 	} else if l.targetWidth == nil || *width != *l.targetWidth {
 		var widthCopy float64 = *width
 		l.targetWidth = &widthCopy
 		l.targetSizeChanged = true
 	}
 	if height == nil {
-		l.targetHeight = nil
+		if l.targetHeight != nil {
+			l.targetHeight = nil
+			l.targetSizeChanged = true
+		}
 	} else if l.targetHeight == nil || *height != *l.targetHeight {
 		var heightCopy float64 = *height
 		l.targetHeight = &heightCopy
 		l.targetSizeChanged = true
 	}
-	l.notifyDependents(nil)
+	if l.targetSizeChanged {
+		l.notifyDependents(nil)
+	}
 }
 
 func (l *Layout) TargetSizeChanged() bool {
