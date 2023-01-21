@@ -13,8 +13,8 @@ type Item struct {
 	width            vit.FloatValue
 	height           vit.FloatValue
 	anchors          vit.AnchorsValue
-	x                vit.FloatValue
-	y                vit.FloatValue
+	x                vit.OptionalValue[*vit.FloatValue]
+	y                vit.OptionalValue[*vit.FloatValue]
 	z                vit.FloatValue
 	left             vit.AnchorLineValue
 	horizontalCenter vit.AnchorLineValue
@@ -36,8 +36,8 @@ func NewItem(id string, context *vit.FileContext) *Item {
 		width:            *vit.NewEmptyFloatValue(),
 		height:           *vit.NewEmptyFloatValue(),
 		anchors:          *vit.NewAnchors(),
-		x:                *vit.NewEmptyFloatValue(),
-		y:                *vit.NewEmptyFloatValue(),
+		x:                *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
+		y:                *vit.NewOptionalValue(vit.NewEmptyFloatValue()),
 		z:                *vit.NewEmptyFloatValue(),
 		left:             *vit.NewAnchorLineValue(),
 		horizontalCenter: *vit.NewAnchorLineValue(),
@@ -466,46 +466,49 @@ func (i *Item) layouting() {
 		didSetBottom = true
 	}
 
-	// set left implicitly based on right
-	if !didSetLeft && !didSetPreferredLeft && didSetRight {
-		// if preferred left is set, we won't set left implicitly
-		i.left.SetAbsolute(i.right.Float64() - width)
+	// if left is still not set...
+	if !didSetLeft {
+		if i.x.IsSet() {
+			// set left explicitly based on position
+			i.left.SetAbsolute(i.x.Value().Float64())
+		} else if didSetPreferredLeft {
+			// accept preferred left
+		} else if didSetRight {
+			// set left implicitly based on right
+			i.left.SetAbsolute(i.right.Float64() - width)
+		} else {
+			// just set to zero
+			i.left.SetAbsolute(0)
+		}
 		didSetLeft = true
 	}
+
+	// if top is still not set...
+	if !didSetTop {
+		if i.y.IsSet() {
+			// set top explicitly based on position
+			i.top.SetAbsolute(i.y.Value().Float64())
+		} else if didSetPreferredTop {
+			// accept preferred top
+		} else if didSetBottom {
+			// set top implicitly based on bottom
+			i.top.SetAbsolute(i.bottom.Float64() - height)
+		} else {
+			// just set to zero
+			i.top.SetAbsolute(0)
+		}
+		didSetTop = true
+	}
+
 	// set right implicitly based on left
-	if !didSetRight && didSetLeft {
+	if !didSetRight && (didSetLeft || didSetPreferredLeft) {
 		i.right.SetAbsolute(i.left.Float64() + width)
 		didSetRight = true
 	}
-	// set top implicitly based on bottom
-	if !didSetTop && !didSetPreferredTop && didSetBottom {
-		i.top.SetAbsolute(i.bottom.Float64() - height)
-		didSetTop = true
-	}
-	// set bottom implicitly based on top
-	if !didSetBottom && didSetTop {
-		i.bottom.SetAbsolute(i.top.Float64() + height)
-		didSetBottom = true
-	}
 
-	// set left implicitly based on position
-	if !didSetLeft {
-		i.left.SetAbsolute(i.x.Float64())
-		didSetLeft = true
-	}
-	// set right implicitly based on position
-	if !didSetRight {
-		i.right.SetAbsolute(i.x.Float64() + width)
-		didSetRight = true
-	}
-	// set top implicitly based on position
-	if !didSetTop {
-		i.top.SetAbsolute(i.y.Float64())
-		didSetTop = true
-	}
-	// set bottom implicitly based on position
-	if !didSetBottom {
-		i.bottom.SetAbsolute(i.y.Float64() + height)
+	// set bottom implicitly based on top
+	if !didSetBottom && (didSetTop || didSetPreferredTop) {
+		i.bottom.SetAbsolute(i.top.Float64() + height)
 		didSetBottom = true
 	}
 
@@ -518,8 +521,30 @@ func (i *Item) layouting() {
 	i.verticalCenter.SetAbsolute(bounds.X1 + height/2)
 	i.horizontalCenter.SetAbsolute(bounds.Y1 + width/2)
 
-	// update potential layout
-	i.layout.SetTargetSize(&width, &height)
+	// update target size
+	intrinsicWidth, intrinsicHeight := i.getIntrinsicSize()
+	i.layout.SetTargetSize(&intrinsicWidth, &intrinsicHeight)
+}
+
+// The intrinsic size is the size the component would have without any outside factors like layouts.
+// It is give by the 'width', 'height', contentWidth, contentHeight and anchors.
+func (i *Item) getIntrinsicSize() (float64, float64) {
+	// Currently anchors.fill is not taken into account as the current use of this method doesn't require it.
+	var width = i.width.Float64()
+	var height = i.height.Float64()
+	if width == 0 {
+		width = i.contentWidth
+	}
+	if height == 0 {
+		height = i.contentHeight
+	}
+	if i.anchors.Left.IsSet() && i.anchors.Right.IsSet() {
+		width = i.anchors.Right.GetValue().(float64) - i.anchors.Left.GetValue().(float64)
+	}
+	if i.anchors.Top.IsSet() && i.anchors.Bottom.IsSet() {
+		height = i.anchors.Bottom.GetValue().(float64) - i.anchors.Top.GetValue().(float64)
+	}
+	return width, height
 }
 
 // SetContentSize sets size of the content of the item. Should only be called by Components that embed this Item.
