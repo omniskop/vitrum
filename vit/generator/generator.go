@@ -33,6 +33,7 @@ const (
 	privateTag     = "gen-private"
 	optionalTag    = "gen-optional"
 	notifyTag      = "gen-notify"
+	specialTag     = "gen-special"
 )
 
 var functionRegex = regexp.MustCompile(`([a-zA-Z]+)\((.+)\)`)
@@ -179,7 +180,16 @@ func generateImports(imports []parse.ImportStatement, compName string) *jen.Stat
 
 // generateComponent generates the code for a full component definition under the given component name.
 // The resulting code is added to the given jen file.
-func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefinition) error {
+func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefinition) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(error); ok {
+				err = e
+			} else {
+				panic(r)
+			}
+		}
+	}()
 	// TODO: Figure out from which package the base component should be imported from. Currently this is hardcoded to be the std package.
 
 	f.Add(generateComponentEnums(compName, comp))
@@ -273,7 +283,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			// property assignments
 			g.Comment("property assignments on embedded components")
 			for _, prop := range comp.Properties {
-				if isInternalProperty(prop) || prop.IsNewDefinition() || len(prop.Identifier) > 1 {
+				if isInternalProperty(prop) || prop.IsNewDefinition() || len(prop.Identifier) > 1 || prop.HasTag(specialTag) {
 					continue
 				}
 				// TODO: implement group properties
@@ -283,10 +293,30 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 			g.Comment("register listeners for when a property changes")
 			addMultiple(g, mapProperties(comp.Properties, func(prop vit.PropertyDefinition, propId string) jen.Code {
 				if tag, ok := prop.Tags[onChangeTag]; ok {
-					return jen.Id(receiverName).Dot(propId).Dot("AddDependent").Call(jen.Id("vit").Dot("FuncDep").Call(jen.Id(receiverName).Dot(tag)))
+					return jen.Id(receiverName).Dot(propId).Dot("AddDependent").Call(jen.Qual(vitPackage, "FuncDep").Call(jen.Id(receiverName).Dot(tag)))
 				}
 				return nil
 			}))
+			for _, prop := range comp.Properties {
+				if isInternalProperty(prop) || prop.IsNewDefinition() || len(prop.Identifier) == 0 {
+					continue
+				}
+				if prop.HasTag(specialTag) {
+					if prop.Identifier[0] == "bounds" {
+						if changeTag, ok := prop.Tags[onChangeTag]; ok {
+							g.Add(jen.Id(receiverName).Dot(comp.BaseName).Dot("AddBoundsDependency").Call(jen.Qual(vitPackage, "FuncDep").Call(jen.Id(receiverName).Dot(changeTag))))
+						} else {
+							panic(fmt.Errorf("special property %q required %q tag to be set", prop.Identifier[0], onChangeTag))
+						}
+					} else {
+						panic(fmt.Errorf("unknown special property %q", prop.Identifier[0]))
+					}
+					continue
+				}
+				if tag, ok := prop.Tags[onChangeTag]; ok {
+					g.Add(jen.Id(receiverName)).Dot(comp.BaseName).Dot("MustProperty").Call(jen.Lit(prop.Identifier[0])).Dot("AddDependent").Call(jen.Qual(vitPackage, "FuncDep").Call(jen.Id(receiverName).Dot(tag)))
+				}
+			}
 			// event listeners
 			g.Comment("register event listeners")
 			firstEventListener := true

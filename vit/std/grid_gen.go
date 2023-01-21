@@ -136,6 +136,7 @@ func NewGrid(id string, context *vit.FileContext) *Grid {
 	g.horizontalItemAlignment.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.verticalItemAlignment.AddDependent(vit.FuncDep(g.recalculateLayout))
 	g.flow.AddDependent(vit.FuncDep(g.recalculateLayout))
+	g.Item.AddBoundsDependency(vit.FuncDep(g.recalculateLayout))
 	// register event listeners
 	// register enumerations
 	g.DefineEnum(vit.Enumeration{

@@ -55,6 +55,7 @@ func NewColumn(id string, context *vit.FileContext) *Column {
 	c.leftPadding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.padding.AddDependent(vit.FuncDep(c.recalculateLayout))
 	c.spacing.AddDependent(vit.FuncDep(c.recalculateLayout))
+	c.Item.AddBoundsDependency(vit.FuncDep(c.recalculateLayout))
 	// register event listeners
 	// register enumerations
 	// add child components

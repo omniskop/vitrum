@@ -55,6 +55,7 @@ func NewRow(id string, context *vit.FileContext) *Row {
 	r.leftPadding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.padding.AddDependent(vit.FuncDep(r.recalculateLayout))
 	r.spacing.AddDependent(vit.FuncDep(r.recalculateLayout))
+	r.Item.AddBoundsDependency(vit.FuncDep(r.recalculateLayout))
 	// register event listeners
 	// register enumerations
 	// add child components

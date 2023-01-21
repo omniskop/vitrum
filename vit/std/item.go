@@ -547,3 +547,17 @@ func (i *Item) Bounds() vit.Rect {
 		Y2: i.bottom.Float64(),
 	}
 }
+
+func (i *Item) AddBoundsDependency(d vit.Dependent) {
+	i.left.AddDependent(d)
+	i.top.AddDependent(d)
+	i.right.AddDependent(d)
+	i.bottom.AddDependent(d)
+}
+
+func (i *Item) RemoveBoundsDependency(d vit.Dependent) {
+	i.left.RemoveDependent(d)
+	i.top.RemoveDependent(d)
+	i.right.RemoveDependent(d)
+	i.bottom.RemoveDependent(d)
+}
