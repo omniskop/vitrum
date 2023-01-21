@@ -69,8 +69,8 @@ func (r *Row) recalculateLayout() {
 		r.childLayouts[child].SetPreferredPosition(nil, &yCopy)
 		x += bounds.Width() + r.spacing.Float64()
 	}
-	r.contentWidth, r.contentHeight = r.ContentSize()
-	r.layouting()
+	r.childLayouts.Update(r) // acknowledge all changes
+	r.SetContentSize(r.ContentSize())
 }
 
 func (r *Row) createNewChildLayout(child vit.Component) *vit.Layout {

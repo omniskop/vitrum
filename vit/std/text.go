@@ -37,6 +37,8 @@ func (t *Text) updateFont() {
 	if err != nil {
 		fmt.Println("Text: font:", err)
 	}
+
+	t.SetContentSize(t.fontFaceData.TextWidth(t.text.String()), t.fontFaceData.LineHeight())
 }
 
 func (t *Text) Draw(ctx vit.DrawingContext, area vit.Rect) error {

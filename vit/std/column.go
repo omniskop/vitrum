@@ -1,6 +1,8 @@
 package std
 
-import vit "github.com/omniskop/vitrum/vit"
+import (
+	vit "github.com/omniskop/vitrum/vit"
+)
 
 func (c *Column) getTopPadding() float64 {
 	if c.topPadding.IsSet() {
@@ -67,8 +69,8 @@ func (c *Column) recalculateLayout() {
 		c.childLayouts[child].SetPreferredPosition(&xCopy, nil)
 		y += bounds.Height() + c.spacing.Float64()
 	}
-	c.contentWidth, c.contentHeight = c.ContentSize()
-	c.layouting()
+	c.childLayouts.Update(c) // acknowledge all changes
+	c.SetContentSize(c.ContentSize())
 }
 
 func (c *Column) createNewChildLayout(child vit.Component) *vit.Layout {

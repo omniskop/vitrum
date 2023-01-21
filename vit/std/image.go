@@ -42,9 +42,7 @@ func (i *Image) reloadImage() {
 	}
 	i.imageData = (*img)(&loaded)
 
-	i.contentWidth = float64(loaded.Bounds().Dx())
-	i.contentHeight = float64(loaded.Bounds().Dy())
-	i.layouting()
+	i.SetContentSize(float64(loaded.Bounds().Dx()), float64(loaded.Bounds().Dy()))
 }
 
 func (i *Image) Draw(ctx vit.DrawingContext, area vit.Rect) error {

@@ -148,10 +148,9 @@ func (g *Grid) recalculateLayout() {
 		height -= g.spacing.Float64() // subtract last spacing again
 	}
 
+	g.childLayouts.Update(g) // acknowledge all changes
 	// as we now know how large the grid is we use that for our own layout
-	g.contentWidth = width
-	g.contentHeight = height
-	g.layouting()
+	g.SetContentSize(width, height)
 }
 
 // getChildInGrid is a helper method that returns the child that should be visible at a specific row and column.

@@ -50,9 +50,7 @@ func NewItem(id string, context *vit.FileContext) *Item {
 	i.y.AddDependent(vit.FuncDep(i.layouting))
 	i.z.AddDependent(vit.FuncDep(i.layouting))
 	i.width.AddDependent(vit.FuncDep(i.layouting))
-	i.width.AddDependent(vit.FuncDep(i.updateLayoutSize))
 	i.height.AddDependent(vit.FuncDep(i.layouting))
-	i.height.AddDependent(vit.FuncDep(i.updateLayoutSize))
 	return i
 }
 
@@ -334,6 +332,7 @@ func (i *Item) layouting() {
 		if h, ok := i.layout.GetHeight(); ok {
 			height = h
 		}
+		i.layout.AckSizeChange()
 
 		var updateValues bool
 		if i.layout.PositionChanged() {
@@ -523,10 +522,13 @@ func (i *Item) layouting() {
 	i.layout.SetTargetSize(&width, &height)
 }
 
-func (i *Item) updateLayoutSize() {
-	w := i.width.Float64()
-	h := i.height.Float64()
-	i.layout.SetTargetSize(&w, &h)
+// SetContentSize sets size of the content of the item. Should only be called by Components that embed this Item.
+func (i *Item) SetContentSize(w, h float64) {
+	if w != i.contentWidth || h != i.contentHeight {
+		i.contentWidth = w
+		i.contentHeight = h
+		i.layouting()
+	}
 }
 
 func (i *Item) Draw(ctx vit.DrawingContext, area vit.Rect) error {
