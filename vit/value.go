@@ -172,7 +172,7 @@ type ListValue[ElementType Value] struct {
 func NewListValueFromCode[ElementType Value](code Code) *ListValue[ElementType] {
 	return &ListValue[ElementType]{
 		baseValue:  newBaseValue(),
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -221,7 +221,7 @@ func (v *ListValue[ElementType]) SetSlice(slice []ElementType) {
 }
 
 func (v *ListValue[ElementType]) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -261,7 +261,7 @@ func NewIntValueFromCode(code Code) *IntValue {
 	return &IntValue{
 		baseValue:  newBaseValue(),
 		value:      0,
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -304,7 +304,7 @@ func (v *IntValue) SetIntValue(newValue int) {
 }
 
 func (v *IntValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -376,7 +376,7 @@ func NewFloatValueFromCode(code Code) *FloatValue {
 	return &FloatValue{
 		baseValue:  newBaseValue(),
 		value:      0,
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -419,7 +419,7 @@ func (v *FloatValue) SetFloatValue(newValue float64) {
 }
 
 func (v *FloatValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -491,7 +491,7 @@ func NewStringValueFromCode(code Code) *StringValue {
 	return &StringValue{
 		baseValue:  newBaseValue(),
 		value:      "",
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -534,7 +534,7 @@ func (v *StringValue) SetStringValue(newValue string) {
 }
 
 func (v *StringValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -599,7 +599,7 @@ func NewBoolValueFromCode(code Code) *BoolValue {
 	return &BoolValue{
 		baseValue:  newBaseValue(),
 		value:      false,
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -644,7 +644,7 @@ func (v *BoolValue) SetBoolValue(newValue bool) {
 }
 
 func (v *BoolValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -831,7 +831,7 @@ func NewAnyValueFromCode(code Code) *AnyValue {
 	return &AnyValue{
 		baseValue:  newBaseValue(),
 		value:      nil,
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -863,7 +863,7 @@ func (v *AnyValue) SetValue(value interface{}) error {
 }
 
 func (v *AnyValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -1110,7 +1110,7 @@ func NewComponentRefValueFromCode(code Code) *ComponentRefValue {
 	return &ComponentRefValue{
 		baseValue:  newBaseValue(),
 		value:      nil,
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -1153,7 +1153,7 @@ func (v *ComponentRefValue) SetComponent(comp Component) {
 }
 
 func (v *ComponentRefValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 
@@ -1215,7 +1215,7 @@ func NewGroupValueFromCode(schema map[string]Value, code Code) *GroupValue {
 	return &GroupValue{
 		baseValue:  newBaseValue(),
 		values:     createGroupEntries(schema),
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -1274,7 +1274,7 @@ func (v *GroupValue) SetValue(newValue interface{}) error {
 }
 
 func (v *GroupValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	for _, value := range v.values {
 		// disable overwrites
 		// TODO: this disables all overwrites, even for properties that will not be set in this expression

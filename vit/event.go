@@ -42,7 +42,7 @@ type JSListener[EventType any] struct {
 
 func NewJSListener[EventType any](code Code) *JSListener[EventType] {
 	return &JSListener[EventType]{
-		AsyncFunction: NewAsyncFunctionFromCode(code),
+		AsyncFunction: NewAsyncFunction(code),
 	}
 }
 

@@ -250,7 +250,7 @@ func generateComponent(f *jen.File, compName string, comp *vit.ComponentDefiniti
 	// setup all method attributes
 	for _, m := range comp.Methods {
 		properties = append(properties, jen.Id(m.Name).Qual(vitPackage, "Method"))
-		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(m.Name).Op(":").Qual(vitPackage, "NewMethodFromCode").Call(jen.Lit(m.Name), generateCode(m.Code(), *m.Position, "context")))
+		propertyInstantiations = append(propertyInstantiations, jen.Line().Id(m.Name).Op(":").Qual(vitPackage, "NewMethod").Call(jen.Lit(m.Name), generateCode(m.Code(), *m.Position, "context")))
 	}
 
 	propertyInstantiations = append(propertyInstantiations, jen.Line())

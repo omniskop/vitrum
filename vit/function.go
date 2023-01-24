@@ -15,41 +15,37 @@ type Function struct {
 	err      error
 }
 
-func NewFunction(code string, position *PositionRange, fileCtx *FileContext) *Function {
-	originalCode := code
+func NewFunction(code Code) *Function {
+	originalCode := code.Code
 	// convert code that is just enclosed in curly braces to a valid function
-	if startsWith(code, '{') {
-		code = fmt.Sprintf("function()%s", code)
-		if position != nil {
+	if startsWith(code.Code, '{') {
+		code.Code = fmt.Sprintf("function()%s", code.Code)
+		if code.Position != nil {
 			// adjust position in a way to hide the fact that we added code here
-			p := position.StartColumnShifted(-10)
-			position = &p
+			p := code.Position.StartColumnShifted(-10)
+			code.Position = &p
 		}
 	}
 
 	// wrap code in parenthesis to make sure we handle the function like a value
-	code = fmt.Sprintf("(%s)", code)
-	if position != nil {
-		p := position.StartColumnShifted(-1)
-		position = &p
+	code.Code = fmt.Sprintf("(%s)", code.Code)
+	if code.Position != nil {
+		p := code.Position.StartColumnShifted(-1)
+		code.Position = &p
 	}
 
-	prog, err := script.NewScript("function", code)
+	prog, err := script.NewScript("function", code.Code)
 	if err != nil {
-		err = NewExpressionError(originalCode, position, err)
+		err = NewExpressionError(originalCode, code.Position, err)
 	}
 
 	return &Function{
-		fileCtx:  fileCtx,
+		fileCtx:  code.FileCtx,
 		code:     originalCode,
 		program:  prog,
-		Position: position,
+		Position: code.Position,
 		err:      err,
 	}
-}
-
-func NewFunctionFromCode(code Code) *Function {
-	return NewFunction(code.Code, code.Position, code.FileCtx)
 }
 
 func (f *Function) Call(context Component, args ...interface{}) (interface{}, error) {
@@ -75,16 +71,12 @@ type AsyncFunction struct {
 	dirty     bool
 }
 
-func NewAsyncFunction(code string, position *PositionRange, fileCtx *FileContext) *AsyncFunction {
+func NewAsyncFunction(code Code) *AsyncFunction {
 	return &AsyncFunction{
-		Function:  *NewFunction(code, position, fileCtx),
+		Function:  *NewFunction(code),
 		arguments: nil,
 		dirty:     false, // async functions start clean
 	}
-}
-
-func NewAsyncFunctionFromCode(code Code) *AsyncFunction {
-	return NewAsyncFunction(code.Code, code.Position, code.FileCtx)
 }
 
 func (f *AsyncFunction) Notify(args ...interface{}) {

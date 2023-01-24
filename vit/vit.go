@@ -68,19 +68,19 @@ type Method struct {
 	AsyncFunction
 }
 
-func NewMethod(name string, code string, positon *PositionRange, fileCtx *FileContext) Method {
+func NewMethod(name string, code Code) Method {
 	return Method{
 		Name:          name,
-		AsyncFunction: *NewAsyncFunction(code, positon, fileCtx),
+		AsyncFunction: *NewAsyncFunction(code),
 	}
 }
 
-func NewMethodFromCode(name string, code Code) Method {
-	return NewMethod(name, code.Code, code.Position, code.FileCtx)
-}
-
 func (m Method) CopyInContext(fileCtx *FileContext) Method {
-	return NewMethod(m.Name, m.code, m.Position, fileCtx)
+	return NewMethod(m.Name, Code{
+		FileCtx:  fileCtx,
+		Code:     m.code,
+		Position: m.Position,
+	})
 }
 
 type AbstractComponent interface {

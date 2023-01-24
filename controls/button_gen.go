@@ -57,7 +57,7 @@ func NewButton(id string, context *vit.FileContext) *Button {
 		pressed:       *vit.NewAliasValueFromCode(vit.Code{FileCtx: context, Code: "mouseArea.pressed", Position: nil}),
 		fontPointSize: *vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "40", Position: nil}),
 		onClicked:     *vit.NewEventAttribute[std.MouseEvent](),
-		clicked:       vit.NewMethodFromCode("clicked", vit.Code{FileCtx: context, Code: "function(e) {\n        onClicked.Fire(e)\n    }", Position: nil}),
+		clicked:       vit.NewMethod("clicked", vit.Code{FileCtx: context, Code: "function(e) {\n        onClicked.Fire(e)\n    }", Position: nil}),
 	}
 	// property assignments on embedded components
 	b.Item.SetPropertyCode("width", vit.Code{FileCtx: context, Code: "150", Position: nil})

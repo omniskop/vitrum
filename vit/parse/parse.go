@@ -696,7 +696,7 @@ func parseMethod(tokens *tokenBuffer, modifiers []string, tags map[string]string
 	}
 
 	pos := vit.NewRangeFromStartToEnd(startingPosition, t.position.End())
-	method := vit.NewMethod(name, t.literal, &pos, nil)
+	method := vit.NewMethod(name, vit.Code{Code: t.literal, Position: &pos})
 
 	return method, nil
 }

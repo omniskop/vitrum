@@ -16,7 +16,7 @@ func NewColorValueFromCode(code Code) *ColorValue {
 	return &ColorValue{
 		baseValue:  newBaseValue(),
 		value:      color.Black,
-		expression: NewExpressionFromCode(code),
+		expression: NewExpression(code),
 	}
 }
 
@@ -82,7 +82,7 @@ func (v *ColorValue) SetColor(newValue color.Color) {
 }
 
 func (v *ColorValue) SetCode(code Code) {
-	v.expression = NewExpressionFromCode(code)
+	v.expression = NewExpression(code)
 	v.notifyDependents([]Dependent{v.expression})
 }
 

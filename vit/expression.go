@@ -31,32 +31,28 @@ type Expression struct {
 	err          error
 }
 
-func NewExpression(code string, fileCtx *FileContext, position *PositionRange) *Expression {
+func NewExpression(code Code) *Expression {
 	// The parenthesis around the code are needed to make sure we get the correct value from all expressions.
 	// For example objects (e.g. {one: 1}) would return the number '1' instead of a map.
 	// The line break is there in case the expression ends with a line comment which would remove the added closing bracket.
-	prog, err := script.NewScript("expression", fmt.Sprintf("(%s\n)", code))
+	prog, err := script.NewScript("expression", fmt.Sprintf("(%s\n)", code.Code))
 	if err != nil {
-		err = NewExpressionError(code, position, err)
+		err = NewExpressionError(code.Code, code.Position, err)
 	}
-	if position != nil {
+	if code.Position != nil {
 		// adjust position in a way to hide the fact that we added the parenthesis around the code
-		p := position.StartColumnShifted(-1)
-		position = &p
+		p := code.Position.StartColumnShifted(-1)
+		code.Position = &p
 	}
 	return &Expression{
-		fileCtx:      fileCtx,
-		code:         code,
+		fileCtx:      code.FileCtx,
+		code:         code.Code,
 		dirty:        true,
 		dependencies: make(map[Value]bool),
 		program:      prog,
-		position:     position,
+		position:     code.Position,
 		err:          err,
 	}
-}
-
-func NewExpressionFromCode(code Code) *Expression {
-	return NewExpression(code.Code, code.FileCtx, code.Position)
 }
 
 func (e *Expression) Evaluate(context Component) (interface{}, error) {
@@ -121,19 +117,6 @@ func (e *Expression) MakeDirty(stack []Dependent) {
 			panic("circular dependency detected")
 		}
 	}
-	e.dirty = true
-}
-
-func (e *Expression) ChangeCode(code string, position *PositionRange) {
-	e.program, e.err = script.NewScript("expression", fmt.Sprintf("(%s)", code))
-	if e.err != nil {
-		fmt.Printf("[expression] code error %q: %v\r\n", code, e.err)
-		e.err = NewExpressionError(code, position, e.err)
-		return
-	}
-	e.position = position
-	e.code = code
-	e.clearDependencies()
 	e.dirty = true
 }
 
