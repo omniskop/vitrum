@@ -20,6 +20,12 @@ includes:
     dir: controls
     vars: {Root: "{{.ROOT}}"}
 
+  pdf:
+    taskfile: Generate.yml
+    dir: pdf
+    vars: {Root: "{{.ROOT}}"}
+
+
 vars:
   ROOT:
     sh: "echo $(pwd)"
@@ -37,6 +43,7 @@ tasks:
       - std:generate-local
       - gui:generate-local
       - controls:generate-local
+      - pdf:generate-local
 
   check-generator-build:
     - cmd: go vet github.com/omniskop/vitrum/vit/generator/gencmd # we use go vet to check for errors in the package

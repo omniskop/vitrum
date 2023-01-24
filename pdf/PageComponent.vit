@@ -1,0 +1,26 @@
+import Vit 1.0
+
+Item {
+    embedded enum Format {
+        A0,
+        A1,
+        A2,
+        A3,
+        A4,
+        A5,
+        A6,
+        A7,
+        A8,
+        A9,
+        A10,
+    }
+
+    embedded enum Orientation {
+        Portrait,
+        Landscape,
+    }
+
+    #gen-onchange="sizeChanged" optional property Format format
+    #gen-onchange="sizeChanged" optional property Orientation orientation
+    property color color: Vit.rgb(255, 255, 255)
+}
