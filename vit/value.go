@@ -1082,7 +1082,11 @@ func (v *OptionalValue[T]) SetCode(code Code) {
 func (v *OptionalValue[T]) Update(context Component) (bool, error) {
 	if v.isSet {
 		v.changed = false
-		return v.value.Update(context)
+		changed, err := v.value.Update(context)
+		if changed {
+			v.notifyDependents(nil)
+		}
+		return changed, err
 	}
 	// we keep track if the value was changed ourself because we wouldn't know otherwise if the value was unset
 	changed := v.changed
