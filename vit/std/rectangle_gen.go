@@ -16,9 +16,10 @@ type Rectangle struct {
 	*Item
 	id string
 
-	color  vit.ColorValue
-	radius vit.FloatValue
-	border vit.GroupValue
+	color    vit.ColorValue
+	radius   vit.FloatValue
+	border   vit.GroupValue
+	gradient vit.OptionalValue[*vit.ComponentDefValue]
 }
 
 // newRectangleInGlobal creates an appropriate file context for the component and then returns a new Rectangle instance.
@@ -41,6 +42,7 @@ func NewRectangle(id string, context *vit.FileContext) *Rectangle {
 			"color": vit.NewColorValueFromCode(vit.Code{FileCtx: context, Code: "\"transparent\"", Position: nil}),
 			"width": vit.NewIntValueFromCode(vit.Code{FileCtx: context, Code: "0", Position: nil}),
 		}),
+		gradient: *vit.NewOptionalValue(vit.NewEmptyComponentDefValue()),
 	}
 	// property assignments on embedded components
 	// register listeners for when a property changes
@@ -65,6 +67,8 @@ func (r *Rectangle) Property(key string) (vit.Value, bool) {
 		return &r.radius, true
 	case "border":
 		return &r.border, true
+	case "gradient":
+		return &r.gradient, true
 	default:
 		return r.Item.Property(key)
 	}
@@ -87,6 +91,8 @@ func (r *Rectangle) SetProperty(key string, value interface{}) error {
 		err = r.radius.SetValue(value)
 	case "border":
 		err = r.border.SetValue(value)
+	case "gradient":
+		err = r.gradient.SetValue(value)
 	default:
 		return r.Item.SetProperty(key, value)
 	}
@@ -104,6 +110,8 @@ func (r *Rectangle) SetPropertyCode(key string, code vit.Code) error {
 		r.radius.SetCode(code)
 	case "border":
 		r.border.SetCode(code)
+	case "gradient":
+		r.gradient.SetCode(code)
 	default:
 		return r.Item.SetPropertyCode(key, code)
 	}
@@ -125,6 +133,8 @@ func (r *Rectangle) ResolveVariable(key string) (interface{}, bool) {
 		return &r.radius, true
 	case "border":
 		return &r.border, true
+	case "gradient":
+		return &r.gradient, true
 	default:
 		return r.Item.ResolveVariable(key)
 	}
@@ -172,6 +182,12 @@ func (r *Rectangle) UpdateExpressions(context vit.Component) (int, vit.ErrorGrou
 		sum++
 		if err != nil {
 			errs.Add(vit.NewPropertyError("Rectangle", "border", r.id, err))
+		}
+	}
+	if changed, err := r.gradient.Update(context); changed || err != nil {
+		sum++
+		if err != nil {
+			errs.Add(vit.NewPropertyError("Rectangle", "gradient", r.id, err))
 		}
 	}
 

@@ -1,0 +1,5 @@
+
+Item {
+    property float position: 0.0
+    property color color: "transparent"
+}

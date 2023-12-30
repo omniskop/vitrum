@@ -1,16 +1,30 @@
 package std
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/omniskop/vitrum/vit"
+	parse "github.com/omniskop/vitrum/vit/parse"
 	"github.com/tdewolff/canvas"
 )
 
 func (r *Rectangle) Draw(ctx vit.DrawingContext, area vit.Rect) error {
 	rect := r.Bounds()
 
-	ctx.SetFillColor(r.color.Color())
+	if r.gradient.IsSet() {
+		compDef := r.gradient.Value().ComponentDefinition()
+		instance, err := parse.InstantiateComponent(compDef, r.gradient.Value().Context())
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		instance.UpdateExpressions(nil)
+		grad := instance.(*Gradient).ConstructGradient(canvas.Point{X: rect.X1, Y: rect.Y1}, canvas.Point{X: rect.X1, Y: rect.Y2})
+		ctx.SetFillGradient(grad)
+	} else {
+		ctx.SetFillColor(r.color.Color())
+	}
 
 	borderWidth := float64(r.border.MustGet("width").GetValue().(int))
 	if borderWidth > 0 {

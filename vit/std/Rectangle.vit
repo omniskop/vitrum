@@ -6,4 +6,5 @@ Item {
         property color color: "transparent"
         property int width: 0
     }
+    #gen-optional property component gradient
 }

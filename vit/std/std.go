@@ -18,6 +18,8 @@ import (
 //go:generate ./gencmd -i KeyArea.vit -o keyArea_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i Rotation.vit -o rotation_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate ./gencmd -i Image.vit -o image_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i Gradient.vit -o gradient_gen.go -p github.com/omniskop/vitrum/vit/std
+//go:generate ./gencmd -i GradientStop.vit -o gradientStop_gen.go -p github.com/omniskop/vitrum/vit/std
 //go:generate rm ./gencmd
 
 func init() {
@@ -28,7 +30,7 @@ type StdLib struct {
 }
 
 func (l StdLib) ComponentNames() []string {
-	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea", "KeyArea", "Rotation", "Image"}
+	return []string{"Item", "Rectangle", "Repeater", "Container", "Row", "Column", "Grid", "Text", "MouseArea", "KeyArea", "Rotation", "Image", "Gradient", "GradientStop"}
 }
 
 func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContext) (vit.Component, bool) {
@@ -61,6 +63,10 @@ func (l StdLib) NewComponent(name string, id string, globalCtx *vit.GlobalContex
 		comp, err = newRotationInGlobal(id, globalCtx, l)
 	case "Image":
 		comp, err = newImageInGlobal(id, globalCtx, l)
+	case "Gradient":
+		comp, err = newGradientInGlobal(id, globalCtx, l)
+	case "GradientStop":
+		comp, err = newGradientStopInGlobal(id, globalCtx, l)
 	default:
 		return nil, false
 	}
