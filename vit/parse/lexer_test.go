@@ -150,8 +150,8 @@ func TestLex(t *testing.T) {
 			token{tokenSemicolon, "", vit.PositionRange{vpath.Virtual(""), 1, 35, 1, 35}},                               // ;
 			token{tokenIdentifier, "gradient", vit.PositionRange{vpath.Virtual(""), 1, 37, 1, 44}},                      // gradient
 			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 45, 1, 45}},                                   // :
-			token{tokenExpression, "Gradient { GradientStop { } }", vit.PositionRange{vpath.Virtual(""), 1, 47, 1, 58}}, // Gradient { GradientStop { } }
-			token{tokenRightBrace, "", vit.PositionRange{vpath.Virtual(""), 1, 59, 1, 59}},                              // }
+			token{tokenExpression, "Gradient { GradientStop { } }", vit.PositionRange{vpath.Virtual(""), 1, 47, 1, 75}}, // Gradient { GradientStop { } }
+			token{tokenRightBrace, "", vit.PositionRange{vpath.Virtual(""), 1, 76, 1, 76}},                              // }
 		},
 	}}
 	// Check if only specific test cases should be run. Allows for easier debugging.
