@@ -313,9 +313,10 @@ func (l *lexer) readString(delimiter rune) (string, vit.Position, error) {
 
 func (l *lexer) readExpressionUntil(stopRunes ...rune) (string, vit.Position, error) {
 	var out strings.Builder
-	var bracketType rune      // type of the outer most bracket we are tracking. It will contain the rune that is expected to close the bracket. (one of ')', ']' or '}' )
-	var openBrackets int      // number brackets (which one is specified in bracketType) that have been opened
-	var potentialComment bool // set to true if we encountered a '/' in the last rune
+	var bracketTypeOpening rune // type of the outer most bracket we are tracking. It will contain the rune that opened the bracket. (one of '(', '[' or '{' )
+	var bracketTypeClosing rune // type of the outer most bracket we are tracking. It will contain the rune that is expected to close the bracket. (one of ')', ']' or '}' )
+	var openBrackets int        // number brackets (which one is specified in bracketType) that have been opened
+	var potentialComment bool   // set to true if we encountered a '/' in the last rune
 	for {
 		r, pos, err := l.nextRune()
 		if err != nil {
@@ -371,26 +372,33 @@ func (l *lexer) readExpressionUntil(stopRunes ...rune) (string, vit.Position, er
 
 		// if we are waiting for a bracket to close...
 		if openBrackets > 0 {
-			// ... and if this is the right type of bracket ...
-			if bracketType == r {
-				// ... mark it as closed ...
+			if bracketTypeOpening == r {
+				// ... and this opens a new bracket of the same type
+				// increase the number of open brackets
+				openBrackets++
+			} else if bracketTypeClosing == r {
+				// ... and this closes a bracket of the same type
+				// mark it as closed ...
 				openBrackets--
 				// ... and check if it was the last one we expected
 				if openBrackets == 0 {
-					bracketType = 0
+					bracketTypeClosing = 0
 				}
 			}
 		} else {
 			// we are currently not inside of a bracket so we need to check if a new one starts here
 			switch r {
 			case '(':
-				bracketType = ')'
+				bracketTypeOpening = '('
+				bracketTypeClosing = ')'
 				openBrackets++
 			case '[':
-				bracketType = ']'
+				bracketTypeOpening = '['
+				bracketTypeClosing = ']'
 				openBrackets++
 			case '{':
-				bracketType = '}'
+				bracketTypeOpening = '{'
+				bracketTypeClosing = '}'
 				openBrackets++
 			}
 		}

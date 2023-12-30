@@ -150,7 +150,7 @@ func (p PositionRange) Report() string {
 			lineContent = append(lineContent, lines[i])
 		}
 		for i, line := range lineContent {
-			out.WriteString(fmt.Sprintf("%s | %s\r\n", formatLineNumber(p.StartLine-2+i, p.EndLine), line[trimmedCharacters:]))
+			out.WriteString(fmt.Sprintf("%s | %s\r\n", formatLineNumber(p.StartLine+i, p.EndLine), line[trimmedCharacters:]))
 		}
 	}
 

@@ -136,22 +136,22 @@ func TestLex(t *testing.T) {
 		input:  "event onClicked(MouseEvent event)",
 		output: []interface{}{token{tokenIdentifier, "event", vit.PositionRange{vpath.Virtual(""), 1, 1, 1, 5}}, token{tokenIdentifier, "onClicked", vit.PositionRange{vpath.Virtual(""), 1, 7, 1, 15}}, token{tokenLeftParenthesis, "", vit.PositionRange{vpath.Virtual(""), 1, 16, 1, 16}}, token{tokenIdentifier, "MouseEvent", vit.PositionRange{vpath.Virtual(""), 1, 17, 1, 26}}, token{tokenIdentifier, "event", vit.PositionRange{vpath.Virtual(""), 1, 28, 1, 32}}, token{tokenRightParenthesis, "", vit.PositionRange{vpath.Virtual(""), 1, 33, 1, 33}}},
 	}, {
-		input: `Rectangle {width: 100; height: 100; gradient: Gradient { }}`,
+		input: `Rectangle {width: 100; height: 100; gradient: Gradient { GradientStop { } }}`,
 		output: []interface{}{
-			token{tokenIdentifier, "Rectangle", vit.PositionRange{vpath.Virtual(""), 1, 1, 1, 9}},      // Rectangle
-			token{tokenLeftBrace, "", vit.PositionRange{vpath.Virtual(""), 1, 11, 1, 11}},              // {
-			token{tokenIdentifier, "width", vit.PositionRange{vpath.Virtual(""), 1, 12, 1, 16}},        // width
-			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 17, 1, 17}},                  // :
-			token{tokenExpression, "100", vit.PositionRange{vpath.Virtual(""), 1, 19, 1, 21}},          // 100
-			token{tokenSemicolon, "", vit.PositionRange{vpath.Virtual(""), 1, 22, 1, 22}},              // ;
-			token{tokenIdentifier, "height", vit.PositionRange{vpath.Virtual(""), 1, 24, 1, 29}},       // height
-			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 30, 1, 30}},                  // :
-			token{tokenExpression, "100", vit.PositionRange{vpath.Virtual(""), 1, 32, 1, 34}},          // 100
-			token{tokenSemicolon, "", vit.PositionRange{vpath.Virtual(""), 1, 35, 1, 35}},              // ;
-			token{tokenIdentifier, "gradient", vit.PositionRange{vpath.Virtual(""), 1, 37, 1, 44}},     // gradient
-			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 45, 1, 45}},                  // :
-			token{tokenExpression, "Gradient { }", vit.PositionRange{vpath.Virtual(""), 1, 47, 1, 58}}, // Gradient { }
-			token{tokenRightBrace, "", vit.PositionRange{vpath.Virtual(""), 1, 59, 1, 59}},             // }
+			token{tokenIdentifier, "Rectangle", vit.PositionRange{vpath.Virtual(""), 1, 1, 1, 9}},                       // Rectangle
+			token{tokenLeftBrace, "", vit.PositionRange{vpath.Virtual(""), 1, 11, 1, 11}},                               // {
+			token{tokenIdentifier, "width", vit.PositionRange{vpath.Virtual(""), 1, 12, 1, 16}},                         // width
+			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 17, 1, 17}},                                   // :
+			token{tokenExpression, "100", vit.PositionRange{vpath.Virtual(""), 1, 19, 1, 21}},                           // 100
+			token{tokenSemicolon, "", vit.PositionRange{vpath.Virtual(""), 1, 22, 1, 22}},                               // ;
+			token{tokenIdentifier, "height", vit.PositionRange{vpath.Virtual(""), 1, 24, 1, 29}},                        // height
+			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 30, 1, 30}},                                   // :
+			token{tokenExpression, "100", vit.PositionRange{vpath.Virtual(""), 1, 32, 1, 34}},                           // 100
+			token{tokenSemicolon, "", vit.PositionRange{vpath.Virtual(""), 1, 35, 1, 35}},                               // ;
+			token{tokenIdentifier, "gradient", vit.PositionRange{vpath.Virtual(""), 1, 37, 1, 44}},                      // gradient
+			token{tokenColon, "", vit.PositionRange{vpath.Virtual(""), 1, 45, 1, 45}},                                   // :
+			token{tokenExpression, "Gradient { GradientStop { } }", vit.PositionRange{vpath.Virtual(""), 1, 47, 1, 58}}, // Gradient { GradientStop { } }
+			token{tokenRightBrace, "", vit.PositionRange{vpath.Virtual(""), 1, 59, 1, 59}},                              // }
 		},
 	}}
 	// Check if only specific test cases should be run. Allows for easier debugging.
