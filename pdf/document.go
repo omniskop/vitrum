@@ -93,7 +93,7 @@ func (d *Document) Render(out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("page %d: %w", i, err)
 		}
-		canv.Render(p) // This has been changed to RenderTo in newer versions of the canvas library
+		canv.RenderTo(p) // This has been changed to RenderTo in newer versions of the canvas library
 	}
 
 	err := p.Close()
