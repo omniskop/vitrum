@@ -82,7 +82,7 @@ The result:
     <img src=".github/example_screenshot.png" width="50%" alt="Screenshot of a window with the title 'Example' and a large 'Hello World!' in the center of it.">
 </p>
 
-A quick note on libraries: To allow a library to be imported in Vit their Go equivalent has to imported as well. Otherwise the parser doesn't know of its existence at runtime. In this example the package "github.com/omniskop/vitrum/gui" defines Vit library "GUI" which is then imported in 'main.vit'. 'gui' itself imports the standard library ("Vit") which allows it to imported as well. If this wasn't the case it would be necessary to import its Go package as well like this: `import _ "github.com/omniskop/vitrum/vit/std"` 
+A quick note on libraries: To allow a library to be imported in Vit its Go equivalent has to be imported as well. Otherwise the parser doesn't know of its existence at runtime. In this example the package "github.com/omniskop/vitrum/gui" defines Vit library "GUI" which is then imported in 'main.vit'. 'gui' itself imports the standard library ("Vit") which allows it to imported as well. If this wasn't the case it would be necessary to import its Go package as well like this: `import _ "github.com/omniskop/vitrum/vit/std"` 
 
 There is a more complex example project that implements a simple [calculator](https://github.com/omniskop/vitrum-calculator-de) using vit. It contains comments in German as it was created for my thesis but the code should be mostly self explanatory.
 
