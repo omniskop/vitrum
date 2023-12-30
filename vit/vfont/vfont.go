@@ -54,23 +54,23 @@ const (
 func (w Weight) toCanvas() canvas.FontStyle {
 	switch w {
 	case Thin:
-		return canvas.FontExtraLight
+		return canvas.FontThin
 	case ExtraLight:
-		return canvas.FontLight
+		return canvas.FontExtraLight
 	case Light:
-		return canvas.FontBook
+		return canvas.FontLight
 	case Normal:
 		return canvas.FontRegular
 	case Medium:
 		return canvas.FontMedium
 	case DemiBold:
-		return canvas.FontSemibold
+		return canvas.FontSemiBold
 	case Bold:
 		return canvas.FontBold
 	case ExtraBold:
-		return canvas.FontBlack
+		return canvas.FontExtraBold
 	case Black:
-		return canvas.FontExtraBlack
+		return canvas.FontBlack
 
 	default:
 		return canvas.FontRegular
@@ -119,7 +119,7 @@ func LoadFontFace(familyName string, style Style) (*canvas.FontFace, error) {
 	}
 
 	if !loadedFont.styles[style] {
-		err := loadedFont.font.LoadLocalFont(familyName+" "+style.searchableName(), style.canvasStyle())
+		err := loadedFont.font.LoadSystemFont(familyName, style.canvasStyle())
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +128,11 @@ func LoadFontFace(familyName string, style Style) (*canvas.FontFace, error) {
 		// TODO: clean the cache somehow
 	}
 
-	var decorators []canvas.FontDecorator
+	decorators := []any{
+		style.Color,
+		style.canvasStyle(),
+		canvas.FontNormal,
+	}
 	if style.Underline {
 		decorators = append(decorators, canvas.FontUnderline)
 	}
@@ -140,13 +144,7 @@ func LoadFontFace(familyName string, style Style) (*canvas.FontFace, error) {
 		style.PointSize = PixelsToPoints(style.PixelSize)
 	}
 
-	return loadedFont.font.Face(
-		style.PointSize,
-		style.Color,
-		style.canvasStyle(),
-		canvas.FontNormal,
-		decorators...,
-	), nil
+	return loadedFont.font.Face(style.PointSize, decorators...), nil
 }
 
 func PixelsToPoints(px int) float64 {
